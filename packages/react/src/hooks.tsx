@@ -21,6 +21,7 @@ import {
   type ContentPart,
   type ContextTrace,
   type Message,
+  type PartialToolCall,
   type RunState,
   type Skill,
   type ThreadMeta,
@@ -211,6 +212,19 @@ export function useStreamingText(): string {
 
 export function useCards(): Card[] {
   return useAgentState((s) => s.cards, sameIds);
+}
+
+const NO_PARTIAL_TOOLS: Record<string, PartialToolCall> = {};
+
+/**
+ * Tool calls whose arguments are streaming, keyed by callId — each with the
+ * tolerant parse so far and, for a tool that previews one, a valid but
+ * incomplete card. Live-only: it empties when the run commits, and nothing in
+ * it is ever written to the thread. Interactive kinds never appear here as a
+ * `partialCard`; they render only once validated.
+ */
+export function usePartialTools(): Record<string, PartialToolCall> {
+  return useAgentState((s) => s.run.partialTools ?? NO_PARTIAL_TOOLS);
 }
 
 /**

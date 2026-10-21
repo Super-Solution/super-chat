@@ -19,7 +19,8 @@ import type { ContextBuilder } from "../context/builder.js";
 import { AgentError, toAgentError } from "../errors.js";
 import type { GenerateResult, NormalizedRequest, Provider, StreamEvent } from "../providers/types.js";
 import type { ToolRegistry } from "../tools/registry.js";
-import { resolveToolLoading, type ToolResolution } from "../tools/types.js";
+import { resolvePartialCard, resolveToolLoading, type ToolDefinition, type ToolResolution } from "../tools/types.js";
+import { PartialJsonParser } from "../tools/partial-json.js";
 import { awaitJob } from "./jobs.js";
 import { executeToolCalls, type ToolCallRequest } from "./execute-tools.js";
 import { EventChannel } from "./channel.js";
@@ -174,10 +175,35 @@ export async function* runAgent(
         if (mode === "stream" && config.provider.capabilities.streaming) {
           const collected = collectStream(config.provider.stream(request, { signal: config.signal }));
           streamSnapshot = collected.result;
+          // Arguments still being written, per call. Parsed incrementally, and
+          // forwarded only when the parse visibly changed: whitespace, a key's
+          // characters or an unfinished number are not worth a re-render.
+          const writing = new Map<string, { name: string; tool?: ToolDefinition; parser: PartialJsonParser; seen: number }>();
           for await (const event of collected.events()) {
             if (event.type === "text-delta") yield { type: "text-delta", delta: event.delta };
             else if (event.type === "reasoning-delta") yield { type: "reasoning-delta", delta: event.delta };
-            else if (event.type === "error") throw toAgentError(event.error, config.provider.id);
+            else if (event.type === "tool-call-start") {
+              const tool = activeTools.find((t) => t.name === event.name);
+              writing.set(event.callId, { name: event.name, tool, parser: new PartialJsonParser(), seen: 0 });
+            } else if (event.type === "tool-call-delta") {
+              const call = writing.get(event.callId);
+              if (!call) continue;
+              call.parser.push(event.argsDelta);
+              if (call.parser.version === call.seen) continue;
+              call.seen = call.parser.version;
+              const partialInput = call.parser.snapshot();
+              if (partialInput === undefined) continue;
+              const partialCard = resolvePartialCard(call.tool, partialInput);
+              const loading = resolveToolLoading(call.tool?.loading, partialInput);
+              yield {
+                type: "tool-call-input-delta",
+                callId: event.callId,
+                name: call.name,
+                partialInput,
+                ...(partialCard ? { partialCard } : {}),
+                ...(loading ? { loading } : {}),
+              };
+            } else if (event.type === "error") throw toAgentError(event.error, config.provider.id);
           }
           const done = collected.result();
           parts = done.parts;

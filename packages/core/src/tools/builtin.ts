@@ -7,7 +7,7 @@
 // chart, an ambiguous match becomes a choice card instead of a guess. That is
 // the difference between an agent that talks about data and one that shows it.
 
-import { CardRegistry } from "../cards/registry.js";
+import { CardRegistry, isObj } from "../cards/registry.js";
 import type { CardSpec } from "../cards/types.js";
 import type { SkillRegistry } from "../skills/registry.js";
 import type { ToolDefinition } from "./types.js";
@@ -88,6 +88,15 @@ export function createVisualizeTool(opts: VisualizeToolOptions): ToolDefinition 
         ...(mediaItems.length ? { count: mediaItems.length } : {}),
         ...(width && height ? { aspectRatio: `${width} / ${height}` } : {}),
       };
+    },
+    // The card IS this tool's arguments, so it can be drawn while they stream.
+    // `cards.partial` refuses interactive kinds and anything its own validator
+    // rejects; `execute` below stays the only path to a real card.
+    partialCard: (input) => {
+      const { kind, spec } = (input ?? {}) as { kind?: unknown; spec?: unknown };
+      if (typeof kind !== "string" || !isObj(spec)) return undefined;
+      if (opts.kinds && !opts.kinds.includes(kind)) return undefined;
+      return cards.partial({ ...spec, kind });
     },
     async execute(input, ctx) {
       const { kind, spec } = (input ?? {}) as { kind?: string; spec?: Record<string, unknown> };

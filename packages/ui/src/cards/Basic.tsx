@@ -18,7 +18,7 @@ import type {
 import type { CardRendererProps } from "../renderer-registry.js";
 import { deltaTone, formatDelta, formatValue, toneClass } from "../format.js";
 import { CodeBlock } from "../agent/CodeBlock.js";
-import { renderMarkdown } from "../markdown.js";
+import { newMarkdownStream, renderMarkdown, renderMarkdownStream } from "../markdown.js";
 import { CardActions } from "./CardActions.js";
 
 // Rows beyond this render behind a "Show all" toggle — a 200-row agent result
@@ -37,7 +37,7 @@ function tableToTsv(columns: TableColumn[], rows: Record<string, unknown>[]): st
   return rows.length ? `${header}\n${body}` : header;
 }
 
-export function TableCardView({ spec }: CardRendererProps<TableCard>) {
+export function TableCardView({ spec, partial }: CardRendererProps<TableCard>) {
   const [sortBy, setSortBy] = useState(spec.sortBy);
   const [sortDir, setSortDir] = useState<"asc" | "desc">(spec.sortDir ?? "desc");
   const [showAll, setShowAll] = useState(false);
@@ -95,7 +95,9 @@ export function TableCardView({ spec }: CardRendererProps<TableCard>) {
             <tr>
               {spec.columns.map((c) => (
                 <th key={c.key} style={{ textAlign: c.align ?? "left" }}>
-                  <button type="button" className="sc-th-btn" onClick={() => toggle(c.key)}>
+                  {/* Sorting a table that is still filling would reshuffle it
+                      on every row; it unlocks when the validated card lands. */}
+                  <button type="button" className="sc-th-btn" onClick={() => toggle(c.key)} disabled={partial}>
                     {c.label}
                     {sortBy === c.key ? <span aria-hidden> {sortDir === "asc" ? "↑" : "↓"}</span> : null}
                   </button>
@@ -104,7 +106,7 @@ export function TableCardView({ spec }: CardRendererProps<TableCard>) {
             </tr>
           </thead>
           <tbody>
-            {visibleRows.length === 0 ? (
+            {visibleRows.length === 0 && !partial ? (
               <tr>
                 <td colSpan={spec.columns.length} className="sc-muted">
                   No rows.
@@ -134,7 +136,9 @@ export function TableCardView({ spec }: CardRendererProps<TableCard>) {
         </button>
       ) : null}
       {spec.caption ? <div className="sc-muted sc-card__caption">{spec.caption}</div> : null}
-      <CardActions getText={() => tableToTsv(spec.columns, rows)} filename="table.tsv" mimeType="text/tab-separated-values" />
+      {partial ? null : (
+        <CardActions getText={() => tableToTsv(spec.columns, rows)} filename="table.tsv" mimeType="text/tab-separated-values" />
+      )}
     </div>
   );
 }
@@ -298,13 +302,19 @@ export function MediaCardView({ spec }: CardRendererProps<MediaCard>) {
   );
 }
 
-export function MarkdownCardView({ spec }: CardRendererProps<MarkdownCard>) {
-  const html = useMemo(() => renderMarkdown(spec.body), [spec.body]);
+export function MarkdownCardView({ spec, partial }: CardRendererProps<MarkdownCard>) {
+  // A body that is still growing re-renders only its open tail per update —
+  // the same output renderMarkdown gives, without re-parsing settled blocks.
+  const [stream] = useState(newMarkdownStream);
+  const html = useMemo(
+    () => (partial ? renderMarkdownStream(spec.body, stream) : renderMarkdown(spec.body)),
+    [spec.body, partial, stream],
+  );
   return (
     <div className="sc-card">
       {spec.title ? <div className="sc-card__title">{spec.title}</div> : null}
       <div className="sc-prose" dangerouslySetInnerHTML={{ __html: html }} />
-      <CardActions getText={() => spec.body} filename="note.md" mimeType="text/markdown" />
+      {partial ? null : <CardActions getText={() => spec.body} filename="note.md" mimeType="text/markdown" />}
     </div>
   );
 }

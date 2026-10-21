@@ -30,6 +30,7 @@ import {
 import { IS_STATIC_DEMO } from "@/agent/deployment";
 
 const EXAMPLES = [
+  { title: "Streaming — table", prompt: "Build a table of the vendor shortlist." },
   { title: "Legal — clause review", prompt: "Review the Vertex MSA for liability exposure." },
   { title: "Legal — sourced answer", prompt: "Can we exclude liability entirely in our standard terms?" },
   { title: "Marketing — funnel", prompt: "Where are we losing people in the signup funnel?" },
@@ -567,6 +568,17 @@ function EventStream() {
   // recompute in full each render, unlike the parts/cards scan above.
   const events = useMemo(() => {
     const extras: LogEntry[] = [];
+    // Arguments still streaming: a live value, like awaiting-user — one line per
+    // call, showing what the preview has reached rather than every delta.
+    for (const p of Object.values(run.partialTools ?? {})) {
+      if (run.parts.some((part) => part.type === "tool-call" && part.callId === p.callId)) continue;
+      const spec = p.partialCard as { kind?: string; rows?: unknown[]; items?: unknown[]; events?: unknown[] } | undefined;
+      const size = spec?.rows?.length ?? spec?.items?.length ?? spec?.events?.length;
+      extras.push({
+        type: "tool-call-input-delta",
+        detail: `${p.name}${spec ? ` · ${spec.kind} preview${size != null ? ` · ${size} so far` : ""}` : ""}`,
+      });
+    }
     if (run.pendingCard) extras.push({ type: "awaiting-user", detail: (run.pendingCard.spec as { kind?: string }).kind ?? "?" });
     if (run.job) extras.push({ type: "job-status", detail: `${run.job.handle.id.slice(0, 14)}… ${run.job.status}` });
     for (const j of jobs) {
@@ -575,7 +587,7 @@ function EventStream() {
     if (run.usage.totalTokens) extras.push({ type: "usage", detail: `${run.usage.totalTokens} tok total` });
     if (run.status === "done") extras.push({ type: "run-finish", detail: `${run.finishReason} · ${run.steps} step(s)` });
     return [...streamEvents, ...extras];
-  }, [streamEvents, run.pendingCard, run.job, jobs, run.usage.totalTokens, run.status, run.finishReason, run.steps]);
+  }, [streamEvents, run.partialTools, run.parts, run.pendingCard, run.job, jobs, run.usage.totalTokens, run.status, run.finishReason, run.steps]);
 
   const cls = (t: string) =>
     t.startsWith("tool") ? "tool" : t === "card" ? "card" : t === "awaiting-user" ? "user" : t === "error" ? "error" : "";

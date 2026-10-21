@@ -28,6 +28,51 @@ type Step =
 
 /** Scripts are keyed by a matcher over the user's message. First match wins. */
 const SCRIPTS: { match: RegExp; steps: Step[] }[] = [
+  // ── streaming card ───────────────────────────────────────────────────────
+  // Big enough that its arguments take a few seconds to arrive, so the table
+  // visibly fills row by row instead of appearing whole at the end.
+  {
+    match: /shortlist|table of|表格/i,
+    steps: [
+      {
+        kind: "tool",
+        name: "visualize",
+        args: {
+          kind: "table",
+          spec: {
+            kind: "table",
+            title: "Vendor shortlist",
+            caption: "Annual cost at the quoted seat count. Score is the weighted rubric out of 100.",
+            columns: [
+              { key: "vendor", label: "Vendor" },
+              { key: "region", label: "Data region" },
+              { key: "sso", label: "SSO", pill: true },
+              { key: "cost", label: "Annual cost", format: "currency", align: "right" },
+              { key: "score", label: "Score", format: "number", align: "right" },
+            ],
+            rows: [
+              { vendor: "Halcyon Systems", region: "EU (Frankfurt)", sso: "All plans", cost: 48200, score: 91 },
+              { vendor: "Brightline", region: "EU (Dublin)", sso: "All plans", cost: 52900, score: 88 },
+              { vendor: "Tessellate", region: "US + EU", sso: "Enterprise", cost: 39800, score: 84 },
+              { vendor: "Quarry and Vale", region: "EU (Paris)", sso: "All plans", cost: 61500, score: 82 },
+              { vendor: "Lumen Works", region: "US (Oregon)", sso: "Add-on", cost: 33100, score: 77 },
+              { vendor: "Ostrander", region: "EU (Stockholm)", sso: "Enterprise", cost: 45750, score: 74 },
+              { vendor: "Pinecrest Labs", region: "UK (London)", sso: "All plans", cost: 57300, score: 71 },
+              { vendor: "Meridian Nine", region: "US + EU", sso: "Add-on", cost: 29900, score: 66 },
+              { vendor: "Corvid", region: "APAC (Singapore)", sso: "Enterprise", cost: 41200, score: 62 },
+              { vendor: "Saltmarsh", region: "US (Virginia)", sso: "None", cost: 24600, score: 48 },
+            ],
+          },
+        },
+      },
+      {
+        kind: "text",
+        text:
+          "Halcyon and Brightline are the two to take forward: both keep data in the EU and include SSO on every plan. " +
+          "Tessellate is the value pick, but only if you were going to buy Enterprise anyway — SSO is gated there.",
+      },
+    ],
+  },
   // ── legal ────────────────────────────────────────────────────────────────
   {
     match: /msa|contract|clause|liability exposure|review the|合約/i,
@@ -492,7 +537,10 @@ export function createDemoTransport(opts: { latencyMs?: number } = {}): Transpor
 
       // Streaming mode asks for SSE; emit the same content as a minimal event
       // sequence so the adapter's stream path is exercised too, not bypassed.
+      // Tool arguments stream in fragments, as a real model's do, so a card
+      // can be drawn while its spec is still arriving.
       if (req.stream) {
+        const argChunks = step.kind === "tool" ? chunkArgs(JSON.stringify(step.args)) : [];
         const events =
           step.kind === "tool"
             ? [
@@ -502,13 +550,19 @@ export function createDemoTransport(opts: { latencyMs?: number } = {}): Transpor
                   sequence_number: 2,
                   item: { type: "function_call", id: `item_${seq}`, call_id: `call_demo_${seq}`, name: step.name, arguments: "" },
                 },
+                ...argChunks.map((delta, i) => ({
+                  type: "response.function_call_arguments.delta",
+                  sequence_number: 3 + i,
+                  item_id: `item_${seq}`,
+                  delta,
+                })),
                 {
                   type: "response.function_call_arguments.done",
-                  sequence_number: 3,
+                  sequence_number: 3 + argChunks.length,
                   item_id: `item_${seq}`,
                   arguments: JSON.stringify(step.args),
                 },
-                { type: "response.completed", sequence_number: 4, response: payload },
+                { type: "response.completed", sequence_number: 4 + argChunks.length, response: payload },
               ]
             : [
                 { type: "response.created", sequence_number: 1, response: { ...payload, output: [] } },
@@ -525,11 +579,13 @@ export function createDemoTransport(opts: { latencyMs?: number } = {}): Transpor
                 return;
               }
               controller.enqueue(encoder.encode(`event: ${e.type}\ndata: ${JSON.stringify(e)}\n\n`));
-              // Pace the text deltas so streaming is visibly streaming — but a
+              // Pace the deltas so streaming is visibly streaming — but a
               // Stop mid-pace should cut the wait short, not run it to the end.
-              if (e.type === "response.output_text.delta") {
+              const pace =
+                e.type === "response.output_text.delta" ? 18 : e.type === "response.function_call_arguments.delta" ? 24 : 0;
+              if (pace) {
                 try {
-                  await delay(18, req.signal);
+                  await delay(pace, req.signal);
                 } catch {
                   controller.error(new DOMException("Aborted", "AbortError"));
                   return;
@@ -545,6 +601,18 @@ export function createDemoTransport(opts: { latencyMs?: number } = {}): Transpor
       return new Response(JSON.stringify(payload), { status: 200, headers: { "content-type": "application/json" } });
     },
   };
+}
+
+/**
+ * Split serialized arguments into token-sized fragments. By code point, not
+ * UTF-16 unit: a fragment ending in half a surrogate pair would be encoded on
+ * the wire as U+FFFD and corrupt the arguments for real.
+ */
+function chunkArgs(json: string, size = 12): string[] {
+  const chars = Array.from(json);
+  const out: string[] = [];
+  for (let i = 0; i < chars.length; i += size) out.push(chars.slice(i, i + size).join(""));
+  return out;
 }
 
 /** Split text into word-ish chunks so the stream looks like a model, not a paste. */

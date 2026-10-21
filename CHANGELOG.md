@@ -2,6 +2,45 @@
 
 ## Unreleased
 
+### Added
+
+- **Cards render while the model is still writing them.** A `visualize` card
+  used to appear only after the whole tool-call JSON had arrived; a table
+  now fills row by row (cell by cell) as its arguments stream, in stream mode,
+  for all three wire dialects (OpenAI Responses, Chat Completions, Anthropic).
+  - **core:** new run event `tool-call-input-delta { callId, name,
+    partialInput, partialCard?, loading? }`, sent while a call's arguments
+    stream and before its `tool-call`. `tool-call` stays the authoritative,
+    repaired input, and only the tool's `execute` validates and emits a real
+    `card`. `RunState.partialTools` holds the latest delta per call until its
+    `tool-result`, and empties on `run-finish` or a fatal error.
+  - **core:** `PartialJsonParser` / `parsePartialJson` — a tolerant,
+    incremental JSON reader with no dependency. Each character is read once;
+    finished objects are shared between snapshots. An open string value shows
+    what has arrived; an open key, an unterminated number or literal, a
+    half-received escape and a lone high surrogate never show. Malformed input
+    freezes the preview rather than guessing.
+  - **core:** `CardKindDefinition.partial` derives a renderable spec from an
+    incomplete one, and `CardRegistry.partial()` is the gate: it refuses
+    unknown kinds, interactive kinds (even if they define `partial`), and any
+    preview the kind's own validator rejects. `table`, `stats`, `checklist`,
+    `timeline` and `markdown` opt in; every other kind keeps its skeleton.
+    `ToolDefinition.partialCard` lets a tool whose arguments ARE a card offer
+    a preview; `visualize` routes it through the registry.
+  - **react:** `usePartialTools()`. Previews are live-only: `AgentClient`
+    never commits them, and clears any left by a run that died mid-stream.
+  - **ui:** `LiveTurn` gives a streaming call its output slot as soon as its
+    arguments start, and the preview holds that slot until the validated card
+    replaces it. Renderers get `partial`: copy/download, column sorting and
+    the checklist tally wait for the whole card. `CardRenderer` refuses a
+    partial spec for any interactive kind and never passes `respond` with one.
+    Fixed with it: the per-frame throttle behind streamed text left a
+    cancelled frame id behind on unmount, so under StrictMode a component
+    that mounted mid-stream froze on its first value.
+  - **playground:** the demo transport streams tool arguments in fragments;
+    "Streaming — table" on `/run` shows a shortlist filling in.
+  - **ui (dev):** `react-dom` is a devDependency, for render tests.
+
 ### Fixed
 
 - **core:** `undoDocument` walks back instead of ping-ponging. Every undo
