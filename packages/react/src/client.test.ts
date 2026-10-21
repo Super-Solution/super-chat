@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   ContextBuilder,
   ToolRegistry,
+  createMemoryDocumentStore,
   createMemoryJobStore,
   createMemoryThreadStore,
   createOpenAIProvider,
@@ -406,6 +407,40 @@ describe("AgentClient + document quotes", () => {
     // …and absent from the wire, which is what Message.metadata promises.
     expect(sent).not.toContain("docId");
     expect(sent).not.toContain(QUOTES_METADATA_KEY);
+  });
+
+  // The card a quote is taken from can be older than the document — the one
+  // createDocument returned, scrolled back to after two edits. Checked at send
+  // time and frozen onto the message, so the turn is told and history keeps
+  // what was true when the user spoke.
+  it("stamps drift from the document store onto the text and the metadata", async () => {
+    let sent = "";
+    const provider = createOpenAIProvider({
+      transport: {
+        kind: "custom",
+        credentialSafe: true,
+        async fetch(req: TransportRequest): Promise<Response> {
+          sent = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+          return new Response(JSON.stringify(respondText("ok")), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        },
+      } as Transport,
+      dialect: "responses",
+    });
+    const documentStore = createMemoryDocumentStore();
+    const doc = await documentStore.create({ id: "doc_1", title: "Q3 plan", markdown: "# Q3\n\nThe cap is 12 months." });
+    const stale = { ...quote, revision: doc.revision, text: "The cap is 12 months." };
+    await documentStore.update(doc.id, "# Q3\n\nThe cap is 24 months.", 1);
+
+    const client = makeClient([], { provider, documentStore });
+    await client.send("tighten this", { quotes: [stale] });
+    await flush();
+
+    expect(sent).toContain("now at v2");
+    const user = client.store.get().messages.find((m) => m.role === "user");
+    expect(quotesOf(user?.metadata)[0]?.drift).toEqual({ status: "moved", revision: 2, intact: false });
   });
 
   it("leaves an unquoted message untouched", async () => {

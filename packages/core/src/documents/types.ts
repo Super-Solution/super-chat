@@ -36,6 +36,17 @@ export type DocumentSnapshot = {
    * first version rather than added when someone hits the bug.
    */
   revision: number;
+  /**
+   * Set when this revision is an undo: the revision whose body it checked out,
+   * resolved to the original rather than to another undo.
+   *
+   * Undo mints a new revision instead of rolling the number back, so without
+   * this the store cannot tell "v4, which is v2 restored" from "v4, a fresh
+   * edit" — and the next undo would step back one from v4, i.e. to v3, which is
+   * the body the user just undid. Walking back from here instead is what makes
+   * the second undo an undo rather than a redo.
+   */
+  restoredFrom?: number;
   createdAt: number;
   updatedAt: number;
 };
@@ -53,8 +64,17 @@ export type DocumentStore = {
    * Write a new body. Rejects when `expectedRevision` is not the current one —
    * the store is where the check belongs, because it is the only place that
    * sees concurrent writers.
+   *
+   * `restoredFrom` marks the write as an undo and must be persisted on the new
+   * snapshot (and cleared by any write without it). A store that drops it
+   * still undoes once; the second undo then walks forward instead of back.
    */
-  update(id: string, markdown: string, expectedRevision: number): Promise<DocumentSnapshot>;
+  update(
+    id: string,
+    markdown: string,
+    expectedRevision: number,
+    opts?: { restoredFrom?: number },
+  ): Promise<DocumentSnapshot>;
   remove(id: string): Promise<void>;
   /** Prior revisions, newest first. Undo is a checkout, never an inverse edit. */
   history(id: string): Promise<DocumentSnapshot[]>;

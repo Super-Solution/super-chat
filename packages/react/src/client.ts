@@ -36,8 +36,10 @@ import {
   userMessage,
   withQuotes,
   formatQuotes,
+  checkQuoteDrift,
   QUOTES_METADATA_KEY,
   type DocumentQuoteRef,
+  type DocumentStore,
 } from "@zzyzxlabs/super-chat-core";
 import { Store } from "./store.js";
 
@@ -113,6 +115,13 @@ export type AgentClientConfig = {
   /** Active-branch leaf when `initialMessages` is a tree. Default: last message. */
   initialHeadId?: string | null;
   threadId?: string;
+  /**
+   * Where quoted documents can be looked up at send time, to catch a quote
+   * taken from a revision the document has since moved past. Only `get` is
+   * used; a host whose store lives on a server can pass a fetch-backed one.
+   * Unset, quotes are sent as taken.
+   */
+  documentStore?: Pick<DocumentStore, "get">;
 };
 
 /** A card waiting on the user, with the resolver that unblocks the run. */
@@ -209,14 +218,23 @@ export class AgentClient {
    * SAID, so it must not go stale between turns and must not be droppable
    * under budget pressure. The structured form rides on `metadata`, which never
    * reaches a provider, so the chips can be re-rendered from history.
+   *
+   * With a `documentStore` configured, each quote is first checked against the
+   * document as it is now, and a quote taken from an older revision goes out
+   * with its drift — in the text, so the model re-reads, and in the metadata,
+   * so the UI can say so.
    */
   async send(
     input: string | ContentPart[],
     opts: { forceSkillIds?: string[]; quotes?: readonly DocumentQuoteRef[] } = {},
   ): Promise<void> {
     if (this.isRunning) throw new Error("A run is already in progress. Call stop() first.");
+    const { documentStore } = this.config;
+    const quotes =
+      opts.quotes?.length && documentStore ? await checkQuoteDrift(opts.quotes, documentStore) : (opts.quotes ?? []);
+    // The drift lookup is an await, and a second send could have started in it.
+    if (this.isRunning) throw new Error("A run is already in progress. Call stop() first.");
     const staged = this.store.get().attachments;
-    const quotes = opts.quotes ?? [];
     const quoted: string | ContentPart[] =
       quotes.length === 0
         ? input

@@ -9,8 +9,11 @@ export {
   formatQuotes,
   withQuotes,
   quotesOf,
+  quoteDrift,
+  checkQuoteDrift,
   QUOTES_METADATA_KEY,
   type DocumentQuoteRef,
+  type QuoteDrift,
 } from "./content/quotes.js";
 
 // errors
