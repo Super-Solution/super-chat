@@ -20,7 +20,7 @@ they land, the package READMEs ([core](../../packages/core/README.md),
 the root [README](../../README.md) cover the same ground in less depth.
 
 Every page is written against the real exported API. If a snippet drifts from the
-code, the code wins — and that's a bug worth [reporting](https://github.com/ZzyzxLabs/super-chat/issues).
+code, the code wins — and that's a bug worth [reporting](https://github.com/Super-Solution/super-chat/issues).
 
 ## Run the examples
 

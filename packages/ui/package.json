@@ -4,8 +4,8 @@
   "description": "Card renderers and chat primitives for superchat. Bring your own styling; ships a self-contained CSS baseline.",
   "license": "Apache-2.0",
   "author": "ZzyzxLabs",
-  "homepage": "https://github.com/ZzyzxLabs/super-chat/tree/main/packages/ui#readme",
-  "bugs": { "url": "https://github.com/ZzyzxLabs/super-chat/issues" },
+  "homepage": "https://github.com/Super-Solution/super-chat/tree/main/packages/ui#readme",
+  "bugs": { "url": "https://github.com/Super-Solution/super-chat/issues" },
   "keywords": ["agent", "llm", "ai", "react", "chat-ui", "components", "cards", "framework"],
   "type": "module",
   "main": "./dist/index.js",
@@ -32,7 +32,7 @@
   "files": ["dist", "src/styles.css", "MOBILE-AGENT.md", "LICENSE", "NOTICE"],
   "repository": {
     "type": "git",
-    "url": "https://github.com/ZzyzxLabs/super-chat.git",
+    "url": "https://github.com/Super-Solution/super-chat.git",
     "directory": "packages/ui"
   },
   "publishConfig": {

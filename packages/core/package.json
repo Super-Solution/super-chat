@@ -4,8 +4,8 @@
   "description": "Provider-agnostic agent core: content model, skills, context assembly, tools, runtime, and hand-rolled provider adapters.",
   "license": "Apache-2.0",
   "author": "ZzyzxLabs",
-  "homepage": "https://github.com/ZzyzxLabs/super-chat/tree/main/packages/core#readme",
-  "bugs": { "url": "https://github.com/ZzyzxLabs/super-chat/issues" },
+  "homepage": "https://github.com/Super-Solution/super-chat/tree/main/packages/core#readme",
+  "bugs": { "url": "https://github.com/Super-Solution/super-chat/issues" },
   "keywords": ["agent", "llm", "ai", "openai", "anthropic", "tool-calling", "streaming", "context-window", "skills", "framework"],
   "type": "module",
   "main": "./dist/index.js",
@@ -31,7 +31,7 @@
   "files": ["dist", "LICENSE", "NOTICE"],
   "repository": {
     "type": "git",
-    "url": "https://github.com/ZzyzxLabs/super-chat.git",
+    "url": "https://github.com/Super-Solution/super-chat.git",
     "directory": "packages/core"
   },
   "publishConfig": {
