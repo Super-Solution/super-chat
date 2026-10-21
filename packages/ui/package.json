@@ -1,6 +1,6 @@
 {
   "name": "@zzyzxlabs/super-chat-ui",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Card renderers and chat primitives for superchat. Bring your own styling; ships a self-contained CSS baseline.",
   "license": "Apache-2.0",
   "author": "ZzyzxLabs",
@@ -14,15 +14,18 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./mobile-agent": {
       "types": "./dist/mobile-agent.d.ts",
-      "import": "./dist/mobile-agent.js"
+      "import": "./dist/mobile-agent.js",
+      "default": "./dist/mobile-agent.js"
     },
     "./mobile-agent/react-native": {
       "types": "./dist/mobile-agent-react-native.d.ts",
-      "import": "./dist/mobile-agent-react-native.js"
+      "import": "./dist/mobile-agent-react-native.js",
+      "default": "./dist/mobile-agent-react-native.js"
     },
     "./styles.css": "./src/styles.css"
   },

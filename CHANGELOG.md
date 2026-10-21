@@ -1,6 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.3.1 (unpublished)
+
+### Fixed
+
+- **core/react/ui:** JavaScript exports retain their ESM import entries and
+  add a default resolver fallback. Native/Jest hosts resolving without the
+  import condition can find the same built modules, including both Mobile Agent
+  entries. This is export resolution compatibility, not a new CommonJS build.
 
 ### Added
 

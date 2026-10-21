@@ -1,5 +1,31 @@
 # Handoff
 
+## Release and downstream checkpoint (2026-09-28)
+
+The tracked manifests prepare **0.3.1**, an unpublished candidate. Public npm
+latest remains **0.3.0** for core, react and ui (registry checked 2026-09-28).
+The candidate contains the performance changes merged through upstream
+`21630da7044bdef19332372248f1fd8d7ba4a3e1` plus ESM export resolver fallbacks.
+`default` points to the same ESM file as `import`; this does not provide CommonJS
+execution support. Keep `types` first and `default` last in condition maps.
+
+Full Repo already consumes exact npm 0.3.0 versions in Web, Mobile and Agent
+Service. Its `1e711aca6` migration removed the vendor copy; it is downstream
+adoption, not a second authoritative core implementation. Wallet transaction
+cards and animations belong to Full Repo's `@workspace/transaction-ui` package
+and must not be copied into this generic framework merely to regain parity.
+Mobile retains two Jest entry mappers for the published 0.3.0 exports. Do not
+remove those or update any consumer pin until a reviewed package version is
+actually available from npm and the consumer's regressions pass.
+
+Open PR #4 owns the quote-only composer fix (`packages/ui/src/Thread.tsx` and
+`Thread.test.ts`). It is separate from this release-parity candidate and remains
+a known mouse/touch composer bug until reviewed and merged. Recheck it and the
+latest upstream source before publication. Source review, local test success,
+package publication, consumer adoption and deployment are separate checkpoints.
+This lane has not published, merged or deployed anything. Its contract and
+review handoff are tracked in upstream Issue #9.
+
 Written 2026-08-04, at the end of the session that built this. For whoever picks
 it up next — probably a future me with no memory of any of it.
 

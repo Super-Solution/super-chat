@@ -1,6 +1,6 @@
 {
   "name": "@zzyzxlabs/super-chat-core",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Provider-agnostic agent core: content model, skills, context assembly, tools, runtime, and hand-rolled provider adapters.",
   "license": "Apache-2.0",
   "author": "ZzyzxLabs",
@@ -14,15 +14,18 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./openai": {
       "types": "./dist/openai.d.ts",
-      "import": "./dist/openai.js"
+      "import": "./dist/openai.js",
+      "default": "./dist/openai.js"
     },
     "./anthropic": {
       "types": "./dist/anthropic.d.ts",
-      "import": "./dist/anthropic.js"
+      "import": "./dist/anthropic.js",
+      "default": "./dist/anthropic.js"
     }
   },
   "files": ["dist", "LICENSE", "NOTICE"],

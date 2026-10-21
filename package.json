@@ -1,6 +1,6 @@
 {
   "name": "superchat",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "description": "A generic agent-service frontend framework: serves contexts, skills and I/O, and crafts provider-correct requests.",
   "license": "Apache-2.0",
