@@ -1,13 +1,6 @@
 # Changelog
 
-## 0.3.1 (unpublished)
-
-### Fixed
-
-- **core/react/ui:** JavaScript exports retain their ESM import entries and
-  add a default resolver fallback. Native/Jest hosts resolving without the
-  import condition can find the same built modules, including both Mobile Agent
-  entries. This is export resolution compatibility, not a new CommonJS build.
+## 0.4.0 (2026-10-21)
 
 ### Added
 
@@ -50,6 +43,14 @@
 
 ### Fixed
 
+- **core/react/ui:** JavaScript exports retain their ESM import entries and
+  add a default resolver fallback. Native/Jest hosts resolving without the
+  import condition can find the same built modules, including both Mobile Agent
+  entries. This is export resolution compatibility, not a new CommonJS build.
+- **ui:** `Composer`'s Send button is enabled when a document quote is the only
+  content. Enter already sent a quote-only message, but the button stayed
+  disabled, so mouse and touch users could not. Both now go through one rule,
+  `hasComposerContent`.
 - **core:** `undoDocument` walks back instead of ping-ponging. Every undo
   restored the body from before the last write, and after an undo that is the
   text just undone, so the second undo was a redo. An undo now records the

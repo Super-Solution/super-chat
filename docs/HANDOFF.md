@@ -1,11 +1,13 @@
 # Handoff
 
-## Release and downstream checkpoint (2026-09-28)
+## Release and downstream checkpoint (2026-09-28, updated 2026-10-21)
 
-The tracked manifests prepare **0.3.1**, an unpublished candidate. Public npm
-latest remains **0.3.0** for core, react and ui (registry checked 2026-09-28).
-The candidate contains the performance changes merged through upstream
-`21630da7044bdef19332372248f1fd8d7ba4a3e1` plus ESM export resolver fallbacks.
+The tracked manifests prepare **0.4.0**. Public npm latest remains **0.3.0** for
+core, react and ui (registry checked 2026-10-21) until 0.4.0 is published. 0.4.0
+folds in the never-published 0.3.1 candidate: the performance changes merged
+through upstream `21630da7044bdef19332372248f1fd8d7ba4a3e1` plus ESM export
+resolver fallbacks. It also carries the document-seam fixes and progressive card
+rendering from streamed tool arguments (see CHANGELOG).
 `default` points to the same ESM file as `import`; this does not provide CommonJS
 execution support. Keep `types` first and `default` last in condition maps.
 
@@ -18,10 +20,8 @@ Mobile retains two Jest entry mappers for the published 0.3.0 exports. Do not
 remove those or update any consumer pin until a reviewed package version is
 actually available from npm and the consumer's regressions pass.
 
-Open PR #4 owns the quote-only composer fix (`packages/ui/src/Thread.tsx` and
-`Thread.test.ts`). It is separate from this release-parity candidate and remains
-a known mouse/touch composer bug until reviewed and merged. Recheck it and the
-latest upstream source before publication. Source review, local test success,
+PR #4, the quote-only composer fix (`packages/ui/src/Thread.tsx` and
+`Thread.test.ts`), was merged into 0.4.0 on 2026-10-21. Source review, local test success,
 package publication, consumer adoption and deployment are separate checkpoints.
 This lane has not published, merged or deployed anything. Its contract and
 review handoff are tracked in upstream Issue #9.

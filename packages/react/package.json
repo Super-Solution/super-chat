@@ -1,6 +1,6 @@
 {
   "name": "@zzyzxlabs/super-chat-react",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "React bindings for superchat: thread state, run control, card actions, and context inspection.",
   "license": "Apache-2.0",
   "author": "ZzyzxLabs",
