@@ -2,6 +2,34 @@
 
 ## Unreleased
 
+### Fixed
+
+- **core:** `undoDocument` walks back instead of ping-ponging. Every undo
+  restored the body from before the last write, and after an undo that is the
+  text just undone, so the second undo was a redo. An undo now records the
+  revision it restored as `restoredFrom` on the new snapshot, and the next one
+  steps back from there. It still mints a new revision. A new `toRevision`
+  input restores one exact stored revision, and the result says whether
+  `canUndoFurther`. `DocumentStore.update` takes an optional
+  `{ restoredFrom }`: both reference stores persist it and drop it on any
+  other write. A custom store has to do the same, or the second undo walks
+  forward again.
+- **core:** `editDocument` re-reads the document after the user answers the
+  review instead of applying the accepted hunks to the body it read before.
+  If the document moved while the review was open, nothing is written and the
+  model gets `{ reason: "stale-revision", revision }`. A store revision
+  conflict on the write now returns that same refusal; other store errors are
+  still thrown. A proposal that is already behind now carries
+  `reason: "stale-revision"` too.
+- **core, react:** A document quote's revision is now compared. `quoteDrift`
+  and `checkQuoteDrift` report a quote whose document has moved past it (with
+  whether the quoted text is still there) or been removed. With
+  `AgentClientConfig.documentStore` set, `send()` stamps that drift at send
+  time: as a note in the message text for the model, and as
+  `DocumentQuoteRef.drift` on the message metadata for the UI. A failed lookup
+  leaves the quote unstamped and does not block the send. The playground run
+  page passes its document store.
+
 ### Performance
 
 Timings are bun medians on a desktop shared with other jobs. Absolute times

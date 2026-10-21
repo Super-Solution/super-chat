@@ -272,11 +272,13 @@ Three more decisions worth knowing:
 - **Undo is a checkout of a stored body, never a computed inverse**, and it
   mints a *new* revision rather than rolling the number back — so an edit
   proposed against the undone text is refused, not silently applied to text that
-  no longer exists.
+  no longer exists. Each undo records the revision it restored, so calling it
+  again keeps walking back; `toRevision` jumps.
 - **A quote is part of the user's message, not app-state.** app-state is re-read
   every turn, goes stale on the next selection, and is droppable under budget
   pressure — and dropping a paragraph the user deliberately highlighted loses
-  part of what they *said*.
+  part of what they *said*. Give the client a `documentStore` and a quote taken
+  from an older revision goes out saying so.
 - **The previewer renders and selects. It is not an editor.** No toolbar, no
   caret, no `contentEditable`. If you want typing, what you get from the
   framework is Markdown plus anchors, and the product decision stays yours.
@@ -494,9 +496,7 @@ product-shaped playground experiences backed by the same runtime.
 and video-generation provider adapters. Image generation is available through
 the OpenAI-compatible media provider and agent-tool bridge.
 
-**Known gaps**, kept here rather than in a tracker so they are read: `undo`
-walks one step back and then ping-pongs between two revisions; a document quote
-records the revision it came from and nothing yet compares it; and nobody has
+**Known gaps**, kept here rather than in a tracker so they are read: nobody has
 driven the document tools against a live model or looked at the document
 surfaces on a real phone. `docs/HANDOFF.md` has the detail.
 

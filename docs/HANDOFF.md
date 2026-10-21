@@ -251,7 +251,7 @@ preinstalled binary.
 
 **Documents landed after that** (UI-SPEC Phase 6, batches N1–N6): an artifact
 the user keeps, a previewer they can quote from, an edit protocol that lands
-only through a diff they approved hunk by hunk, and `.eml` as the way out. Five
+only through a diff they approved hunk by hunk, and `.eml` as the way out. Six
 things to know before touching it:
 
 - **The refusals are the feature.** Half of `applyEdits` rejects: a `find` that
@@ -263,12 +263,26 @@ things to know before touching it:
 - **Undo is a checkout, never an inverse edit**, and it mints a *new* revision
   rather than rolling the number back, so an edit proposed against the undone
   text is refused instead of silently applied to text that no longer exists.
+  The new revision records which one it restored (`restoredFrom`), and the next
+  undo steps back from *that* — without it the second undo restored the body
+  the first had just replaced. A custom `DocumentStore` has to persist the
+  field and drop it on every other write; `toRevision` jumps straight to one.
+- **A write that loses a race is refused, not thrown.** `editDocument` re-reads
+  after the approval await: an approved diff was against the revision it was
+  proposed on and does not transfer to one that moved while the review was
+  open. The store's own check still closes the last gap, and its throw comes
+  back as the same `stale-revision` refusal.
 - **A quote belongs to the user's message, not to app-state.** app-state is
   re-read every turn (history would replay the wrong span), goes stale on the
   next selection, and is droppable under budget pressure — and dropping a
   paragraph the user deliberately highlighted loses part of what they *said*.
   It flattens into the message text; the structured form rides on `metadata`,
-  which never reaches a provider. No adapter changes.
+  which never reaches a provider. No adapter changes. Drift follows the same
+  rule: with `documentStore` on the client, a quote from a revision the
+  document has moved past is stamped at send time — a note in the text for
+  the model, `drift` on the metadata for the UI — and never re-derived later.
+  No kit component renders sent quotes yet, so the metadata half has no
+  reader in the box.
 - **The previewer renders and selects. It is not an editor.** No toolbar, no
   caret, no `contentEditable`. That boundary is what keeps it a component rather
   than the visual builder this document rules out. If a host wants typing, what
@@ -285,16 +299,7 @@ What is genuinely open:
    are exercised by tests and by hand — not by an actual model deciding to call
    them. For documents specifically, whether the outline is a good enough map to
    steer by is a question only a real model answers.
-3. **`undoDocument` walks one step and then ping-pongs.** It always restores
-   `history[0]`, and undoing pushes the current body onto that history — so the
-   second undo is a redo. It needs a cursor, or an explicit `toRevision`.
-4. **`editDocument` reuses the body it read before the approval await.** The
-   comment above it claims otherwise. The store's revision check is a real
-   backstop, but it throws rather than returning a rejection the model can act
-   on, so a concurrent edit surfaces as an error instead of a retry.
-5. **A quote records the revision it came from and nothing compares it.** The
-   drift the field exists to detect is not detected yet.
-6. **Layer 3 (real device) is still unrun**, and nobody has looked at the
+3. **Layer 3 (real device) is still unrun**, and nobody has looked at the
    document surfaces with human eyes. iOS's native selection UI fighting the
    quote affordance is the known high-risk item — the classic "fine on desktop,
    unusable on a phone" shape.

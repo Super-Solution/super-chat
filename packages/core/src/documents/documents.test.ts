@@ -4,6 +4,7 @@ import { buildEml, buildMailto, emlFilename, MAILTO_SAFE_LENGTH } from "./email.
 import { createMemoryDocumentStore } from "./store.js";
 import { createDocumentTools } from "./tools.js";
 import type { EmailCard } from "../cards/types.js";
+import type { DocumentStore } from "./types.js";
 
 const DOC = [
   "# Vendor review",
@@ -215,6 +216,177 @@ describe("DocumentStore", () => {
   it("reports a missing document rather than creating one", async () => {
     const store = createMemoryDocumentStore();
     await expect(store.update("nope", "x", 1)).rejects.toThrow(/No document nope/);
+  });
+
+  // Carried over by the spread, an undo's marker would make the next ordinary
+  // edit look like part of the undo — and the undo after that would skip it.
+  it("records an undo's origin on that write only", async () => {
+    const store = createMemoryDocumentStore();
+    const doc = await store.create({ title: "Plan", markdown: "one" });
+    await store.update(doc.id, "two", 1);
+    const undone = await store.update(doc.id, "one", 2, { restoredFrom: 1 });
+    expect(undone.restoredFrom).toBe(1);
+    const edited = await store.update(doc.id, "three", 3);
+    expect(edited.restoredFrom).toBeUndefined();
+    expect((await store.history(doc.id))[0]!.restoredFrom).toBe(1);
+  });
+});
+
+// Shared by the undo and edit suites: run a tool for its whole result, with a
+// review handler standing in for the user.
+const toolOf = (store: DocumentStore, name: string) => {
+  const tool = createDocumentTools({ store }).find((t) => t.name === name);
+  if (!tool?.execute) throw new Error(`no ${name}`);
+  return tool;
+};
+type Outcome = { output: Record<string, unknown>; failure?: string; card?: { revision?: number } };
+const call = async (
+  store: DocumentStore,
+  name: string,
+  input: Record<string, unknown>,
+  review?: (spec: unknown) => Promise<unknown>,
+): Promise<Outcome> => {
+  const ctx = { vars: {}, callId: "call_1", ...(review ? { requestCard: review } : {}) };
+  return (await toolOf(store, name).execute!(input, ctx)) as Outcome;
+};
+const bodyOf = async (store: DocumentStore, id: string) => (await store.get(id))!.markdown;
+
+// Each undo is a checkout that mints a new revision, which used to mean the
+// second undo restored the body the first one had just replaced: history[0] is
+// always "what was here before the last write", and after an undo that is the
+// undone text. Two undos left the document where it started.
+describe("undoDocument", () => {
+  const threeVersions = async () => {
+    const store = createMemoryDocumentStore();
+    const doc = await store.create({ title: "Plan", markdown: "one" });
+    await store.update(doc.id, "two", 1);
+    await store.update(doc.id, "three", 2);
+    return { store, id: doc.id };
+  };
+
+  it("walks back one version per call instead of ping-ponging", async () => {
+    const { store, id } = await threeVersions();
+
+    const first = await call(store, "undoDocument", { docId: id });
+    expect(await bodyOf(store, id)).toBe("two");
+    expect(first.output).toMatchObject({ revision: 4, restoredFrom: 2, canUndoFurther: true });
+
+    const second = await call(store, "undoDocument", { docId: id });
+    expect(await bodyOf(store, id)).toBe("one");
+    expect(second.output).toMatchObject({ revision: 5, restoredFrom: 1, canUndoFurther: false });
+
+    // Past the start is a refusal, not a wrap-around.
+    const third = await call(store, "undoDocument", { docId: id });
+    expect(third.failure).toBe("not-found");
+    expect(await bodyOf(store, id)).toBe("one");
+  });
+
+  // Ordinary linear undo: editing after an undo abandons what was undone, so
+  // walking back from the new edit never resurfaces it.
+  it("does not resurface an undone version after a fresh edit", async () => {
+    const { store, id } = await threeVersions();
+    await call(store, "undoDocument", { docId: id }); // v4 = "two"
+    await store.update(id, "four", 4); // v5
+
+    const seen: string[] = [];
+    for (let i = 0; i < 3; i += 1) {
+      const out = await call(store, "undoDocument", { docId: id });
+      if (out.failure) break;
+      seen.push(await bodyOf(store, id));
+    }
+    expect(seen).toEqual(["two", "one"]);
+  });
+
+  it("jumps to an explicit revision, and steps back from there", async () => {
+    const { store, id } = await threeVersions();
+
+    const jump = await call(store, "undoDocument", { docId: id, toRevision: 1 });
+    expect(await bodyOf(store, id)).toBe("one");
+    expect(jump.output).toMatchObject({ revision: 4, restoredFrom: 1, canUndoFurther: false });
+    expect((await call(store, "undoDocument", { docId: id })).failure).toBe("not-found");
+  });
+
+  it("refuses a revision it does not keep, and says which it does", async () => {
+    const { store, id } = await threeVersions();
+    const out = await call(store, "undoDocument", { docId: id, toRevision: 9 });
+    expect(out.failure).toBe("not-found");
+    expect(out.output["available"]).toEqual([2, 1]);
+    expect(await bodyOf(store, id)).toBe("three");
+  });
+});
+
+// The review is an await on a human, and the document can move while it is
+// open. The edit used to be applied to the body read BEFORE that await, with
+// the store's revision check as the only guard — which threw, so the model saw
+// a failed tool instead of a refusal it could retry.
+describe("editDocument across the approval await", () => {
+  const BODY = "Alpha one.\n\nBeta two.";
+  const seed = async () => {
+    const store = createMemoryDocumentStore();
+    const doc = await store.create({ title: "Plan", markdown: BODY });
+    return { store, id: doc.id };
+  };
+  const propose = { revision: 1, edits: [{ find: "Alpha", replace: "ALPHA" }, { find: "Beta", replace: "BETA" }] };
+
+  it("writes only the accepted hunks", async () => {
+    const { store, id } = await seed();
+    const out = await call(store, "editDocument", { docId: id, ...propose }, async () => ({ accepted: [1] }));
+    expect(out.failure).toBeUndefined();
+    expect(out.output).toMatchObject({ revision: 2, applied: 1, rejected: 1 });
+    expect(await bodyOf(store, id)).toBe("Alpha one.\n\nBETA two.");
+  });
+
+  it("refuses, without throwing, when the document moves during review", async () => {
+    const { store, id } = await seed();
+    const out = await call(store, "editDocument", { docId: id, ...propose }, async () => {
+      // The user accepts a different change in another tab before this one.
+      await store.update(id, `${BODY}\n\nGamma three.`, 1);
+      return { accepted: [0, 1] };
+    });
+
+    expect(out.failure).toBe("invalid-input");
+    expect(out.output).toMatchObject({ reason: "stale-revision", revision: 2 });
+    expect(String(out.output["error"])).toMatch(/Re-read/);
+    // The approved diff was against revision 1; it does not transfer.
+    expect(await bodyOf(store, id)).toBe(`${BODY}\n\nGamma three.`);
+  });
+
+  // The narrower race: the document moves between the re-read and the write.
+  // The store's check catches it; the tool turns that into the same refusal.
+  it("turns the store's own revision check into the same refusal", async () => {
+    const { store: inner, id } = await seed();
+    const racing: DocumentStore = {
+      ...inner,
+      async update(docId, markdown, expected, opts) {
+        await inner.update(docId, "Someone else's body.", expected);
+        return inner.update(docId, markdown, expected, opts);
+      },
+    };
+
+    const out = await call(racing, "editDocument", { docId: id, ...propose }, async () => ({ accepted: [0] }));
+    expect(out.failure).toBe("invalid-input");
+    expect(out.output).toMatchObject({ reason: "stale-revision", revision: 2 });
+    expect(await bodyOf(inner, id)).toBe("Someone else's body.");
+  });
+
+  it("still throws a store failure that is not a conflict", async () => {
+    const { store: inner, id } = await seed();
+    const broken: DocumentStore = {
+      ...inner,
+      async update() {
+        throw new Error("disk full");
+      },
+    };
+    await expect(
+      call(broken, "editDocument", { docId: id, ...propose }, async () => ({ accepted: [0] })),
+    ).rejects.toThrow(/disk full/);
+  });
+
+  it("names the stale-revision reason when the proposal itself is behind", async () => {
+    const { store, id } = await seed();
+    await store.update(id, BODY.replace("one", "uno"), 1);
+    const out = await call(store, "editDocument", { docId: id, ...propose }, async () => ({ accepted: [0] }));
+    expect(out.output).toMatchObject({ reason: "stale-revision", revision: 2 });
   });
 });
 

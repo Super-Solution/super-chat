@@ -35,6 +35,23 @@ const staleError = (id: string, expected: number, actual: number) =>
     `Document ${id} is at revision ${actual}, not ${expected}. Re-read it before editing.`,
   );
 
+/**
+ * The snapshot a write produces. `restoredFrom` is set only by an undo and is
+ * dropped by every other write — carried over by the spread, it would make an
+ * ordinary edit after an undo look like part of the undo, and the next undo
+ * would skip it.
+ */
+const nextSnapshot = (current: DocumentSnapshot, markdown: string, restoredFrom: number | undefined): DocumentSnapshot => {
+  const { restoredFrom: _previous, ...rest } = current;
+  return {
+    ...rest,
+    markdown,
+    revision: current.revision + 1,
+    ...(restoredFrom !== undefined ? { restoredFrom } : {}),
+    updatedAt: Date.now(),
+  };
+};
+
 export function createMemoryDocumentStore(): DocumentStore {
   const docs = new Map<string, DocumentSnapshot>();
   const past = new Map<string, DocumentSnapshot[]>();
@@ -60,19 +77,14 @@ export function createMemoryDocumentStore(): DocumentStore {
       past.set(doc.id, []);
       return doc;
     },
-    async update(id, markdown, expectedRevision) {
+    async update(id, markdown, expectedRevision, opts) {
       const current = docs.get(id);
       if (!current) throw new AgentError("invalid-request", `No document ${id}.`);
       if (current.revision !== expectedRevision) {
         throw staleError(id, expectedRevision, current.revision);
       }
       past.set(id, [current, ...(past.get(id) ?? [])].slice(0, MAX_HISTORY));
-      const next: DocumentSnapshot = {
-        ...current,
-        markdown,
-        revision: current.revision + 1,
-        updatedAt: Date.now(),
-      };
+      const next = nextSnapshot(current, markdown, opts?.restoredFrom);
       docs.set(id, next);
       return next;
     },
@@ -133,7 +145,7 @@ export function createLocalDocumentStore(key = "superchat:documents"): DocumentS
       write(all);
       return doc;
     },
-    async update(id, markdown, expectedRevision) {
+    async update(id, markdown, expectedRevision, opts) {
       const all = read();
       const current = all.docs[id];
       if (!current) throw new AgentError("invalid-request", `No document ${id}.`);
@@ -141,12 +153,7 @@ export function createLocalDocumentStore(key = "superchat:documents"): DocumentS
         throw staleError(id, expectedRevision, current.revision);
       }
       all.past[id] = [current, ...(all.past[id] ?? [])].slice(0, MAX_HISTORY);
-      const next: DocumentSnapshot = {
-        ...current,
-        markdown,
-        revision: current.revision + 1,
-        updatedAt: Date.now(),
-      };
+      const next = nextSnapshot(current, markdown, opts?.restoredFrom);
       all.docs[id] = next;
       write(all);
       return next;

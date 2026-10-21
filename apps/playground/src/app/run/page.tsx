@@ -18,6 +18,7 @@ import {
   buildContextBuilder,
   buildProvider,
   buildTransport,
+  documentStore,
   fileStore,
   jobStore,
   threadStores,
@@ -108,6 +109,7 @@ export default function RunPanel() {
       maxSteps: 8,
       jobStore,
       threadStore,
+      documentStore,
     });
     // Rebuilt when the persistence backend changes too — the thread list and
     // hydration both read through the store the client holds.

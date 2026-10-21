@@ -41,6 +41,53 @@ const documentSpec = (doc: DocumentSnapshot): CardSpec => ({
   revision: doc.revision,
 });
 
+/**
+ * The refusal for a document that moved underneath a write — shaped like
+ * applyEdits' own refusals, because it is one: "stale-revision" means re-read
+ * and propose again, which is a retry the model can make. A thrown error is
+ * not; it surfaces as a failed tool, and the model is left guessing whether
+ * anything was written.
+ */
+const moved = (docId: string, read: number, now: DocumentSnapshot | undefined, when: string) =>
+  now
+    ? {
+        output: {
+          error: `Document ${docId} moved from revision ${read} to ${now.revision} ${when}. Nothing was written. Re-read it and propose again.`,
+          reason: "stale-revision" as const,
+          revision: now.revision,
+        },
+        failure: "invalid-input" as const,
+      }
+    : {
+        output: { error: `Document ${docId} was removed ${when}. Nothing was written.` },
+        failure: "not-found" as const,
+      };
+
+/**
+ * Write through the store, turning its revision check into a refusal.
+ *
+ * The check stays the store's — it is the only place that sees every writer —
+ * but its error is the host's to shape, so this does not parse it. It asks the
+ * store again instead: if the document is no longer at the revision this write
+ * was based on, the throw was that check and the caller gets `moved`; anything
+ * else is a real failure and is rethrown.
+ */
+async function writeOrRefuse(
+  store: DocumentStore,
+  doc: DocumentSnapshot,
+  markdown: string,
+  when: string,
+  opts?: { restoredFrom?: number },
+): Promise<{ next: DocumentSnapshot } | ReturnType<typeof moved>> {
+  try {
+    return { next: await store.update(doc.id, markdown, doc.revision, opts) };
+  } catch (err) {
+    const now = await store.get(doc.id);
+    if (!now || now.revision !== doc.revision) return moved(doc.id, doc.revision, now, when);
+    throw err;
+  }
+}
+
 const CREATE_SCHEMA: JSONSchema = {
   type: "object",
   required: ["title", "markdown"],
@@ -226,6 +273,7 @@ export function createDocumentTools(opts: DocumentToolsOptions): ToolDefinition[
         return {
           output: {
             error: `Document is at revision ${doc.revision}, you read ${revision}. Re-read it and propose again.`,
+            reason: "stale-revision",
             revision: doc.revision,
           },
           failure: "invalid-input" as const,
@@ -260,16 +308,29 @@ export function createDocumentTools(opts: DocumentToolsOptions): ToolDefinition[
         return { output: { applied: 0, revision: doc.revision, note: "The user accepted none of the changes." } };
       }
 
+      // Re-read: the review is an await on a human, and the document can move
+      // while it is open — the user accepts a different edit first, undoes, or
+      // types in another tab. What they approved was a diff against `doc`, so
+      // if the document is no longer `doc` the approval does not transfer:
+      // applying it anyway would put an approved-looking change into a context
+      // nobody reviewed. Refused, with the revision to re-read from.
+      const latest = await store.get(doc.id);
+      if (!latest || latest.revision !== doc.revision) {
+        return moved(doc.id, doc.revision, latest, "while the change was awaiting approval");
+      }
+
+      // Only the accepted subset, recomputed from its anchors against the body
+      // just re-read rather than spliced in at the proposal's offsets.
       const chosen = result.applied.filter((_, index) => accepted.includes(index)).map((a) => a.edit);
-      // Recomputed against the current body rather than reusing the offsets:
-      // between proposing and accepting, the user may have applied another
-      // edit, and the store's revision check is the backstop for that.
-      const partial = applyEdits(doc.markdown, chosen);
+      const partial = applyEdits(latest.markdown, chosen);
       if (!partial.ok) {
         return { output: { error: partial.message, reason: partial.reason }, failure: "invalid-input" as const };
       }
 
-      const next = await store.update(doc.id, partial.markdown, doc.revision);
+      // The re-read above narrows the window; the store's own check closes it.
+      const written = await writeOrRefuse(store, latest, partial.markdown, "while the change was being written");
+      if (!("next" in written)) return written;
+      const { next } = written;
       return {
         output: {
           docId: next.id,
@@ -284,11 +345,18 @@ export function createDocumentTools(opts: DocumentToolsOptions): ToolDefinition[
 
   const undoDocument: ToolDefinition = {
     name: "undoDocument",
-    description: "Restore a document's previous version.",
+    description:
+      "Restore an earlier version of a document. With no toRevision it steps back one version, and calling it again keeps stepping back. Each undo is itself a new revision.",
     inputSchema: {
       type: "object",
       required: ["docId"],
-      properties: { docId: { type: "string" } },
+      properties: {
+        docId: { type: "string" },
+        toRevision: {
+          type: "number",
+          description: "Restore exactly this earlier revision instead of stepping back one.",
+        },
+      },
     },
     side: "write",
     async execute(input) {
@@ -297,16 +365,55 @@ export function createDocumentTools(opts: DocumentToolsOptions): ToolDefinition[
       const doc = await store.get(docId);
       if (!doc) return { output: { error: `No document ${docId}.` }, failure: "not-found" as const };
 
-      const [previous] = await store.history(docId);
-      if (!previous) return { output: { error: "This document has no earlier version." }, failure: "not-found" as const };
+      const history = await store.history(docId);
+      const toRevision = num(i["toRevision"]);
+
+      // The cursor. A body that is itself an undo stands for the revision it
+      // restored, so stepping back starts from THERE — not from its own,
+      // newer number, whose predecessor is the very body that was just undone.
+      // That one line is the difference between walking back and ping-ponging.
+      const at = doc.restoredFrom ?? doc.revision;
+      const target =
+        toRevision === undefined
+          ? history.find((h) => h.revision < at)
+          : history.find((h) => h.revision === toRevision);
+
+      if (!target) {
+        return {
+          output: {
+            error:
+              toRevision === undefined
+                ? "This document has no earlier version."
+                : toRevision >= doc.revision
+                  ? `Revision ${toRevision} is not earlier than the current revision, ${doc.revision}.`
+                  : `Revision ${toRevision} is not one this document still keeps.`,
+            revision: doc.revision,
+            available: history.map((h) => h.revision),
+          },
+          failure: "not-found" as const,
+        };
+      }
 
       // Undo restores a stored body and mints a NEW revision — it does not roll
       // the number back. An inverse edit would have to be computed, and can be
       // computed wrongly; a checkout cannot. And keeping revisions monotonic
       // means an in-flight edit proposed against the undone body is refused
       // rather than silently applied to text that no longer exists.
-      const next = await store.update(docId, previous.markdown, doc.revision);
-      return { output: { docId: next.id, revision: next.revision, restoredFrom: previous.revision }, card: documentSpec(next) };
+      const restoredFrom = target.restoredFrom ?? target.revision;
+      const written = await writeOrRefuse(store, doc, target.markdown, "before the undo was written", { restoredFrom });
+      if (!("next" in written)) return written;
+      const { next } = written;
+      return {
+        output: {
+          docId: next.id,
+          revision: next.revision,
+          restoredFrom,
+          // Said, so a model asked to go further back can tell whether there
+          // is anywhere to go without spending a call to find out.
+          canUndoFurther: history.some((h) => h.revision < restoredFrom),
+        },
+        card: documentSpec(next),
+      };
     },
   };
 
