@@ -890,12 +890,14 @@ export function Composer({
     setAttachments((prev) => [...prev, ...read.filter((r) => !prev.some((p) => p.id === r.id))]);
   };
 
+  const hasContent = hasComposerContent(value, attachments.length, quotes.length);
+
   const submit = () => {
     const text = value.trim();
     // Attachments alone are a valid send — "summarize this file" is the text-less
     // case — and so is a quote alone: pointing at a paragraph and hitting send
     // is a complete request ("what about this?").
-    if ((!text && !attachments.length && !quotes.length) || isRunning || overLimit) return;
+    if (!hasContent || isRunning || overLimit) return;
     // Host-staged parts are already on the client and get appended by send();
     // inlining them here too would send every file twice.
     const parts: ContentPart[] = [
@@ -952,7 +954,7 @@ export function Composer({
       {stopping ? "Stopping…" : "Stop"}
     </button>
   ) : (
-    <button type="submit" className="sc-btn sc-btn--primary" disabled={(!value.trim() && !attachments.length) || overLimit}>
+    <button type="submit" className="sc-btn sc-btn--primary" disabled={!hasContent || overLimit}>
       Send
     </button>
   );
@@ -1136,4 +1138,9 @@ export function Composer({
       )}
     </form>
   );
+}
+
+/** Keep keyboard submission and the Send button on one content rule. */
+export function hasComposerContent(value: string, attachmentCount: number, quoteCount: number): boolean {
+  return Boolean(value.trim() || attachmentCount > 0 || quoteCount > 0);
 }
