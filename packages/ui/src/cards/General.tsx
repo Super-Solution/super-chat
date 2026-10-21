@@ -77,7 +77,7 @@ export function ComparisonCardView({ spec }: CardRendererProps<ComparisonCard>) 
 
 const CHECK_ICON: Record<string, string> = { done: "✓", todo: "○", blocked: "✕", na: "–" };
 
-export function ChecklistCardView({ spec }: CardRendererProps<ChecklistCard>) {
+export function ChecklistCardView({ spec, partial }: CardRendererProps<ChecklistCard>) {
   // Group consecutive items sharing a `group`, preserving the model's ordering
   // rather than re-sorting — the order usually carries meaning.
   const groups = useMemo(() => {
@@ -97,9 +97,13 @@ export function ChecklistCardView({ spec }: CardRendererProps<ChecklistCard>) {
     <div className="sc-card">
       <div className="sc-card__head">
         {spec.title ? <span className="sc-card__title">{spec.title}</span> : <span />}
-        <span className="sc-pill">
-          {done}/{relevant} done
-        </span>
+        {/* "2/3 done" on a list that will have nine items is a false count;
+            the tally waits for the whole list. */}
+        {partial ? null : (
+          <span className="sc-pill">
+            {done}/{relevant} done
+          </span>
+        )}
       </div>
       {groups.map((g, gi) => (
         <div key={gi} className="sc-checkgroup">

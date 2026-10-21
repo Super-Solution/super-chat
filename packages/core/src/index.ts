@@ -114,6 +114,7 @@ export {
 export * from "./tools/types.js";
 export { ToolRegistry } from "./tools/registry.js";
 export { repairToolArguments, normalizeToolName, type RepairResult } from "./tools/repair.js";
+export { PartialJsonParser, parsePartialJson } from "./tools/partial-json.js";
 export { createVisualizeTool, createLoadSkillTool, createUpdateCardTool, createBuiltinTools } from "./tools/builtin.js";
 
 // runtime

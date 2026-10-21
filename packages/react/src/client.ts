@@ -381,8 +381,12 @@ export class AgentClient {
       // over it here, or the catch's "error" status gets overwritten back
       // to whatever the loop last reduced to (e.g. "running").
       const status = s.status === "error" ? "error" : s.run.status;
-      const parts = s.run.parts;
-      if (!parts.length && !s.run.cards.length) return { ...s, status };
+      // Streaming-argument previews are live-only. run-finish already clears
+      // them; a run that died by throwing never sent one, so clear them here
+      // too rather than leave a half-drawn card on an errored turn.
+      const run = s.run.partialTools && Object.keys(s.run.partialTools).length ? { ...s.run, partialTools: {} } : s.run;
+      const parts = run.parts;
+      if (!parts.length && !run.cards.length) return { ...s, run, status };
 
       // `data` carries the answer alongside the spec: an answered card that
       // re-renders from history has to show what the user actually chose, and
@@ -412,6 +416,7 @@ export class AgentClient {
       const tree = [...s.tree, linked];
       return {
         ...s,
+        run,
         tree,
         headId: linked.id,
         messages: pathTo(tree, linked.id),

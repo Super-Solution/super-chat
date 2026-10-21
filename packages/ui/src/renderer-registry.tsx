@@ -18,7 +18,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import type { Card, CardAction, CardSpec, ToolLoadingHint } from "@zzyzxlabs/super-chat-core";
+import { BUILTIN_CARDS, type Card, type CardAction, type CardSpec, type ToolLoadingHint } from "@zzyzxlabs/super-chat-core";
 
 export type CardRendererProps<S extends CardSpec = CardSpec> = {
   spec: S;
@@ -27,7 +27,22 @@ export type CardRendererProps<S extends CardSpec = CardSpec> = {
   respond?: (action: Omit<CardAction, "at">) => void;
   /** True once the card has been answered — controls disable it. */
   answered?: boolean;
+  /**
+   * The spec is still streaming in: valid, but more is coming. Renderers
+   * should hide what would act on the incomplete data (copy, download, sort)
+   * and show the rest as it lands. Never set for an interactive card.
+   */
+  partial?: boolean;
 };
+
+/**
+ * Built-in kinds that ask the user something. A partial spec never reaches
+ * one: core's `CardRegistry.partial` already refuses to derive a preview for
+ * an interactive kind, and `CardRenderer` refuses again here, so a tool hook
+ * that skipped the registry still cannot put a half-received question in
+ * front of the user.
+ */
+const INTERACTIVE_KINDS: ReadonlySet<string> = new Set(BUILTIN_CARDS.filter((c) => c.interactive).map((c) => c.kind));
 
 export type CardRendererMap = Record<string, ComponentType<CardRendererProps<never>>>;
 
@@ -136,9 +151,21 @@ export function CardSkeleton({ lines = 2, hint, delayMs = 200 }: CardSkeletonPro
   );
 }
 
-export function CardRenderer({ card, respond, answered }: { card: Card; respond?: CardRendererProps["respond"]; answered?: boolean }) {
+export function CardRenderer({
+  card,
+  respond,
+  answered,
+  partial,
+}: {
+  card: Card;
+  respond?: CardRendererProps["respond"];
+  answered?: boolean;
+  partial?: boolean;
+}) {
   const renderers = useCardRenderers();
   const kind = (card.spec as { kind?: string }).kind ?? "unknown";
+
+  if (partial && INTERACTIVE_KINDS.has(kind)) return null;
 
   if (card.expired) {
     // Large card payloads are trimmed out of persisted history. Say so — an
@@ -152,6 +179,9 @@ export function CardRenderer({ card, respond, answered }: { card: Card; respond?
 
   const Renderer = renderers[kind];
   if (!Renderer) {
+    // The raw-JSON fallback is for a finished card; a half-received one stays
+    // a skeleton's business.
+    if (partial) return null;
     return (
       <div className="sc-card sc-card--muted">
         <div className="sc-card__head">
@@ -160,6 +190,15 @@ export function CardRenderer({ card, respond, answered }: { card: Card; respond?
         </div>
         <pre className="sc-pre">{JSON.stringify(card.spec, null, 2)}</pre>
       </div>
+    );
+  }
+
+  if (partial) {
+    // No `respond`: nothing on a card that is still arriving may be acted on.
+    return (
+      <CardBoundary label={`The ${kind} card`}>
+        <Renderer spec={card.spec as never} card={card} partial />
+      </CardBoundary>
     );
   }
 

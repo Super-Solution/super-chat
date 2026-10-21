@@ -775,6 +775,26 @@
 
 .sc-msg { margin-bottom: var(--sc-sp-24); }
 .sc-tooloutput { display: grid; gap: var(--sc-sp-10); }
+/* A card whose spec is still arriving. What it shows is real, so it gets no
+   shimmer over it — just a write-head along its bottom edge while more is
+   coming, which goes when the validated card replaces it. */
+.sc-cardstream > .sc-card { position: relative; }
+.sc-cardstream > .sc-card::after {
+  content: "";
+  position: absolute;
+  left: var(--sc-radius);
+  right: var(--sc-radius);
+  bottom: -1px;
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--sc-accent) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: sc-shimmer 1.2s linear infinite;
+  opacity: 0.7;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sc-cardstream > .sc-card::after { animation: none; background: var(--sc-accent); opacity: 0.4; }
+}
 .sc-msg--user { display: flex; justify-content: flex-end; }
 .sc-bubble {
   max-width: min(76%, 620px);

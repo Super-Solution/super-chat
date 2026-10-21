@@ -91,7 +91,30 @@ export type ToolDefinition = {
   costHint?: number;
   /** Live-only output placeholder. Omit when the result's shape is unknown. */
   loading?: ToolLoading;
+  /**
+   * For a tool whose ARGUMENTS are a card (`visualize` is the built-in one):
+   * a preview of that card from arguments that are still streaming. Called
+   * with each tolerant parse of the partial JSON; return `undefined` until
+   * there is something worth drawing. Route it through
+   * `CardRegistry.partial` so interactive kinds and specs that fail
+   * validation never preview. Live-only — the validated card from `execute`
+   * replaces it, and it is never written to history.
+   *
+   * A tool whose card is computed BY `execute` has nothing to preview here:
+   * the arguments are a query, not the answer.
+   */
+  partialCard?: (partialInput: unknown) => CardSpec | undefined;
 };
+
+/** Resolve a tool's streaming card preview; a throwing hook means "no preview", never a failed call. */
+export function resolvePartialCard(tool: ToolDefinition | undefined, partialInput: unknown): CardSpec | undefined {
+  if (!tool?.partialCard) return undefined;
+  try {
+    return tool.partialCard(partialInput);
+  } catch {
+    return undefined;
+  }
+}
 
 /** Resolve a static or input-derived loading hint without leaking a function into run events. */
 export function resolveToolLoading(loading: ToolLoading | undefined, input: unknown): ToolLoadingHint | undefined {

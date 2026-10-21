@@ -16,6 +16,17 @@ import type { CardSpec } from "./types.js";
 
 const ok: CardValidation = { ok: true };
 
+/**
+ * The entries of `spec[field]` that are already renderable. The last entry of
+ * a streaming array is usually half-written; `ready` decides whether it can be
+ * shown yet (a row with one cell can, a checklist item with no status cannot).
+ */
+const arrived = (spec: Record<string, unknown>, field: string, ready: (item: Record<string, unknown>) => boolean) => {
+  const value = spec[field];
+  return Array.isArray(value) ? value.filter((item): item is Record<string, unknown> => isObj(item) && ready(item)) : [];
+};
+const isScalar = (v: unknown) => typeof v === "string" || typeof v === "number";
+
 const tokensOf = (spec: CardSpec) => estimateJsonTokens(spec);
 
 const FORMATS = ["text", "number", "currency", "percent", "bytes", "duration", "datetime", "code"];
@@ -64,6 +75,16 @@ export const tableCard: CardKindDefinition = {
     }
     return ok;
   },
+  partial(spec) {
+    const columns = arrived(spec, "columns", (c) => typeof c["key"] === "string" && typeof c["label"] === "string");
+    if (!columns.length) return undefined;
+    // A row shows from its first cell, so the table fills cell by cell. Sorting
+    // waits for the whole card: rows land in arrival order rather than each new
+    // one shuffling the ones already on screen.
+    const rows = arrived(spec, "rows", (r) => Object.keys(r).length > 0);
+    const { sortBy: _sortBy, sortDir: _sortDir, ...rest } = spec;
+    return { ...rest, kind: "table", columns, rows } as CardSpec;
+  },
 };
 
 export const statsCard: CardKindDefinition = {
@@ -105,6 +126,10 @@ export const statsCard: CardKindDefinition = {
       }
     }
     return ok;
+  },
+  partial(spec) {
+    const items = arrived(spec, "items", (i) => typeof i["label"] === "string" && isScalar(i["value"]));
+    return items.length ? ({ ...spec, kind: "stats", items } as CardSpec) : undefined;
   },
 };
 
@@ -235,6 +260,10 @@ export const timelineCard: CardKindDefinition = {
     const events = check.arrayField(s as Record<string, unknown>, "events", "timeline");
     return failed(events) ? events : ok;
   },
+  partial(spec) {
+    const events = arrived(spec, "events", (e) => typeof e["label"] === "string" && isScalar(e["at"]));
+    return events.length ? ({ ...spec, kind: "timeline", events } as CardSpec) : undefined;
+  },
 };
 
 export const keyValueCard: CardKindDefinition = {
@@ -363,6 +392,11 @@ export const markdownCard: CardKindDefinition = {
     return typeof (s as Record<string, unknown>)["body"] === "string"
       ? ok
       : { ok: false, error: "markdown.body must be a string." };
+  },
+  partial(spec) {
+    const body = typeof spec["body"] === "string" ? spec["body"] : "";
+    if (!body && typeof spec["title"] !== "string") return undefined;
+    return { ...spec, kind: "markdown", body } as CardSpec;
   },
 };
 
@@ -602,6 +636,8 @@ export const comparisonCard: CardKindDefinition = {
   },
 };
 
+const CHECK_STATUSES = new Set(["done", "todo", "blocked", "na"]);
+
 export const checklistCard: CardKindDefinition = {
   kind: "checklist",
   summary:
@@ -633,13 +669,18 @@ export const checklistCard: CardKindDefinition = {
     if (failed(s)) return s;
     const items = check.arrayField(s as Record<string, unknown>, "items", "checklist");
     if (failed(items)) return items;
-    const valid = new Set(["done", "todo", "blocked", "na"]);
     for (const i of items as unknown[]) {
-      if (!isObj(i) || typeof i["label"] !== "string" || !valid.has(String(i["status"]))) {
+      if (!isObj(i) || typeof i["label"] !== "string" || !CHECK_STATUSES.has(String(i["status"]))) {
         return { ok: false, error: "Each checklist item needs a `label` and a status of done|todo|blocked|na." };
       }
     }
     return ok;
+  },
+  partial(spec) {
+    // An item waits for its status: showing "todo" for one that is about to
+    // say "blocked" would be a claim the model never made.
+    const items = arrived(spec, "items", (i) => typeof i["label"] === "string" && CHECK_STATUSES.has(String(i["status"])));
+    return items.length ? ({ ...spec, kind: "checklist", items } as CardSpec) : undefined;
   },
 };
 

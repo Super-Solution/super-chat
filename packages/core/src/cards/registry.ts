@@ -28,6 +28,19 @@ export type CardKindDefinition = {
   interactive?: boolean;
   /** Approximate token cost of the spec, for context budgeting of replayed cards. */
   estimateTokens?: (spec: CardSpec) => number;
+  /**
+   * Derive a renderable spec from one that is still streaming in — keep what
+   * has fully arrived, drop the entry still being written when the renderer
+   * cannot show it yet. Return `undefined` until there is something worth
+   * drawing. The result must pass `validate`: `CardRegistry.partial` checks
+   * it, so a preview is a VALID card that is merely incomplete, never a
+   * malformed one.
+   *
+   * Omit for kinds that should keep a skeleton until they are whole. Ignored
+   * on interactive kinds: a control the user can act on must never be shown
+   * before the spec behind it is complete and validated.
+   */
+  partial?: (spec: Record<string, unknown>) => CardSpec | undefined;
 };
 
 export const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -99,6 +112,26 @@ export class CardRegistry {
       };
     }
     return def.validate(spec);
+  }
+
+  /**
+   * A preview of a spec that is still streaming, or `undefined` when there
+   * should not be one: an unknown kind, an interactive kind, a kind with no
+   * `partial`, or a derived spec its own validator rejects. The one place that
+   * decides whether a partial spec may reach a renderer.
+   */
+  partial(spec: unknown): CardSpec | undefined {
+    if (!isObj(spec) || typeof spec["kind"] !== "string") return undefined;
+    const def = this.kinds.get(spec["kind"]);
+    if (!def?.partial || def.interactive) return undefined;
+    let preview: CardSpec | undefined;
+    try {
+      preview = def.partial(spec);
+    } catch {
+      return undefined; // a preview must never be able to fail the call it previews
+    }
+    if (!isObj(preview) || preview["kind"] !== def.kind) return undefined;
+    return def.validate(preview).ok ? preview : undefined;
   }
 
   /** The catalogue text embedded in the `visualize` tool description. */

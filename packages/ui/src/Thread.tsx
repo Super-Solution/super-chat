@@ -11,6 +11,7 @@ import {
   estimateTokens,
   isCardCarrier,
   type Card,
+  type CardSpec,
   type ContentPart,
   type MediaSource,
   type Message,
@@ -511,7 +512,13 @@ function useFrameThrottled<T>(value: T, active: boolean): T {
 
   useEffect(
     () => () => {
+      // Clear the id as well as cancelling it. StrictMode remounts every
+      // component once in development, and a stale id left here reads as
+      // "a frame is already pending" to the effect above — so a component
+      // that mounts while active (a card preview does) never schedules
+      // another frame and freezes on its first value.
       if (frame.current != null) cancelAnimationFrame(frame.current);
+      frame.current = null;
     },
     [],
   );
@@ -542,6 +549,26 @@ function useStreamingPulse(value: string, active: boolean, quietMs = 420): "rece
   }, [value, active, quietMs]);
 
   return phase;
+}
+
+/**
+ * A card whose spec is still streaming in. Core only previews kinds that can
+ * show part of themselves and are not interactive, and hands over a spec that
+ * already passes the kind's validator — just an incomplete one.
+ *
+ * Keyed apart from the validated card that replaces it, so that card mounts
+ * fresh: a table's initial sort, for one, is read from the spec at mount, and
+ * the preview never had it.
+ */
+function PartialCard({ callId, spec }: { callId: string; spec: CardSpec }) {
+  // Arguments arrive at token rate; drawing more than once a frame is waste.
+  const shown = useFrameThrottled(spec, true);
+  const card = useMemo<Card>(() => ({ id: `partial:${callId}`, callId, spec: shown }), [callId, shown]);
+  return (
+    <div className="sc-cardstream" aria-busy="true">
+      <CardRenderer card={card} partial />
+    </div>
+  );
 }
 
 /** The live turn: streamed text, cards as they arrive, and any blocking card. */
@@ -575,6 +602,26 @@ export function LiveTurn() {
   const visibleCards = cards.filter((c) => c.id !== pending?.id);
   const callIds = new Set(calls.map((call) => call.callId));
   const uncorrelatedCards = visibleCards.filter((card) => !card.callId || !callIds.has(card.callId));
+  // Calls whose arguments are still being written have no tool-call part yet
+  // (that lands when the step ends), but they already own an output slot.
+  const partialTools = run.partialTools ?? {};
+  const slots = [...callIds, ...Object.keys(partialTools).filter((id) => !callIds.has(id))];
+  const outputs = slots.map((callId) => {
+    const correlated = visibleCards.filter((card) => card.callId === callId);
+    const preview = partialTools[callId];
+    const loading = run.pendingTools?.[callId]?.loading ?? preview?.loading;
+    // Validated card > streaming preview > shaped skeleton. The preview holds
+    // its place past `tool-call` until the real card replaces it, so the slot
+    // never drops back to a skeleton in between.
+    const content = correlated.length
+      ? correlated.map((card) => <CardRenderer key={card.id} card={card} />)
+      : preview?.partialCard
+        ? <PartialCard key={`partial:${callId}`} callId={callId} spec={preview.partialCard} />
+        : loading
+          ? <CardSkeleton hint={loading} />
+          : null;
+    return content ? { callId, content } : null;
+  });
 
   return (
     <div className="sc-msg sc-msg--assistant">
@@ -592,21 +639,17 @@ export function LiveTurn() {
       ) : null}
       {providerTools.length ? <ProviderToolChips items={providerTools} /> : null}
       {calls.length ? <ToolActivity calls={calls} results={results} /> : null}
-      {/* A known tool output owns one stable slot from call → skeleton → card.
-          Keeping the wrapper keyed by callId prevents a generated image or
-          chart from jumping to a new position when its real card arrives. */}
-      {calls.map((call) => {
-        const correlated = visibleCards.filter((card) => card.callId === call.callId);
-        const loading = run.pendingTools?.[call.callId]?.loading;
-        if (!correlated.length && !loading) return null;
-        return (
-          <div className="sc-tooloutput" key={call.callId} data-call-id={call.callId}>
-            {correlated.length
-              ? correlated.map((card) => <CardRenderer key={card.id} card={card} />)
-              : <CardSkeleton hint={loading} />}
+      {/* A known tool output owns one stable slot from arguments → preview or
+          skeleton → card. Keeping the wrapper keyed by callId prevents a
+          generated image or chart from jumping to a new position when its
+          real card arrives. */}
+      {outputs.map((slot) =>
+        slot ? (
+          <div className="sc-tooloutput" key={slot.callId} data-call-id={slot.callId}>
+            {slot.content}
           </div>
-        );
-      })}
+        ) : null,
+      )}
       {uncorrelatedCards.map((card) => <CardRenderer key={card.id} card={card} />)}
       {/* The blocking card renders last and un-collapsed — it is the thing the
           user must act on, so nothing may hide it. */}
@@ -619,7 +662,7 @@ export function LiveTurn() {
       ) : null}
       {/* Nothing to show yet. The orb carries the wait; the label stays derived
           from run state rather than a rotation of invented phrases. */}
-      {run.status === "running" && !text && !calls.length ? (
+      {run.status === "running" && !text && !calls.length && !outputs.some(Boolean) ? (
         <div className="sc-status" aria-live="polite">
           <Orb variant="S1" pill label={statusLine(run)} />
         </div>
@@ -638,6 +681,10 @@ export function LiveTurn() {
 function statusLine(run: RunState): string {
   if (run.job) return `Working in the background — ${run.job.status}`;
   if (run.pendingCard) return "Waiting for you";
+  const writing = Object.values(run.partialTools ?? {}).find(
+    (p) => !run.parts.some((part) => part.type === "tool-call" && part.callId === p.callId),
+  );
+  if (writing) return `Preparing ${writing.name}…`;
   const lastCall = [...run.parts].reverse().find((p) => p.type === "tool-call") as
     | Extract<ContentPart, { type: "tool-call" }>
     | undefined;

@@ -17,6 +17,14 @@
 //   4. All of a step's `tool-result`s arrive before the next `step-start`.
 //   5. The `role: "tool"` message runAgent writes back to history keeps CALL
 //      order.
+//
+// `tool-call-input-delta` comes earlier still: in stream mode, while the model
+// is WRITING a call's arguments, before the step ends and before `tool-call`.
+// It is a preview — a tolerant parse of the JSON so far, and the card it
+// implies when the tool can say (`ToolDefinition.partialCard`). `tool-call`
+// remains the authoritative, repaired input, and only the tool's own execute
+// path validates and emits a real `card`. Nothing a delta carries is ever
+// written to history.
 
 import type { Card, CardAction, CardSpec } from "../cards/types.js";
 import type { ContentPart, FinishReason, Usage } from "../content/types.js";
@@ -32,6 +40,19 @@ export type RunEvent =
   | { type: "step-start"; step: number }
   | { type: "text-delta"; delta: string }
   | { type: "reasoning-delta"; delta: string }
+  /**
+   * Live-only: a tool call's arguments as far as they have streamed. Stream
+   * mode only; never sent for a kind that is interactive. `partialCard` is a
+   * VALID but incomplete card, present only when the tool previews one.
+   */
+  | {
+      type: "tool-call-input-delta";
+      callId: string;
+      name: string;
+      partialInput: unknown;
+      partialCard?: CardSpec;
+      loading?: ToolLoadingHint;
+    }
   | { type: "tool-call"; callId: string; name: string; input: unknown; repaired?: boolean; loading?: ToolLoadingHint }
   /** A `confirm`-side tool, or an interactive card, is waiting on the user. */
   | { type: "awaiting-user"; callId: string; card: Card }
@@ -64,6 +85,13 @@ export type RunState = {
   steps: number;
   /** Live tool output slots, removed as their correlated result arrives. */
   pendingTools: Record<string, { callId: string; name: string; loading?: ToolLoadingHint }>;
+  /**
+   * Calls whose arguments are streaming or have streamed, keyed by callId:
+   * the latest `tool-call-input-delta` for each. Kept past `tool-call` so a
+   * card preview holds its place until the validated card replaces it, and
+   * removed with the call's `tool-result`. Live-only — never committed.
+   */
+  partialTools?: Record<string, PartialToolCall>;
   trace?: ContextTrace;
   /**
    * Tool names actually exposed to the model this run — the base presets PLUS
@@ -78,8 +106,16 @@ export type RunState = {
   finishReason?: FinishReason;
 };
 
+export type PartialToolCall = {
+  callId: string;
+  name: string;
+  partialInput: unknown;
+  partialCard?: CardSpec;
+  loading?: ToolLoadingHint;
+};
+
 export function initialRunState(runId: string, mode: RunMode): RunState {
-  return { runId, mode, status: "idle", parts: [], cards: [], usage: {}, steps: 0, pendingTools: {} };
+  return { runId, mode, status: "idle", parts: [], cards: [], usage: {}, steps: 0, pendingTools: {}, partialTools: {} };
 }
 
 function mergeUsage(a: Usage, b?: Usage): Usage {
@@ -122,6 +158,20 @@ export function reduceRunEvent(state: RunState, event: RunEvent): RunState {
           : [...state.parts, { type: "reasoning" as const, text: event.delta }];
       return { ...state, parts };
     }
+    case "tool-call-input-delta":
+      return {
+        ...state,
+        partialTools: {
+          ...state.partialTools,
+          [event.callId]: {
+            callId: event.callId,
+            name: event.name,
+            partialInput: event.partialInput,
+            ...(event.partialCard ? { partialCard: event.partialCard } : {}),
+            ...(event.loading ? { loading: event.loading } : {}),
+          },
+        },
+      };
     case "tool-call":
       return {
         ...state,
@@ -156,6 +206,7 @@ export function reduceRunEvent(state: RunState, event: RunEvent): RunState {
       return {
         ...state,
         pendingTools,
+        ...(state.partialTools?.[event.callId] ? { partialTools: without(state.partialTools, event.callId) } : {}),
         parts: [
           ...markCallDone(state.parts, event.callId, event.failure ? "error" : "done"),
           {
@@ -207,6 +258,7 @@ export function reduceRunEvent(state: RunState, event: RunEvent): RunState {
         ...state,
         status: event.finishReason === "error" ? "error" : "done",
         pendingTools: {},
+        partialTools: {},
         finishReason: event.finishReason,
         // REPLACE, not merge. This is runAgent's own total across every step,
         // so it is the authoritative figure — and taking it wholesale also
@@ -219,12 +271,18 @@ export function reduceRunEvent(state: RunState, event: RunEvent): RunState {
       return {
         ...state,
         status: event.recoverable ? state.status : "error",
-        ...(event.recoverable ? {} : { pendingTools: {} }),
+        ...(event.recoverable ? {} : { pendingTools: {}, partialTools: {} }),
         error: event.error,
       };
     default:
       return state;
   }
+}
+
+function without<T>(record: Record<string, T>, key: string): Record<string, T> {
+  const next = { ...record };
+  delete next[key];
+  return next;
 }
 
 function upsertCard(cards: Card[], card: Card): Card[] {

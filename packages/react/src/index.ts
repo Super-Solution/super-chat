@@ -9,6 +9,7 @@ export {
   useRun,
   useStreamingText,
   useCards,
+  usePartialTools,
   useCardAction,
   useContextTrace,
   useSkills,
