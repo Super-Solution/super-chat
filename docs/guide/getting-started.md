@@ -6,14 +6,14 @@ answers with a card — wired the way a real host wires it, not a toy loop.
 ## Install
 
 ```bash
-pnpm add @zzyzxlabs/super-chat-core @zzyzxlabs/super-chat-react @zzyzxlabs/super-chat-ui
+pnpm add @super-solution/super-chat-core @super-solution/super-chat-react @super-solution/super-chat-ui
 ```
 
 `core` is isomorphic and has no React and no LLM SDK dependency. `react` and `ui`
 are additive — a server-side or CLI host installs `core` alone.
 
 ```ts
-import "@zzyzxlabs/super-chat-ui/styles.css";   // if you use the UI kit
+import "@super-solution/super-chat-ui/styles.css";   // if you use the UI kit
 ```
 
 ## 1. The proxy route
@@ -25,7 +25,7 @@ BYOK-direct.
 
 ```ts
 // app/api/agent/route.ts  (Next.js App Router)
-import { createProxyHandler } from "@zzyzxlabs/super-chat-core";
+import { createProxyHandler } from "@super-solution/super-chat-core";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";   // streaming must not be buffered or cached
@@ -81,7 +81,7 @@ a fresh registry per render looks identical in a table and is dead everywhere el
 import {
   BUILTIN_CARDS, CardRegistry, ContextBuilder, SkillRegistry, ToolRegistry,
   createBuiltinTools, createOpenAIProvider, createProxyTransport,
-} from "@zzyzxlabs/super-chat-core";
+} from "@super-solution/super-chat-core";
 
 export const cards  = new CardRegistry(BUILTIN_CARDS);
 export const skills = new SkillRegistry(MY_SKILLS, { maxMatched: 3 });
@@ -115,7 +115,7 @@ never blocklists — see [`tools/types.ts`](../../packages/core/src/tools/types.
 or a queue worker.
 
 ```ts
-import { runAgent, userMessage } from "@zzyzxlabs/super-chat-core";
+import { runAgent, userMessage } from "@super-solution/super-chat-core";
 
 const messages = [userMessage("What's the weather in Taipei?")];
 
@@ -153,8 +153,8 @@ re-render on every streamed token.
 
 ```tsx
 "use client";
-import { AgentClient, AgentProvider } from "@zzyzxlabs/super-chat-react";
-import { BUILTIN_RENDERERS, CardRendererProvider, Composer, Thread } from "@zzyzxlabs/super-chat-ui";
+import { AgentClient, AgentProvider } from "@super-solution/super-chat-react";
+import { BUILTIN_RENDERERS, CardRendererProvider, Composer, Thread } from "@super-solution/super-chat-ui";
 import { contextBuilder, provider, tools } from "@/agent/setup";
 import { useMemo } from "react";
 

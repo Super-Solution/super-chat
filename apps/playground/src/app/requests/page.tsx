@@ -6,7 +6,7 @@ import {
   buildResponsesRequest,
   type Message,
   type NormalizedRequest,
-} from "@zzyzxlabs/super-chat-core";
+} from "@super-solution/super-chat-core";
 import { PanelHeader } from "@/components/Shell";
 
 // Scenarios chosen to expose the places the two dialects actually disagree.

@@ -777,7 +777,7 @@ P2 刻意不投資：那是給開發者評估框架用的桌機工具，不是�
 
 這是本章最重要的決策，因為選錯會讓整套規範答錯題。
 
-`@zzyzxlabs/super-chat-ui` 是**嵌入式套件**，宿主可能把 `<Thread>` 放進 1920px
+`@super-solution/super-chat-ui` 是**嵌入式套件**，宿主可能把 `<Thread>` 放進 1920px
 視窗裡的一個 380px 側欄。此時 media query 回報「桌機」，但元件實際
 只有 380px——它會用寬版規則把自己撐爆。container query 問的是「我有
 多寬」，那才是元件真正需要知道的事。
@@ -1430,7 +1430,7 @@ pnpm typecheck
 
 這批是在 Phase 5 合併之後、於較新的 main 上重新接枝的，有四處要留意：
 
-- 套件已改名為 `@zzyzxlabs/super-chat-*`，本批所有新檔案跟著改。
+- 套件已改名為 `@super-solution/super-chat-*`，本批所有新檔案跟著改。
 - 規範文件已移入 `docs/`。
 - main 為 `renderMarkdown` 加了「整份沒有 markdown 字元就跳過正則鏈」的
   快速路徑。改寫**保留該最佳化並改成逐區塊套用**——一份只有一個程式碼

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { splitBlocks } from "@zzyzxlabs/super-chat-core";
+import { splitBlocks } from "@super-solution/super-chat-core";
 import { renderMarkdown, renderMarkdownWithAnchors } from "./markdown.js";
 
 describe("renderMarkdown", () => {

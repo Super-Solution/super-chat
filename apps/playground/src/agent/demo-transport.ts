@@ -10,7 +10,7 @@
 // a check that the request we build is one a real endpoint would accept, since
 // the script reads the request to decide what to answer.
 
-import type { Transport, TransportRequest } from "@zzyzxlabs/super-chat-core";
+import type { Transport, TransportRequest } from "@super-solution/super-chat-core";
 
 type ResponsesItem = {
   type: string;

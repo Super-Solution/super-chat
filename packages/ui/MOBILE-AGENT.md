@@ -10,13 +10,13 @@ import {
   SUPERCHAT_MOBILE_AGENT_LOADING,
   SUPERCHAT_MOBILE_AGENT_ORB,
   resolveSuperChatMobileAgentStreamingPhase,
-} from "@zzyzxlabs/super-chat-ui/mobile-agent";
+} from "@super-solution/super-chat-ui/mobile-agent";
 
 import {
   SUPERCHAT_MOBILE_AGENT_RN_DESIGN,
   resolveSuperChatMobileAgentRNLayout,
   resolveSuperChatMobileAgentRNSkeleton,
-} from "@zzyzxlabs/super-chat-ui/mobile-agent/react-native";
+} from "@super-solution/super-chat-ui/mobile-agent/react-native";
 ```
 
 Both modules contain data and pure helpers. They do not import React, React
@@ -51,7 +51,7 @@ code:
 import { Platform, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { resolveSuperChatMobileAgentRNLayout } from
-  "@zzyzxlabs/super-chat-ui/mobile-agent/react-native";
+  "@super-solution/super-chat-ui/mobile-agent/react-native";
 
 function useAgentLayout() {
   const window = useWindowDimensions();

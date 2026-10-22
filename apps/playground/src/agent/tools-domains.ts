@@ -4,7 +4,7 @@
 // an executor, and a card. Nothing about the framework changes between fields —
 // which is the thing this file exists to demonstrate.
 
-import { withCard, type ToolDefinition } from "@zzyzxlabs/super-chat-core";
+import { withCard, type ToolDefinition } from "@super-solution/super-chat-core";
 
 // ── Legal ───────────────────────────────────────────────────────────────────
 

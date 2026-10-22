@@ -9,7 +9,7 @@
 // does not have, and faking it with a data: URL would produce links that break
 // the moment they leave the browser.
 
-import type { Card, ContentPart, Message } from "@zzyzxlabs/super-chat-core";
+import type { Card, ContentPart, Message } from "@super-solution/super-chat-core";
 
 function cardToMarkdown(spec: Record<string, unknown>): string {
   const kind = String(spec.kind ?? "unknown");

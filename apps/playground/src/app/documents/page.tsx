@@ -24,14 +24,14 @@ import {
   type DocumentEdit,
   type EditReviewCard,
   type EmailCard,
-} from "@zzyzxlabs/super-chat-core";
+} from "@super-solution/super-chat-core";
 import {
   DocumentCardView,
   DocumentQuoteProvider,
   EditReviewCardView,
   EmailCardView,
   useDocumentQuotes,
-} from "@zzyzxlabs/super-chat-ui";
+} from "@super-solution/super-chat-ui";
 import { PanelHeader } from "@/components/Shell";
 
 // Deliberately made of the constructs a real report is made of — a table, a

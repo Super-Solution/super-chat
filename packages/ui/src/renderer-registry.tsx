@@ -18,7 +18,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { BUILTIN_CARDS, type Card, type CardAction, type CardSpec, type ToolLoadingHint } from "@zzyzxlabs/super-chat-core";
+import { BUILTIN_CARDS, type Card, type CardAction, type CardSpec, type ToolLoadingHint } from "@super-solution/super-chat-core";
 
 export type CardRendererProps<S extends CardSpec = CardSpec> = {
   spec: S;

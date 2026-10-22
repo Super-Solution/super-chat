@@ -29,13 +29,13 @@ importers:
       '@gsap/react':
         specifier: ^2.1.2
         version: 2.1.2(gsap@3.15.0)(react@19.2.8)
-      '@zzyzxlabs/super-chat-core':
+      '@super-solution/super-chat-core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@zzyzxlabs/super-chat-react':
+      '@super-solution/super-chat-react':
         specifier: workspace:*
         version: link:../../packages/react
-      '@zzyzxlabs/super-chat-ui':
+      '@super-solution/super-chat-ui':
         specifier: workspace:*
         version: link:../../packages/ui
       gsap:
@@ -69,13 +69,13 @@ importers:
 
   apps/site:
     dependencies:
-      '@zzyzxlabs/super-chat-core':
+      '@super-solution/super-chat-core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@zzyzxlabs/super-chat-react':
+      '@super-solution/super-chat-react':
         specifier: workspace:*
         version: link:../../packages/react
-      '@zzyzxlabs/super-chat-ui':
+      '@super-solution/super-chat-ui':
         specifier: workspace:*
         version: link:../../packages/ui
       marked:
@@ -115,7 +115,7 @@ importers:
 
   packages/react:
     dependencies:
-      '@zzyzxlabs/super-chat-core':
+      '@super-solution/super-chat-core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -134,10 +134,10 @@ importers:
 
   packages/ui:
     dependencies:
-      '@zzyzxlabs/super-chat-core':
+      '@super-solution/super-chat-core':
         specifier: workspace:*
         version: link:../core
-      '@zzyzxlabs/super-chat-react':
+      '@super-solution/super-chat-react':
         specifier: workspace:*
         version: link:../react
     devDependencies:

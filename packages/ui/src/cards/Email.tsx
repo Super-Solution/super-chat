@@ -20,7 +20,7 @@
 // `onSend`; without it there is no button, which is the honest default.
 
 import { useState } from "react";
-import { buildEml, buildMailto, emlFilename, type EmailCard } from "@zzyzxlabs/super-chat-core";
+import { buildEml, buildMailto, emlFilename, type EmailCard } from "@super-solution/super-chat-core";
 import type { CardRendererProps } from "../renderer-registry.js";
 
 export type EmailCardViewProps = CardRendererProps<EmailCard> & {

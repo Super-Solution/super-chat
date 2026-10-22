@@ -18,7 +18,7 @@ import type {
   GaugeCard,
   TreeCard,
   TreeNode,
-} from "@zzyzxlabs/super-chat-core";
+} from "@super-solution/super-chat-core";
 import type { CardRendererProps } from "../renderer-registry.js";
 import { formatValue } from "../format.js";
 import { StatusMark, ToneIcon, type StatusMarkKind } from "./icons.js";

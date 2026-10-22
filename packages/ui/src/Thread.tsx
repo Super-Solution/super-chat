@@ -16,7 +16,7 @@ import {
   type MediaSource,
   type Message,
   type RunState,
-} from "@zzyzxlabs/super-chat-core";
+} from "@super-solution/super-chat-core";
 import {
   useAgentClient,
   useAttachments,
@@ -28,7 +28,7 @@ import {
   useThread,
   useTools,
   type TurnMeta,
-} from "@zzyzxlabs/super-chat-react";
+} from "@super-solution/super-chat-react";
 import { CardRenderer, CardSkeleton } from "./renderer-registry.js";
 import { AttachIcon, Chevron, FileIcon, ImageIcon, StatusMark } from "./cards/icons.js";
 import { newMarkdownStream, renderMarkdown, renderMarkdownStream } from "./markdown.js";

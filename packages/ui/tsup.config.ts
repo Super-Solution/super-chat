@@ -11,6 +11,6 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   target: "es2022",
-  external: ["react", "@zzyzxlabs/super-chat-core", "@zzyzxlabs/super-chat-react"],
+  external: ["react", "@super-solution/super-chat-core", "@super-solution/super-chat-react"],
   loader: { ".css": "copy" },
 });

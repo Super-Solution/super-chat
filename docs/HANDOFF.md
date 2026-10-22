@@ -2,9 +2,11 @@
 
 ## Release and downstream checkpoint (2026-09-28, updated 2026-10-21)
 
-The tracked manifests prepare **0.4.0**. Public npm latest remains **0.3.0** for
-core, react and ui (registry checked 2026-10-21) until 0.4.0 is published. 0.4.0
-folds in the never-published 0.3.1 candidate: the performance changes merged
+The tracked manifests prepare **0.5.0**, the first release under the
+`@super-solution` npm org (the old `@zzyzxlabs/super-chat-*` names stay at
+**0.3.0**; registry checked 2026-10-23). 0.4.0 was never published under either
+scope; 0.5.0 carries everything 0.4.0 was going to ship plus the changes listed
+under 0.5.0 in the CHANGELOG. 0.4.0 folded in the never-published 0.3.1 candidate: the performance changes merged
 through upstream `21630da7044bdef19332372248f1fd8d7ba4a3e1` plus ESM export
 resolver fallbacks. It also carries the document-seam fixes and progressive card
 rendering from streamed tool arguments (see CHANGELOG).
@@ -60,8 +62,8 @@ panel; it does not get a feature in an app that happens to live here.
 a stray prefix is how a theme override silently stops applying.
 
 **Publish scope**: the three publishable packages (`core`, `react`, `ui`) are
-scoped `@zzyzxlabs/super-chat-*` and publish to the **public npm registry**
-under the ZzyzxLabs org. `apps/playground` stays `@superchat/playground`: it's
+scoped `@super-solution/super-chat-*` and publish to the **public npm registry**
+under the super-solution org. `apps/playground` stays `@superchat/playground`: it's
 `private: true` and never published. "superchat" the *project* is still called
 superchat everywhere else (README, CSS prefix, storage keys) — only the three
 registry-facing package names carry the scope.
@@ -194,14 +196,14 @@ has a regression test now; the test names spell out the failure.
   while `next dev` is live corrupts the running server and the page goes blank.
   Stop the server first.
 - **`tsup --clean` wipes `dist` on every rebuild.** That is why
-  `@zzyzxlabs/super-chat-ui`'s `styles.css` export points at `src/`, not `dist/` — a
+  `@super-solution/super-chat-ui`'s `styles.css` export points at `src/`, not `dist/` — a
   consuming dev server that compiles during the wipe fails on a missing
   stylesheet. Don't "tidy" it back into dist.
 - **Next's webpack does not resolve `.js` specifiers to `.ts`** in app source.
   Inside `apps/playground/src`, import without the extension. The workspace
   packages are fine because they resolve to built `dist`.
 - **Typecheck order matters.** `packages/react` and `packages/ui` resolve
-  `@zzyzxlabs/super-chat-core` through its built `dist`, so build core before typechecking
+  `@super-solution/super-chat-core` through its built `dist`, so build core before typechecking
   them. `pnpm -r typecheck` after `pnpm build` is the safe order.
 - **G: is slow.** Scope searches; avoid unscoped recursive `find`/`du` here.
 - **Still nobody has looked at these panels with human eyes.** A headless

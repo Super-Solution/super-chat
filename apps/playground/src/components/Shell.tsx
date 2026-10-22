@@ -66,9 +66,9 @@ export function Shell({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <div className="dev__foot">
-            <code className="sc-mono">@zzyzxlabs/super-chat-core</code>
-            <code className="sc-mono">@zzyzxlabs/super-chat-react</code>
-            <code className="sc-mono">@zzyzxlabs/super-chat-ui</code>
+            <code className="sc-mono">@super-solution/super-chat-core</code>
+            <code className="sc-mono">@super-solution/super-chat-react</code>
+            <code className="sc-mono">@super-solution/super-chat-ui</code>
           </div>
         </aside>
         <main className="dev__main">{children}</main>

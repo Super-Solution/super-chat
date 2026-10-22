@@ -1,9 +1,16 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 (2026-10-23)
 
 ### Changed
 
+- **core/react/ui:** The packages move to the super-solution npm org:
+  `@zzyzxlabs/super-chat-{core,react,ui}` become
+  `@super-solution/super-chat-{core,react,ui}`. The `@zzyzxlabs` names stop at
+  0.3.0 and receive no further releases; 0.4.0 was never published under
+  either scope. Consumers change the scope in their dependencies and imports
+  (the CSS entry is now `@super-solution/super-chat-ui/styles.css`); the API is
+  unchanged by the move itself.
 - **ui:** Card renderers drop the patterns that made them read as generated
   UI. Unicode glyphs and emoji (✓ ○ ◐ ● ✕ 📎 📄 🖼) are replaced by one set of
   drawn 12px marks in `currentColor`, in progress steps, checklists,

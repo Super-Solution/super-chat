@@ -7,7 +7,7 @@
 // thing this deliberately omits: per-user scoping in `authorize`, so thread ids
 // are not a shared namespace.
 
-import type { StoredThread, ThreadMeta } from "@zzyzxlabs/super-chat-core";
+import type { StoredThread, ThreadMeta } from "@super-solution/super-chat-core";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

@@ -36,7 +36,7 @@
 // of rendering a block's interior through the same splitter, with a depth cap
 // so a pathological `> > > > …` cannot recurse without end.
 
-import { splitBlocks, type MarkdownBlock } from "@zzyzxlabs/super-chat-core";
+import { splitBlocks, type MarkdownBlock } from "@super-solution/super-chat-core";
 
 export type AnchoredMarkdown = {
   html: string;

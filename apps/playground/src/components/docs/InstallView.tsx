@@ -12,9 +12,9 @@ const MANAGERS = [
 ] as const;
 
 const PACKAGES = [
-  { name: "@zzyzxlabs/super-chat-core", what: "Runtime, provider adapters, cards and the proxy handler. No React, no LLM SDK.", core: true },
-  { name: "@zzyzxlabs/super-chat-react", what: "Thread state and run control for React 18 and 19.", core: false },
-  { name: "@zzyzxlabs/super-chat-ui", what: "Card renderers, the composer and other parts, and styles.css.", core: false },
+  { name: "@super-solution/super-chat-core", what: "Runtime, provider adapters, cards and the proxy handler. No React, no LLM SDK.", core: true },
+  { name: "@super-solution/super-chat-react", what: "Thread state and run control for React 18 and 19.", core: false },
+  { name: "@super-solution/super-chat-ui", what: "Card renderers, the composer and other parts, and styles.css.", core: false },
 ] as const;
 
 type Step = { title: string; code: string; for: "react" | "server" | "both" };
@@ -22,13 +22,13 @@ type Step = { title: string; code: string; for: "react" | "server" | "both" };
 const STEPS: Step[] = [
   {
     title: "Import the styles",
-    code: `import "@zzyzxlabs/super-chat-ui/styles.css";`,
+    code: `import "@super-solution/super-chat-ui/styles.css";`,
     for: "react",
   },
   {
     title: "Add the proxy route",
     code: `// app/api/agent/route.ts
-import { createProxyHandler } from "@zzyzxlabs/super-chat-core";
+import { createProxyHandler } from "@super-solution/super-chat-core";
 
 export const POST = createProxyHandler({
   providers: {
@@ -53,7 +53,7 @@ export const POST = createProxyHandler({
   },
   {
     title: "Run a turn",
-    code: `import { runAgent, userMessage } from "@zzyzxlabs/super-chat-core";
+    code: `import { runAgent, userMessage } from "@super-solution/super-chat-core";
 
 for await (const event of runAgent([userMessage("Summarise the contract")], {
   provider,

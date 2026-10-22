@@ -1,4 +1,4 @@
-import type { Transport, TransportRequest } from "@zzyzxlabs/super-chat-core";
+import type { Transport, TransportRequest } from "@super-solution/super-chat-core";
 
 type JsonRpc = { jsonrpc: "2.0"; id?: number | string; method?: string; params?: Record<string, unknown> };
 

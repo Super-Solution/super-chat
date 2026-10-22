@@ -1,6 +1,6 @@
-# @zzyzxlabs/super-chat-react
+# @super-solution/super-chat-react
 
-React bindings for [@zzyzxlabs/super-chat-core](../core/README.md): thread state, run
+React bindings for [@super-solution/super-chat-core](../core/README.md): thread state, run
 control, card actions, and context inspection. One `AgentClient` store per
 thread; hooks are fine-grained selectors over it so a component that only
 reads `status` doesn't re-render on every streamed token.
@@ -18,13 +18,13 @@ decisions.
 ## Install
 
 ```bash
-pnpm add @zzyzxlabs/super-chat-core @zzyzxlabs/super-chat-react
+pnpm add @super-solution/super-chat-core @super-solution/super-chat-react
 ```
 
 ## Develop
 
 ```bash
-pnpm --filter @zzyzxlabs/super-chat-react build       # tsup, emits dist/
-pnpm --filter @zzyzxlabs/super-chat-react typecheck   # tsc --noEmit
+pnpm --filter @super-solution/super-chat-react build       # tsup, emits dist/
+pnpm --filter @super-solution/super-chat-react typecheck   # tsc --noEmit
 pnpm vitest run packages/react             # this package's tests
 ```

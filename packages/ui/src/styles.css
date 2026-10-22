@@ -4,7 +4,7 @@
  * into any app without imposing a build step or a config merge. Override the
  * tokens to theme it; every rule below reads from them.
  *
- * Consumers import this from source ("@zzyzxlabs/super-chat-ui/styles.css" → src/styles.css),
+ * Consumers import this from source ("@super-solution/super-chat-ui/styles.css" → src/styles.css),
  * not from dist: the bundler cleans dist on every rebuild, and a consuming dev
  * server that compiles during that window fails on a missing stylesheet. CSS
  * needs no compilation, so there is nothing to gain by routing it through dist.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { threadToMarkdown } from "./export.js";
-import type { Message } from "@zzyzxlabs/super-chat-core";
+import type { Message } from "@super-solution/super-chat-core";
 
 const msg = (role: Message["role"], parts: Message["parts"]): Message => ({ id: `${role}_1`, role, parts });
 

@@ -14,7 +14,7 @@ import {
   createOpenAIProvider,
   type Message,
   type Transport,
-} from "@zzyzxlabs/super-chat-core";
+} from "@super-solution/super-chat-core";
 import { AgentClient } from "./client.js";
 import { branchPosition, useBranches } from "./hooks.js";
 

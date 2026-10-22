@@ -10,7 +10,7 @@
 // carries its own anchor and is therefore independently applicable.
 
 import { useState } from "react";
-import type { EditReviewCard } from "@zzyzxlabs/super-chat-core";
+import type { EditReviewCard } from "@super-solution/super-chat-core";
 import type { CardRendererProps } from "../renderer-registry.js";
 
 export function EditReviewCardView({ spec, card, respond, answered }: CardRendererProps<EditReviewCard>) {

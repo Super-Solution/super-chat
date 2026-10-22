@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { RollingCount } from "@zzyzxlabs/super-chat-ui";
+import { RollingCount } from "@super-solution/super-chat-ui";
 import styles from "./home.module.css";
 import { prefersReducedMotion, useSeen } from "./useInView";
 

@@ -1,5 +1,5 @@
-import type { CardSpec } from "@zzyzxlabs/super-chat-core";
-import type { CardRendererProps } from "@zzyzxlabs/super-chat-ui";
+import type { CardSpec } from "@super-solution/super-chat-core";
+import type { CardRendererProps } from "@super-solution/super-chat-ui";
 
 // A host-defined card kind, rendered through the same registry as the 23
 // built-ins. It uses the kit's card classes, so it follows the flavor tokens.

@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { CardSkeleton, ThinkingState } from "@zzyzxlabs/super-chat-ui";
+import { CardSkeleton, ThinkingState } from "@super-solution/super-chat-ui";
 import {
   ExperienceBar,
   FrameworkXray,
