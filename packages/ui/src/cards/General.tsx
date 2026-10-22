@@ -20,7 +20,8 @@ import type {
   TreeNode,
 } from "@zzyzxlabs/super-chat-core";
 import type { CardRendererProps } from "../renderer-registry.js";
-import { formatValue, toneClass } from "../format.js";
+import { formatValue } from "../format.js";
+import { StatusMark, ToneIcon, type StatusMarkKind } from "./icons.js";
 
 export function ComparisonCardView({ spec }: CardRendererProps<ComparisonCard>) {
   return (
@@ -50,14 +51,12 @@ export function ComparisonCardView({ spec }: CardRendererProps<ComparisonCard>) 
                   const v = c.values[o.id];
                   return (
                     <td key={o.id} className={o.highlight ? "sc-compare__best" : undefined}>
+                      {/* Yes and no differ in shape and weight, not in a
+                          red-green pair across every row of the table. */}
                       {v === true ? (
-                        <span className="sc-tone--positive" aria-label="yes">
-                          ✓
-                        </span>
+                        <span className="sc-compare__yes"><StatusMark kind="done" label="yes" /></span>
                       ) : v === false ? (
-                        <span className="sc-tone--negative" aria-label="no">
-                          ✕
-                        </span>
+                        <span className="sc-compare__no"><StatusMark kind="failed" label="no" /></span>
                       ) : v == null ? (
                         <span className="sc-muted">—</span>
                       ) : (
@@ -75,7 +74,7 @@ export function ComparisonCardView({ spec }: CardRendererProps<ComparisonCard>) 
   );
 }
 
-const CHECK_ICON: Record<string, string> = { done: "✓", todo: "○", blocked: "✕", na: "–" };
+const CHECK_MARK: Record<string, StatusMarkKind> = { done: "done", todo: "pending", blocked: "failed", na: "skipped" };
 
 export function ChecklistCardView({ spec, partial }: CardRendererProps<ChecklistCard>) {
   // Group consecutive items sharing a `group`, preserving the model's ordering
@@ -111,8 +110,8 @@ export function ChecklistCardView({ spec, partial }: CardRendererProps<Checklist
           <ul className="sc-checklist">
             {g.items.map((item, i) => (
               <li key={i} className={`sc-check sc-check--${item.status}`}>
-                <span className="sc-check__icon" aria-hidden>
-                  {CHECK_ICON[item.status] ?? "○"}
+                <span className="sc-check__icon">
+                  <StatusMark kind={CHECK_MARK[item.status] ?? "pending"} />
                 </span>
                 <span className="sc-check__body">
                   <span className="sc-check__label">{item.label}</span>
@@ -127,14 +126,16 @@ export function ChecklistCardView({ spec, partial }: CardRendererProps<Checklist
   );
 }
 
-const CALLOUT_ICON: Record<string, string> = { info: "i", warning: "!", danger: "!", success: "✓", note: "·" };
-
 export function CalloutCardView({ spec }: CardRendererProps<CalloutCard>) {
+  // A note is plain prose and carries no mark; the other tones get a drawn
+  // icon so the tone never rests on color alone.
   return (
     <div className={`sc-card sc-callout sc-callout--${spec.tone}`} role={spec.tone === "danger" ? "alert" : undefined}>
-      <span className="sc-callout__icon" aria-hidden>
-        {CALLOUT_ICON[spec.tone] ?? "·"}
-      </span>
+      {spec.tone === "note" ? null : (
+        <span className="sc-callout__icon">
+          <ToneIcon kind={spec.tone} />
+        </span>
+      )}
       <div>
         {spec.title ? <div className="sc-callout__title">{spec.title}</div> : null}
         <div className="sc-callout__body">{spec.body}</div>
@@ -164,11 +165,9 @@ export function CitationsCardView({ spec }: CardRendererProps<CitationsCard>) {
                 ) : (
                   <span className="sc-cite__title">{item.title}</span>
                 )}
-                {item.relevance ? (
-                  <span className={`sc-pill sc-pill--${item.relevance === "high" ? "positive" : item.relevance === "low" ? "warning" : "info"}`}>
-                    {item.relevance}
-                  </span>
-                ) : null}
+                {/* Relevance is a ranking, not a status: one neutral pill,
+                    not a traffic light per source. */}
+                {item.relevance ? <span className="sc-pill">{item.relevance}</span> : null}
               </div>
               <div className="sc-muted sc-cite__meta">
                 {[item.source, item.locator, item.date ? formatValue(item.date, "datetime") : null]
@@ -186,6 +185,19 @@ export function CitationsCardView({ spec }: CardRendererProps<CitationsCard>) {
 
 export function FunnelCardView({ spec }: CardRendererProps<FunnelCard>) {
   const top = Math.max(...spec.stages.map((s) => s.value), 1);
+  // Only the steepest drop is marked. Coloring every step under 50% painted
+  // most real funnels orange and so marked nothing.
+  let dropAt = -1;
+  let dropRate = Infinity;
+  spec.stages.forEach((stage, i) => {
+    const prev = i > 0 ? spec.stages[i - 1]! : null;
+    if (!prev || prev.value <= 0) return;
+    const rate = stage.value / prev.value;
+    if (rate < dropRate) {
+      dropRate = rate;
+      dropAt = i;
+    }
+  });
 
   return (
     <div className="sc-card">
@@ -213,7 +225,7 @@ export function FunnelCardView({ spec }: CardRendererProps<FunnelCard>) {
                 {stepRate == null ? (
                   <span className="sc-muted">—</span>
                 ) : (
-                  <span className={stepRate < 50 ? "sc-tone--warning" : "sc-muted"}>{stepRate.toFixed(1)}%</span>
+                  <span className={i === dropAt ? "sc-funnel__drop" : "sc-muted"}>{formatValue(stepRate, "percent")}</span>
                 )}
               </div>
             </div>
@@ -234,17 +246,18 @@ export function GaugeCardView({ spec }: CardRendererProps<GaugeCard>) {
   return (
     <div className="sc-card">
       {spec.title ? <div className="sc-card__title">{spec.title}</div> : null}
+      {/* The reading stays in the text color: the band it falls in already
+          says how good or bad it is, and a red headline number is an alarm the
+          card can't take back. */}
       <div className="sc-gauge">
-        <div className={`sc-gauge__value${toneClass(band?.tone)}`}>{formatValue(spec.value, spec.format ?? "number")}</div>
-        {band || spec.label ? (
-          <div className={`sc-gauge__label${toneClass(band?.tone)}`}>{spec.label ?? band?.label}</div>
-        ) : null}
+        <div className="sc-gauge__value">{formatValue(spec.value, spec.format ?? "number")}</div>
+        {band || spec.label ? <div className="sc-gauge__label">{spec.label ?? band?.label}</div> : null}
       </div>
       <div className="sc-gauge__track" role="meter" aria-valuenow={clamped} aria-valuemin={min} aria-valuemax={max}>
         {(spec.bands ?? []).map((b, i) => (
           <div
             key={i}
-            className={`sc-gauge__band sc-tone--${b.tone ?? "neutral"}`}
+            className={`sc-gauge__band sc-tone--${b.tone ?? "neutral"}${band === b ? " sc-gauge__band--on" : ""}`}
             style={{ left: `${((b.from - min) / (max - min)) * 100}%`, width: `${((b.to - b.from) / (max - min)) * 100}%` }}
             title={b.label}
           />
@@ -270,8 +283,11 @@ export function GaugeCardView({ spec }: CardRendererProps<GaugeCard>) {
 
 function TreeBranch({ node, depth }: { node: TreeNode; depth: number }) {
   return (
-    <li className={`sc-treenode${toneClass(node.tone)}`}>
+    // Tone marks the node with a dot. It used to color the whole <li>, which
+    // every descendant inherited, so one flagged section turned its subtree red.
+    <li className="sc-treenode">
       <div className="sc-treenode__row">
+        {node.tone && node.tone !== "neutral" ? <span className={`sc-treenode__mark sc-tone--${node.tone}`} aria-hidden /> : null}
         <span className="sc-treenode__label">{node.label}</span>
         {node.detail ? <span className="sc-muted sc-treenode__detail">{node.detail}</span> : null}
       </div>

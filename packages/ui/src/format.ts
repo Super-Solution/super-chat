@@ -7,6 +7,9 @@ import type { CardValueFormat } from "@zzyzxlabs/super-chat-core";
 
 const compact = new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 2 });
 const plain = new Intl.NumberFormat(undefined, { maximumFractionDigits: 6 });
+const pctWide = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1, useGrouping: false });
+const pctNarrow = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2, useGrouping: false });
+const percent = (n: number): string => (Math.abs(n) < 1 ? pctNarrow : pctWide).format(n);
 
 export function formatValue(value: unknown, format: CardValueFormat = "text"): string {
   if (value == null) return "—";
@@ -25,12 +28,17 @@ export function formatValue(value: unknown, format: CardValueFormat = "text"): s
       const abs = Math.abs(n);
       // Sub-cent values are common in crypto; fixed 2dp would render them as $0.00.
       const digits = abs >= 1 ? 2 : abs >= 0.01 ? 4 : 8;
-      return `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: digits })}`;
+      // A whole amount in the thousands reads as "$48,200". Forcing ".00" onto
+      // it is the machine-printed look; amounts with cents keep them.
+      const min = abs >= 1000 && Number.isInteger(n) ? 0 : 2;
+      return `$${n.toLocaleString(undefined, { minimumFractionDigits: min, maximumFractionDigits: Math.max(min, digits) })}`;
     }
     case "percent": {
       const n = Number(value);
       if (!Number.isFinite(n)) return String(value);
-      return `${n.toFixed(2)}%`;
+      // One decimal at most ("8.2%", "12%"), two only below 1% where the
+      // second digit is the signal ("0.04%"). A fixed "8.20%" is false precision.
+      return `${percent(n)}%`;
     }
     case "bytes": {
       const n = Number(value);
@@ -64,8 +72,10 @@ export function formatValue(value: unknown, format: CardValueFormat = "text"): s
 }
 
 export function formatDelta(delta: number, format: CardValueFormat = "number"): string {
-  const sign = delta > 0 ? "+" : "";
-  return `${sign}${formatValue(delta, format)}`;
+  // A true minus sign: the hyphen-minus is narrower and misaligns a column of
+  // signed deltas against the plus signs above it.
+  const sign = delta > 0 ? "+" : delta < 0 ? "−" : "";
+  return `${sign}${formatValue(Math.abs(delta), format)}`;
 }
 
 export const toneClass = (tone?: string): string => (tone && tone !== "neutral" ? ` sc-tone--${tone}` : "");

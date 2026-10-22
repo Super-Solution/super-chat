@@ -81,9 +81,9 @@ export function EmailCardView({ spec, onSend }: EmailCardViewProps) {
   };
 
   return (
+    // No "Draft email" heading: the To / Subject / body fields already say what
+    // this is, and the subject is the title the user will recognise.
     <div className="sc-card sc-email">
-      <div className="sc-card__title">Draft email</div>
-
       <div className="sc-email__fields">
         <label className="sc-email__row">
           <span className="sc-email__label">To</span>

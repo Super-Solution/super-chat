@@ -309,6 +309,8 @@
   border: 1px solid var(--sc-border);
   background: var(--sc-surface);
   color: var(--sc-text);
+  /* Buttons don't inherit the font by default and fell back to the UA face. */
+  font-family: inherit;
   font-size: var(--sc-fs-ui);
   font-weight: 500;
   cursor: pointer;
@@ -395,6 +397,9 @@
   border-radius: var(--sc-radius);
   border: 1px solid var(--sc-border);
   background: var(--sc-surface);
+  /* A card paints its own surface, so it owns its text color too. Inheriting
+     put the host's near-white text on a white card on any dark page. */
+  color: var(--sc-text);
   font-family: var(--sc-sans);
 }
 .sc-card--interactive { border-color: color-mix(in srgb, var(--sc-accent) 45%, var(--sc-border)); }
@@ -408,6 +413,15 @@
 .sc-card__caption { margin-top: var(--sc-sp-8); font-size: var(--sc-fs-meta); }
 .sc-card__footnote { margin-top: var(--sc-sp-10); font-size: var(--sc-fs-meta); }
 .sc-card__actions { display: flex; align-items: center; gap: var(--sc-sp-8); margin-top: var(--sc-sp-12); flex-wrap: wrap; }
+/* Copy and Download are utilities, not part of the answer. With a mouse they
+   wait until the card is hovered or focused; on touch they stay visible, since
+   there is no hover to reveal them. Space is kept, so nothing shifts. */
+@media (hover: hover) and (pointer: fine) {
+  .sc-card__actions--aux { opacity: 0; transition: opacity var(--sc-dur-1) ease; }
+  .sc-card:hover .sc-card__actions--aux, .sc-card:focus-within .sc-card__actions--aux { opacity: 1; }
+}
+.sc-th-btn .sc-mark { display: inline-block; margin-left: var(--sc-sp-4); vertical-align: middle; }
+.sc-jump .sc-mark { display: inline-block; vertical-align: middle; }
 
 /* Card-internal separator. A hairline, nothing else — cards that need to set
    one section apart from another use this instead of hand-rolling a
@@ -426,7 +440,9 @@
 
 /* stats */
 .sc-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: var(--sc-sp-12); }
-.sc-stat__label { font-size: var(--sc-fs-micro); color: var(--sc-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+/* Sentence case. An uppercase, tracked label over every number is the
+   generated-dashboard look; the value already carries the hierarchy. */
+.sc-stat__label { font-size: var(--sc-fs-meta); color: var(--sc-text-muted); }
 .sc-stat__value { font-size: var(--sc-fs-stat); font-weight: 600; line-height: var(--sc-lh-tight); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 .sc-stat__delta { font-size: var(--sc-fs-meta); font-variant-numeric: tabular-nums; }
 .sc-stat__hint { font-size: var(--sc-fs-micro); margin-top: var(--sc-sp-2); }
@@ -467,7 +483,10 @@
 .sc-progress__bar { height: 100%; background: var(--sc-accent); transition: width var(--sc-dur-2) var(--sc-ease-in-out); }
 .sc-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sc-sp-6); font-size: var(--sc-fs-ui); }
 .sc-step { display: flex; align-items: baseline; gap: var(--sc-sp-8); }
-.sc-step--done .sc-step__icon { color: var(--sc-positive); }
+/* Drawn marks have no text baseline; pin them to the first line instead. */
+.sc-step__icon, .sc-check__icon { flex: none; display: inline-flex; align-self: flex-start; width: 12px; height: 12px; margin-top: 3px; }
+.sc-mark { display: block; flex: none; }
+.sc-step--done .sc-step__icon { color: var(--sc-text); }
 .sc-step--active .sc-step__icon { color: var(--sc-accent); }
 .sc-step--failed .sc-step__icon, .sc-step--failed .sc-step__label { color: var(--sc-negative); }
 .sc-step--pending, .sc-step--skipped { color: var(--sc-text-muted); }
@@ -539,39 +558,38 @@
 /* Neutral, not accent: a "best" cell is data emphasis, not something you can
    click. Accent stays scarce so it keeps meaning "act here". */
 .sc-compare__best { background: var(--sc-surface-2); }
+.sc-compare__yes, .sc-compare__no { display: inline-flex; vertical-align: middle; }
+.sc-compare__yes { color: var(--sc-text); }
+.sc-compare__no { color: var(--sc-text-muted); }
 .sc-compare__key th[scope="row"] { font-weight: 600; }
 
 /* checklist */
 .sc-checkgroup + .sc-checkgroup { margin-top: var(--sc-sp-12); }
 .sc-checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sc-sp-8); font-size: var(--sc-fs-ui); }
 .sc-check { display: flex; align-items: baseline; gap: var(--sc-sp-8); }
-.sc-check__icon { flex: none; width: 12px; text-align: center; }
 .sc-check__body { display: flex; flex-direction: column; gap: var(--sc-sp-2); min-width: 0; }
 .sc-check__detail { font-size: var(--sc-fs-meta); }
-.sc-check--done .sc-check__icon { color: var(--sc-positive); }
-.sc-check--blocked .sc-check__icon, .sc-check--blocked .sc-check__label { color: var(--sc-negative); }
+/* Done is the normal state, so it takes the text color; only a blocked item
+   is colored. A green tick on every row made the list a traffic light. */
+.sc-check--done .sc-check__icon { color: var(--sc-text); }
+/* The mark says blocked; the label stays readable text, not a red sentence. */
+.sc-check--blocked .sc-check__icon { color: var(--sc-negative); }
 .sc-check--todo .sc-check__icon { color: var(--sc-text-muted); }
 .sc-check--na { color: var(--sc-text-muted); }
 .sc-check--na .sc-check__label { text-decoration: line-through; }
 
 /* callout */
-.sc-callout { display: flex; gap: var(--sc-sp-12); align-items: flex-start; border-left-width: 3px; }
-.sc-callout__icon {
-  flex: none;
-  width: 18px; height: 18px;
-  display: grid; place-items: center;
-  border-radius: 50%;
-  font-size: var(--sc-fs-micro); font-weight: 600;
-  background: currentColor;
-}
-.sc-callout__icon::first-letter { color: var(--sc-bg); }
-.sc-callout__title { font-weight: 600; font-size: var(--sc-fs-ui); margin-bottom: var(--sc-sp-4); }
+/* One even border tinted by tone, a drawn mark, plain text. A thick colored
+   left rule with a filled icon disc is the stock generated alert. */
+.sc-callout { display: flex; gap: var(--sc-sp-10); align-items: flex-start; }
+.sc-callout__icon { flex: none; display: inline-flex; margin-top: 2px; }
+.sc-callout__title { font-weight: 600; font-size: var(--sc-fs-ui); margin-bottom: var(--sc-sp-2); }
 .sc-callout__body { font-size: var(--sc-fs-ui); line-height: var(--sc-lh-prose); }
-.sc-callout--info { border-left-color: var(--sc-info); color: var(--sc-info); }
-.sc-callout--note { border-left-color: var(--sc-text-muted); color: var(--sc-text-muted); }
-.sc-callout--success { border-left-color: var(--sc-positive); color: var(--sc-positive); }
-.sc-callout--warning { border-left-color: var(--sc-warning); color: var(--sc-warning); background: color-mix(in srgb, var(--sc-warning) 8%, var(--sc-surface)); }
-.sc-callout--danger { border-left-color: var(--sc-negative); color: var(--sc-negative); background: color-mix(in srgb, var(--sc-negative) 8%, var(--sc-surface)); }
+.sc-callout--info { color: var(--sc-info); }
+.sc-callout--note { color: var(--sc-text-muted); }
+.sc-callout--success { color: var(--sc-positive); }
+.sc-callout--warning { color: var(--sc-warning); border-color: color-mix(in srgb, var(--sc-warning) 35%, var(--sc-border)); background: color-mix(in srgb, var(--sc-warning) 5%, var(--sc-surface)); }
+.sc-callout--danger { color: var(--sc-negative); border-color: color-mix(in srgb, var(--sc-negative) 35%, var(--sc-border)); background: color-mix(in srgb, var(--sc-negative) 5%, var(--sc-surface)); }
 .sc-callout__title, .sc-callout__body { color: var(--sc-text); }
 
 /* citations */
@@ -631,10 +649,11 @@
 .sc-funnel__note { font-size: var(--sc-fs-micro); }
 .sc-funnel__track { background: var(--sc-surface-2); border-radius: var(--sc-radius-sm); overflow: hidden; }
 .sc-funnel__bar {
-  /* Height is the bar's own now that it carries no text. */
-  height: 24px;
-  background: linear-gradient(90deg, var(--sc-accent), color-mix(in srgb, var(--sc-accent) 62%, transparent));
-  border-radius: var(--sc-radius-sm);
+  /* Height is the bar's own now that it carries no text. A solid fill: the
+     fading gradient implied a value the bar didn't have. */
+  height: 14px;
+  background: var(--sc-accent);
+  border-radius: var(--sc-radius-xs);
   /* A stage that rounds to nothing still has to read as a bar, not as an empty
      track — otherwise "0.4%" and "no data" look identical. */
   min-width: 2%;
@@ -642,13 +661,16 @@
 }
 .sc-funnel__value { text-align: right; font-size: var(--sc-fs-meta); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .sc-funnel__rate { text-align: right; font-size: var(--sc-fs-meta); font-variant-numeric: tabular-nums; }
+.sc-funnel__drop { color: var(--sc-negative); font-weight: 600; }
 
 /* gauge */
 .sc-gauge { display: flex; align-items: baseline; gap: var(--sc-sp-10); margin-bottom: var(--sc-sp-10); }
 .sc-gauge__value { font-size: var(--sc-fs-hero); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; letter-spacing: -0.01em; }
-.sc-gauge__label { font-size: var(--sc-fs-ui); font-weight: 500; }
+.sc-gauge__label { font-size: var(--sc-fs-ui); color: var(--sc-text-muted); }
 .sc-gauge__track { position: relative; height: 8px; border-radius: 999px; background: var(--sc-surface-2); overflow: hidden; }
-.sc-gauge__band { position: absolute; top: 0; bottom: 0; background: currentColor; opacity: 0.32; }
+/* Bands stay faint; only the one holding the reading gets full presence. */
+.sc-gauge__band { position: absolute; top: 0; bottom: 0; background: currentColor; opacity: 0.16; }
+.sc-gauge__band--on { opacity: 0.5; }
 .sc-gauge__needle {
   position: absolute; top: -3px; bottom: -3px;
   width: 3px;
@@ -667,6 +689,7 @@
 .sc-treenode { font-size: var(--sc-fs-ui); }
 .sc-treenode__row { display: flex; gap: var(--sc-sp-8); align-items: baseline; padding: var(--sc-sp-4) 0; flex-wrap: wrap; }
 .sc-treenode__label { font-weight: 500; }
+.sc-treenode__mark { flex: none; align-self: center; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .sc-treenode__detail { font-size: var(--sc-fs-meta); }
 
 /* choice */
@@ -974,9 +997,10 @@
   gap: var(--sc-sp-8);
   padding: var(--sc-sp-4) var(--sc-sp-8);
   border-radius: var(--sc-radius-sm);
-  border: 1px solid var(--sc-border);
-  border-left: 2px solid var(--sc-accent);
-  background: var(--sc-surface);
+  /* The whole chip is tinted, not one edge: a colored left rule is the
+     generated-UI tell, and the source label already says where it came from. */
+  border: 1px solid color-mix(in srgb, var(--sc-accent) 35%, var(--sc-border));
+  background: color-mix(in srgb, var(--sc-accent) 5%, var(--sc-surface));
   font-size: var(--sc-fs-meta);
 }
 .sc-quote__doc { flex: none; color: var(--sc-accent); font-weight: 500; }
@@ -1044,7 +1068,8 @@
 .sc-panel { padding: var(--sc-sp-16); font-size: var(--sc-fs-ui); font-family: var(--sc-sans); }
 .sc-panel__title { font-weight: 600; font-size: var(--sc-fs-ui); margin-bottom: var(--sc-sp-12); }
 .sc-panel__section { margin-bottom: var(--sc-sp-20); }
-.sc-panel__label { font-size: var(--sc-fs-micro); text-transform: uppercase; letter-spacing: 0.04em; color: var(--sc-text-muted); margin-bottom: var(--sc-sp-8); }
+/* A group heading in sentence case and weight, not uppercase tracking. */
+.sc-panel__label { font-size: var(--sc-fs-meta); font-weight: 600; color: var(--sc-text-muted); margin-bottom: var(--sc-sp-8); }
 .sc-panel__row { display: flex; justify-content: space-between; gap: var(--sc-sp-12); font-size: var(--sc-fs-meta); padding: var(--sc-sp-2) 0; }
 
 .sc-bar { margin-bottom: var(--sc-sp-10); }

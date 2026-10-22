@@ -55,7 +55,7 @@ export function CardActions({ getText, filename, mimeType = "text/plain" }: Card
   };
 
   return (
-    <div className="sc-card__actions">
+    <div className="sc-card__actions sc-card__actions--aux">
       <button
         type="button"
         className={`sc-btn sc-btn--ghost sc-btn--sm${state === "failed" ? " sc-tone--negative" : ""}`}

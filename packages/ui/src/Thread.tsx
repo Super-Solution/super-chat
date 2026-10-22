@@ -30,6 +30,7 @@ import {
   type TurnMeta,
 } from "@zzyzxlabs/super-chat-react";
 import { CardRenderer, CardSkeleton } from "./renderer-registry.js";
+import { AttachIcon, Chevron, FileIcon, ImageIcon, StatusMark } from "./cards/icons.js";
 import { newMarkdownStream, renderMarkdown, renderMarkdownStream } from "./markdown.js";
 import { useDocumentQuotes } from "./quotes.js";
 import {
@@ -331,7 +332,6 @@ function formatMs(ms: number): string {
   return ms < 1000 ? `${Math.round(ms)}ms` : `${(ms / 1000).toFixed(1)}s`;
 }
 
-const GLYPH = { pending: "○", done: "●", failed: "✕" } as const;
 
 const mediaSrc = (source: MediaSource, mediaType?: string): string | null => {
   if (source.kind === "url") return source.url;
@@ -354,7 +354,7 @@ function MediaParts({ parts }: { parts: Extract<ContentPart, { type: "image" | "
             <img key={i} className="sc-media__img" src={src} alt="attached image" style={{ maxWidth: "min(100%, 360px)", borderRadius: 8 }} />
           ) : (
             <span key={i} className="sc-pill" title={(p.source as { id?: string }).id}>
-              🖼 attached image
+              <ImageIcon /> attached image
             </span>
           );
         }
@@ -362,7 +362,7 @@ function MediaParts({ parts }: { parts: Extract<ContentPart, { type: "image" | "
           const name = p.filename ?? (p.source.kind === "providerFile" ? p.source.id : "attachment");
           return (
             <span key={i} className="sc-pill" title={p.mediaType}>
-              📄 {name}
+              <FileIcon /> {name}
             </span>
           );
         }
@@ -415,7 +415,7 @@ function ToolActivity({
       <li key={c.callId} className="sc-tools__item">
         <div className="sc-tools__row">
           <span className="sc-tools__status" aria-hidden>
-            {state === "running" ? <span className="sc-spinner" /> : GLYPH[state]}
+            {state === "running" ? <span className="sc-spinner" /> : <StatusMark kind={state} />}
           </span>
           <code className="sc-mono">{c.name}</code>
           {result?.failure ? <span className="sc-pill sc-pill--negative">{result.failure}</span> : null}
@@ -771,7 +771,7 @@ export function Thread({ empty }: { empty?: ReactNode }) {
             bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
           }}
         >
-          <span aria-hidden>↓</span> Latest
+          <Chevron /> Latest
         </button>
       ) : null}
     </div>
@@ -932,7 +932,8 @@ export function Composer({
   // a touch device — so the picker is always offered too.
   const attachButton = (
     <label className="sc-btn sc-btn--ghost sc-btn--sm" title="Attach a file" aria-disabled={isRunning}>
-      📎
+      <AttachIcon />
+      <span className="sc-sr-only">Attach a file</span>
       <input
         type="file"
         multiple

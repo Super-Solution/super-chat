@@ -1,5 +1,40 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- **ui:** Card renderers drop the patterns that made them read as generated
+  UI. Unicode glyphs and emoji (✓ ○ ◐ ● ✕ 📎 📄 🖼) are replaced by one set of
+  drawn 12px marks in `currentColor`, in progress steps, checklists,
+  comparison cells, tool rows and attachments. Callouts lose the 3px colored
+  left rule and the filled icon disc: an even border tinted by tone, a drawn
+  icon, and no icon for `note`. The composer quote chip is tinted whole instead
+  of carrying a colored left edge. Funnel bars are solid, not a fading
+  gradient, and only the steepest drop is marked; before, every step under
+  50% was colored, which on most funnels was all of them. The gauge reading
+  stays in the text color, with only the band it falls in at full strength.
+  Tree tones mark a node with a dot instead of coloring its whole subtree.
+  Stat labels and group headings (`.sc-panel__label`) are sentence case.
+  Citation relevance pills are neutral. Done marks in checklists and progress
+  steps take the text color, so only blocked or failed items are colored.
+- **ui:** `formatValue` percentages show one decimal at most, two below 1%
+  (`8.2%`, `12%`, `0.04%`); before, every value was fixed at two. Whole
+  currency amounts of $1,000 and up drop `.00`. `formatDelta` uses a true
+  minus sign (`−4.6%`).
+- **ui:** `.sc-btn` inherits the font; buttons fell back to the browser's face.
+- **ui:** Fewer secondary labels. The email card drops its fixed "Draft email"
+  heading. Copy and Download on tables, code, markdown and documents fade in on
+  hover or focus with a mouse and stay visible on touch. Sort direction and the
+  "Latest" jump use the drawn chevron, and sorted table headers set
+  `aria-sort`.
+
+### Fixed
+
+- **ui:** `.sc-card` sets its own text color (`--sc-text`). Cards placed on a
+  dark host inherited light text onto their light surface, so table and
+  key-value text was unreadable.
+
 ## 0.4.0 (2026-10-21)
 
 ### Added

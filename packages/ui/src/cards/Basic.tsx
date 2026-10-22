@@ -20,6 +20,7 @@ import { deltaTone, formatDelta, formatValue, toneClass } from "../format.js";
 import { CodeBlock } from "../agent/CodeBlock.js";
 import { newMarkdownStream, renderMarkdown, renderMarkdownStream } from "../markdown.js";
 import { CardActions } from "./CardActions.js";
+import { Chevron, StatusMark } from "./icons.js";
 
 // Rows beyond this render behind a "Show all" toggle — a 200-row agent result
 // would otherwise turn the card into the entire scroll surface.
@@ -94,12 +95,16 @@ export function TableCardView({ spec, partial }: CardRendererProps<TableCard>) {
           <thead>
             <tr>
               {spec.columns.map((c) => (
-                <th key={c.key} style={{ textAlign: c.align ?? "left" }}>
+                <th
+                  key={c.key}
+                  style={{ textAlign: c.align ?? "left" }}
+                  aria-sort={sortBy === c.key ? (sortDir === "asc" ? "ascending" : "descending") : undefined}
+                >
                   {/* Sorting a table that is still filling would reshuffle it
                       on every row; it unlocks when the validated card lands. */}
                   <button type="button" className="sc-th-btn" onClick={() => toggle(c.key)} disabled={partial}>
                     {c.label}
-                    {sortBy === c.key ? <span aria-hidden> {sortDir === "asc" ? "↑" : "↓"}</span> : null}
+                    {sortBy === c.key ? <Chevron up={sortDir === "asc"} /> : null}
                   </button>
                 </th>
               ))}
@@ -201,8 +206,6 @@ export function TimelineCardView({ spec }: CardRendererProps<TimelineCard>) {
   );
 }
 
-const STEP_ICON: Record<string, string> = { pending: "○", active: "◐", done: "●", failed: "✕", skipped: "–" };
-
 export function ProgressCardView({ spec }: CardRendererProps<ProgressCard>) {
   const done = spec.steps.filter((s) => s.status === "done").length;
   const fraction = spec.fraction ?? (spec.steps.length ? done / spec.steps.length : 0);
@@ -222,8 +225,8 @@ export function ProgressCardView({ spec }: CardRendererProps<ProgressCard>) {
       <ul className="sc-steps">
         {spec.steps.map((s, i) => (
           <li key={i} className={`sc-step sc-step--${s.status}`}>
-            <span className="sc-step__icon" aria-hidden>
-              {STEP_ICON[s.status] ?? "○"}
+            <span className="sc-step__icon">
+              <StatusMark kind={s.status} />
             </span>
             <span className="sc-step__label">{s.label}</span>
             {s.detail ? <span className="sc-muted sc-step__detail">{s.detail}</span> : null}
