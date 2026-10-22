@@ -10,6 +10,39 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ── site shell ───────────────────────────────────────────────────────────── */
+
+/* The homepage and the panels share one top bar. The bar stays put and the
+   content below it is the scroll container, so a panel's own sticky parts
+   still stick to the right edge. */
+.site { --site-nav-h: 61px; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+.site__main { flex: 1; min-height: 0; overflow-y: auto; }
+.site .dev { flex: 1; min-height: 0; height: auto; }
+
+.sitenav {
+  flex: none;
+  border-bottom: 1px solid #e2e2dc;
+  background: #f4f4f1;
+  color: #161616;
+  font-family: "IBM Plex Sans", "Segoe UI", -apple-system, Arial, "PingFang TC", "Microsoft JhengHei", sans-serif;
+}
+.sitenav__inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; min-height: 60px; display: flex; align-items: center; gap: 32px; }
+.sitenav__brand { display: flex; align-items: center; gap: 10px; color: #161616; text-decoration: none; font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-size: 15px; font-weight: 500; }
+.sitenav__mark { display: inline-flex; gap: 3px; }
+.sitenav__mark i { width: 6px; height: 6px; background: #161616; }
+.sitenav__mark i:first-child { background: #0f766e; }
+.sitenav__links { display: flex; gap: 24px; font-size: 14px; }
+.sitenav__links a { color: #3f3f3c; text-decoration: none; }
+.sitenav__links a:hover, .sitenav__links a[aria-current="page"] { color: #0f766e; }
+.sitenav__actions { margin-left: auto; display: flex; gap: 8px; }
+.sitenav__btn { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border: 1px solid #d0d0c9; border-radius: 4px; color: #161616; text-decoration: none; font-size: 14px; }
+.sitenav__btn--primary { border-color: #161616; background: #161616; color: #ffffff; font-weight: 600; }
+.sitenav__btn:focus-visible, .sitenav__links a:focus-visible, .sitenav__brand:focus-visible { outline: 2px solid #0f766e; outline-offset: 2px; }
+@media (max-width: 900px) {
+  .sitenav__links { display: none; }
+  .sitenav__inner { gap: 16px; }
+}
+
 /* ── dev shell ────────────────────────────────────────────────────────────── */
 
 .dev { display: grid; grid-template-columns: 232px minmax(0, 1fr); height: 100dvh; overflow: hidden; }

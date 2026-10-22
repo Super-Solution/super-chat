@@ -16,7 +16,6 @@ export const CARD_SAMPLES: Record<string, CardSpec> = {
   table: {
     kind: "table",
     title: "Open support tickets",
-    caption: "Click a header to sort.",
     columns: [
       { key: "id", label: "Ticket", pill: true },
       { key: "subject", label: "Subject" },
