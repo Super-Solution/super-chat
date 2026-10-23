@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { BUILTIN_CARDS, type CardAction, type CardSpec } from "@zzyzxlabs/super-chat-core";
-import { BUILTIN_RENDERERS, CardRenderer, CardRendererProvider } from "@zzyzxlabs/super-chat-ui";
+import { BUILTIN_CARDS, type CardAction, type CardSpec } from "@super-solution/super-chat-core";
+import { BUILTIN_RENDERERS, CardRenderer, CardRendererProvider } from "@super-solution/super-chat-ui";
 import { PanelHeader, SpecSplit } from "@/components/Shell";
 import { CARD_SAMPLES } from "@/agent/card-samples";
 

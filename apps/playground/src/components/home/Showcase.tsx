@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { CardAction, CardSpec } from "@zzyzxlabs/super-chat-core";
-import { CardRenderer } from "@zzyzxlabs/super-chat-ui";
+import type { CardAction, CardSpec } from "@super-solution/super-chat-core";
+import { CardRenderer } from "@super-solution/super-chat-ui";
 import { CARD_SAMPLES } from "@/agent/card-samples";
 import styles from "./home.module.css";
 import { BUDGET_GAUGE, SIGNUP_CHART, SIGNUP_FUNNEL, SIGNUP_STATS } from "./specs";

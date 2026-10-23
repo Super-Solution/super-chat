@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CardRenderer } from "@zzyzxlabs/super-chat-ui";
+import { CardRenderer } from "@super-solution/super-chat-ui";
 import styles from "./home.module.css";
 import { useInView } from "./useInView";
 import { VENDOR_ROWS, vendorTable } from "./specs";

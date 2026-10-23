@@ -1,7 +1,7 @@
-# @zzyzxlabs/super-chat-ui
+# @super-solution/super-chat-ui
 
-Card renderers and chat primitives for [@zzyzxlabs/super-chat-core](../core/README.md) +
-[@zzyzxlabs/super-chat-react](../react/README.md). Ships a self-contained plain-CSS
+Card renderers and chat primitives for [@super-solution/super-chat-core](../core/README.md) +
+[@super-solution/super-chat-react](../react/README.md). Ships a self-contained plain-CSS
 baseline — no Tailwind, no preprocessor, no build step imposed on the host.
 
 Part of the [superchat](../../README.md) monorepo. Design tokens, breakpoints,
@@ -12,11 +12,11 @@ theming and the full component spec live in
 ## What's in here
 
 - `Thread.tsx` — the main chat surface: message list, composer, live streaming turn.
-- `cards/` — one renderer per built-in card kind (table, chart, funnel, diff, confirm, …), registered in `cards/index.ts` and validated against `@zzyzxlabs/super-chat-core`'s `BUILTIN_CARDS` (`cards/registry-sync.test.ts` keeps the two in sync).
+- `cards/` — one renderer per built-in card kind (table, chart, funnel, diff, confirm, …), registered in `cards/index.ts` and validated against `@super-solution/super-chat-core`'s `BUILTIN_CARDS` (`cards/registry-sync.test.ts` keeps the two in sync).
 - `renderer-registry.tsx` — the `CardRenderer` dispatch + provider for host-supplied renderer overrides.
 - `ContextInspector.tsx` — renders a context-build trace (what was included/truncated/dropped and why).
 - `markdown.ts`, `format.ts`, `export.ts` — supporting utilities for message rendering and card export.
-- `styles.css` — the token baseline. Import it from source (`@zzyzxlabs/super-chat-ui/styles.css`), not from `dist`.
+- `styles.css` — the token baseline. Import it from source (`@super-solution/super-chat-ui/styles.css`), not from `dist`.
 - `mobile-agent` — framework-neutral action, model-selection, loading and Orb
   contracts for native ports.
 - `mobile-agent/react-native` — RN-specific window-class, small-screen,
@@ -26,11 +26,11 @@ theming and the full component spec live in
 ## Install
 
 ```bash
-pnpm add @zzyzxlabs/super-chat-core @zzyzxlabs/super-chat-react @zzyzxlabs/super-chat-ui
+pnpm add @super-solution/super-chat-core @super-solution/super-chat-react @super-solution/super-chat-ui
 ```
 
 ```ts
-import "@zzyzxlabs/super-chat-ui/styles.css";
+import "@super-solution/super-chat-ui/styles.css";
 ```
 
 Native hosts should import only the portable contract entry:
@@ -39,12 +39,12 @@ Native hosts should import only the portable contract entry:
 import {
   SUPERCHAT_MOBILE_AGENT_ACTIONS,
   SUPERCHAT_MOBILE_AGENT_ORB,
-} from "@zzyzxlabs/super-chat-ui/mobile-agent";
+} from "@super-solution/super-chat-ui/mobile-agent";
 
 import {
   resolveSuperChatMobileAgentRNLayout,
   resolveSuperChatMobileAgentRNSkeleton,
-} from "@zzyzxlabs/super-chat-ui/mobile-agent/react-native";
+} from "@super-solution/super-chat-ui/mobile-agent/react-native";
 ```
 
 ## Loading states
@@ -67,8 +67,8 @@ Use `CardSkeleton` directly for host-managed work. Pass `hint.kind` as `media`,
 ## Develop
 
 ```bash
-pnpm --filter @zzyzxlabs/super-chat-ui build       # tsup, emits dist/
-pnpm --filter @zzyzxlabs/super-chat-ui typecheck   # tsc --noEmit
+pnpm --filter @super-solution/super-chat-ui build       # tsup, emits dist/
+pnpm --filter @super-solution/super-chat-ui typecheck   # tsc --noEmit
 pnpm vitest run packages/ui             # unit tests (jsdom — no real layout)
 pnpm test:rwd                           # Playwright — real layout at 360/390/768/1280px
 ```

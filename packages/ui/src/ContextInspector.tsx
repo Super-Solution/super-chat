@@ -7,8 +7,8 @@
 // reading a log. Every framework can build a request; being able to SEE the
 // request is what makes one debuggable.
 
-import { useContextTrace, useSkills, useTools } from "@zzyzxlabs/super-chat-react";
-import type { TraceEntry } from "@zzyzxlabs/super-chat-core";
+import { useContextTrace, useSkills, useTools } from "@super-solution/super-chat-react";
+import type { TraceEntry } from "@super-solution/super-chat-core";
 
 const STATUS_TONE: Record<TraceEntry["status"], string> = {
   included: "positive",

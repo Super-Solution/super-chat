@@ -7,8 +7,8 @@ export default defineConfig({
   resolve: {
     // Point at source, not dist, so tests never run against a stale build.
     alias: {
-      "@zzyzxlabs/super-chat-core": r("./packages/core/src/index.ts"),
-      "@zzyzxlabs/super-chat-react": r("./packages/react/src/index.ts"),
+      "@super-solution/super-chat-core": r("./packages/core/src/index.ts"),
+      "@super-solution/super-chat-react": r("./packages/react/src/index.ts"),
     },
   },
   esbuild: { jsx: "automatic" },

@@ -101,9 +101,9 @@ describe("SuperChat Mobile Agent contract", () => {
 
   it("remains portable and is exported as its own build entry", () => {
     const source = read("./mobile-agent.ts");
-    expect(source).not.toMatch(/from ["'](?:react|react-native|@zzyzxlabs)/);
+    expect(source).not.toMatch(/from ["'](?:react|react-native|@super-solution)/);
     const rnSource = read("./mobile-agent-rn.ts");
-    expect(rnSource).not.toMatch(/from ["'](?:react|react-native|@zzyzxlabs)/);
+    expect(rnSource).not.toMatch(/from ["'](?:react|react-native|@super-solution)/);
     const pkg = JSON.parse(read("../../package.json")) as { exports: Record<string, unknown> };
     expect(pkg.exports["./mobile-agent"]).toBeDefined();
     expect(pkg.exports["./mobile-agent/react-native"]).toBeDefined();

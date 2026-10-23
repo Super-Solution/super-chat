@@ -16,8 +16,8 @@ import {
   useAppState,
   useContextTrace,
   useThread,
-} from "@zzyzxlabs/super-chat-react";
-import { BUILTIN_RENDERERS, CardRendererProvider, Composer, Thread } from "@zzyzxlabs/super-chat-ui";
+} from "@super-solution/super-chat-react";
+import { BUILTIN_RENDERERS, CardRendererProvider, Composer, Thread } from "@super-solution/super-chat-ui";
 import {
   ContextBuilder,
   ToolRegistry,
@@ -25,7 +25,7 @@ import {
   createAppStateSource,
   createBuiltinTools,
   type AppStateBinding,
-} from "@zzyzxlabs/super-chat-core";
+} from "@super-solution/super-chat-core";
 import { PanelHeader } from "@/components/Shell";
 import { buildProvider, buildTransport, cards, skills } from "@/agent/setup";
 

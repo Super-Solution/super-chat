@@ -14,7 +14,7 @@ import {
   QUOTES_METADATA_KEY,
   type Transport,
   type TransportRequest,
-} from "@zzyzxlabs/super-chat-core";
+} from "@super-solution/super-chat-core";
 import { AgentClient } from "./client.js";
 
 function mockTransport(responses: unknown[], opts: { delayMs?: number } = {}): Transport {
@@ -61,7 +61,7 @@ const flush = () => new Promise((r) => setTimeout(r, 0));
 
 describe("AgentClient + ThreadStore", () => {
   it("passes the full metering controls through to runAgent", async () => {
-    const records: import("@zzyzxlabs/super-chat-core").MeteringRecord[] = [];
+    const records: import("@super-solution/super-chat-core").MeteringRecord[] = [];
     const client = makeClient([respondText("metered")], {
       meter: { record: (record) => { records.push(record); } },
       meteringMetadata: { tenantId: "tenant-1" },

@@ -3,7 +3,7 @@
 // Centralised because a table cell and a stat tile showing the same number in
 // different formats is the fastest way to make an interface look untrustworthy.
 
-import type { CardValueFormat } from "@zzyzxlabs/super-chat-core";
+import type { CardValueFormat } from "@super-solution/super-chat-core";
 
 const compact = new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 2 });
 const plain = new Intl.NumberFormat(undefined, { maximumFractionDigits: 6 });

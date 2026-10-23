@@ -32,7 +32,7 @@ import {
   createDocumentTools,
   createEmailDraftTool,
   createLocalDocumentStore,
-} from "@zzyzxlabs/super-chat-core";
+} from "@super-solution/super-chat-core";
 import { createDemoTransport } from "./demo-transport";
 import { DOMAIN_TOOLS } from "./tools";
 import { LEGAL_TOOLS, MARKETING_TOOLS } from "./tools-domains";

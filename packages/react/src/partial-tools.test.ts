@@ -12,7 +12,7 @@ import {
   type Provider,
   type StreamEvent,
   type Transport,
-} from "@zzyzxlabs/super-chat-core";
+} from "@super-solution/super-chat-core";
 import { AgentClient } from "./client.js";
 
 const ARGS = {

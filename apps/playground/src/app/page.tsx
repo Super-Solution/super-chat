@@ -7,7 +7,7 @@ import {
   CardRenderer,
   CardRendererProvider,
   type CardRendererMap,
-} from "@zzyzxlabs/super-chat-ui";
+} from "@super-solution/super-chat-ui";
 import { playgroundPath } from "@/agent/deployment";
 import { REPO_URL } from "@/components/SiteNav";
 import { LiveSurface } from "@/components/home/LiveSurface";
@@ -23,10 +23,10 @@ import styles from "@/components/home/home.module.css";
 // The custom kind registers beside the built-ins, exactly as a host would.
 const RENDERERS: CardRendererMap = { ...BUILTIN_RENDERERS, vendorQuote: VendorQuoteView };
 
-const INSTALL = "pnpm add @zzyzxlabs/super-chat-core @zzyzxlabs/super-chat-react @zzyzxlabs/super-chat-ui";
+const INSTALL = "pnpm add @super-solution/super-chat-core @super-solution/super-chat-react @super-solution/super-chat-ui";
 
 const PROXY_CODE = `// app/api/agent/route.ts
-import { createProxyHandler } from "@zzyzxlabs/super-chat-core";
+import { createProxyHandler } from "@super-solution/super-chat-core";
 
 export const POST = createProxyHandler({
   providers: {
@@ -62,7 +62,7 @@ function InstallCommand() {
   return (
     <div className={styles.install}>
       <span aria-hidden="true">$</span>
-      <code>pnpm add @zzyzxlabs/super-chat-ui</code>
+      <code>pnpm add @super-solution/super-chat-ui</code>
       <button
         type="button"
         onClick={() => {
@@ -233,7 +233,7 @@ export default function Home() {
               <div><span className={styles.mono}>superchat</span><small>Apache-2.0 · v0.4.0</small><small>Sample data on this site is synthetic.</small></div>
               <div><strong>Library</strong><a href="#cards">Cards</a><a href="#materials">Materials</a><a href="#backend">Backend</a><a href="#flavors">Flavors</a></div>
               <div><strong>Build</strong><Link href="/install">Install</Link><Link href="/docs">Guide</Link><Link href={playgroundPath("/cards")}>Playground</Link><a href={`${REPO_URL}/blob/main/CHANGELOG.md`}>Changelog</a></div>
-              <div><strong>Project</strong><a href={REPO_URL}>GitHub</a><a href="https://www.npmjs.com/package/@zzyzxlabs/super-chat-core">npm</a><a href={`${REPO_URL}/blob/main/LICENSE`}>License</a></div>
+              <div><strong>Project</strong><a href={REPO_URL}>GitHub</a><a href="https://www.npmjs.com/package/@super-solution/super-chat-core">npm</a><a href={`${REPO_URL}/blob/main/LICENSE`}>License</a></div>
             </div>
           </div>
         </footer>

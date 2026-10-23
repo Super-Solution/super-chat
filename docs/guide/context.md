@@ -13,7 +13,7 @@ problem. It isn't.
 ## Build one
 
 ```ts
-import { ContextBuilder } from "@zzyzxlabs/super-chat-core";
+import { ContextBuilder } from "@super-solution/super-chat-core";
 
 const contextBuilder = new ContextBuilder({
   identity: "You are a support agent for Acme. Today is 20 August 2026.",
@@ -49,7 +49,7 @@ know that" becomes a thing you read rather than a thing you guess.
 In React you don't have to build this yourself — the runtime emits it:
 
 ```tsx
-import { ContextInspector } from "@zzyzxlabs/super-chat-ui";
+import { ContextInspector } from "@super-solution/super-chat-ui";
 <ContextInspector />        // renders the trace from the current run
 ```
 
@@ -86,7 +86,7 @@ Three come built in:
 import {
   createMemorySource, createLocalMemoryStore,
   createRetrievalSource, createKeywordRetriever,
-} from "@zzyzxlabs/super-chat-core";
+} from "@super-solution/super-chat-core";
 
 const memoryStore = createLocalMemoryStore("myapp:memory");
 
@@ -104,7 +104,7 @@ sources: [
 Writing your own is the whole extension point:
 
 ```ts
-import { estimateTokens, type ContextSource } from "@zzyzxlabs/super-chat-core";
+import { estimateTokens, type ContextSource } from "@super-solution/super-chat-core";
 
 const ticketSource: ContextSource = {
   id: "open-tickets",

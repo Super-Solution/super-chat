@@ -24,7 +24,7 @@ import {
   type AgentAttachment,
   type OrbVariant,
   type TodoItem,
-} from "@zzyzxlabs/super-chat-ui";
+} from "@super-solution/super-chat-ui";
 import { PanelHeader } from "@/components/Shell";
 
 const REASONING = [

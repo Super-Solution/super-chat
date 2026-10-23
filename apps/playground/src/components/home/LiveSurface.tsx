@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { PlanProgress, ThinkingState, type PlanStepStatus } from "@zzyzxlabs/super-chat-ui";
+import { PlanProgress, ThinkingState, type PlanStepStatus } from "@super-solution/super-chat-ui";
 import styles from "./home.module.css";
 import { prefersReducedMotion, useInView } from "./useInView";
 

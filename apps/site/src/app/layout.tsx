@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import "@zzyzxlabs/super-chat-ui/styles.css";
+import "@super-solution/super-chat-ui/styles.css";
 import "../../../playground/src/app/globals.css";
 import { Shell } from "@/components/Shell";
 import { SITE_FONTS } from "@/components/site-fonts";

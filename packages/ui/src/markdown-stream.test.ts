@@ -7,8 +7,8 @@ import { newMarkdownStream, renderMarkdown, renderMarkdownStream, type MarkdownS
 // and quotes included: whatever it renders in a frame went through splitBlocks
 // in that frame, so this measures the work, not the cache's bookkeeping.
 const split = vi.hoisted(() => ({ chars: 0 }));
-vi.mock("@zzyzxlabs/super-chat-core", async (importOriginal) => {
-  const core = await importOriginal<typeof import("@zzyzxlabs/super-chat-core")>();
+vi.mock("@super-solution/super-chat-core", async (importOriginal) => {
+  const core = await importOriginal<typeof import("@super-solution/super-chat-core")>();
   return {
     ...core,
     splitBlocks: (src: string) => {

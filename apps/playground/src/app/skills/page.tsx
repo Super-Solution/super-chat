@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ContextBuilder, scoreSkill, userMessage, type BuiltContext } from "@zzyzxlabs/super-chat-core";
+import { ContextBuilder, scoreSkill, userMessage, type BuiltContext } from "@super-solution/super-chat-core";
 import { PanelHeader } from "@/components/Shell";
 import { buildContextBuilder, skills } from "@/agent/setup";
 

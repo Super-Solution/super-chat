@@ -5,7 +5,7 @@
 // reload — a chart that reshuffles each render makes it impossible to tell a
 // rendering bug from new data.
 
-import { withCard, type ToolDefinition } from "@zzyzxlabs/super-chat-core";
+import { withCard, type ToolDefinition } from "@super-solution/super-chat-core";
 
 const INSTRUMENTS = [
   { symbol: "SUI", name: "Sui", venue: "crypto", base: 3.42 },

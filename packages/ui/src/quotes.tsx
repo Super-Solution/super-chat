@@ -15,7 +15,7 @@
 // composer integration.
 
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
-import type { DocumentQuoteRef } from "@zzyzxlabs/super-chat-core";
+import type { DocumentQuoteRef } from "@super-solution/super-chat-core";
 
 export type QuoteBus = {
   quotes: DocumentQuoteRef[];

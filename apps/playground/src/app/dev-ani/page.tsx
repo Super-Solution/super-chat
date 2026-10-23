@@ -31,7 +31,7 @@ import {
   type PlanStep,
   type PlanStepStatus,
   type TodoItem,
-} from "@zzyzxlabs/super-chat-ui";
+} from "@super-solution/super-chat-ui";
 import { PanelHeader } from "@/components/Shell";
 
 /* ── shared demo scaffolding ─────────────────────────────────────────────── */

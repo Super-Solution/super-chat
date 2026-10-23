@@ -10,7 +10,7 @@
 //     what the user actually chose.
 
 import { useState } from "react";
-import type { ChoiceCard, ConfirmCard, FormCard, FormField } from "@zzyzxlabs/super-chat-core";
+import type { ChoiceCard, ConfirmCard, FormCard, FormField } from "@super-solution/super-chat-core";
 import type { CardRendererProps } from "../renderer-registry.js";
 import { formatValue, toneClass } from "../format.js";
 

@@ -12,8 +12,8 @@ import {
   type CardSpec,
   type PartialToolCall,
   type Transport,
-} from "@zzyzxlabs/super-chat-core";
-import { AgentClient, AgentProvider } from "@zzyzxlabs/super-chat-react";
+} from "@super-solution/super-chat-core";
+import { AgentClient, AgentProvider } from "@super-solution/super-chat-react";
 import { CardRenderer, CardRendererProvider, type CardRendererMap } from "../renderer-registry.js";
 import { LiveTurn } from "../Thread.js";
 import { BUILTIN_RENDERERS } from "./index.js";

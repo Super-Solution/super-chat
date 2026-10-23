@@ -5,7 +5,7 @@
 // vendor decision, `checklist` a compliance review, `citations` legal authority,
 // `funnel` a hiring pipeline, `tree` a document outline.
 
-import type { CardSpec } from "@zzyzxlabs/super-chat-core";
+import type { CardSpec } from "@super-solution/super-chat-core";
 
 const day = 86_400_000;
 const now = Date.UTC(2026, 7, 3);

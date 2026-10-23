@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BUILTIN_CARDS } from "@zzyzxlabs/super-chat-core";
+import { BUILTIN_CARDS } from "@super-solution/super-chat-core";
 import { BUILTIN_RENDERERS } from "./index.js";
 
 describe("card registry / renderer sync", () => {

@@ -8,9 +8,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@zzyzxlabs/super-chat-core": "workspace:*",
-    "@zzyzxlabs/super-chat-react": "workspace:*",
-    "@zzyzxlabs/super-chat-ui": "workspace:*",
+    "@super-solution/super-chat-core": "workspace:*",
+    "@super-solution/super-chat-react": "workspace:*",
+    "@super-solution/super-chat-ui": "workspace:*",
     "marked": "16.4.0",
     "next": "^15.1.3",
     "react": "^19.0.0",

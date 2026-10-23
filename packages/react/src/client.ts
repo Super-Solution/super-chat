@@ -40,7 +40,7 @@ import {
   QUOTES_METADATA_KEY,
   type DocumentQuoteRef,
   type DocumentStore,
-} from "@zzyzxlabs/super-chat-core";
+} from "@super-solution/super-chat-core";
 import { Store } from "./store.js";
 
 export type ThreadState = {

@@ -1,8 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import type { CardSpec } from "@zzyzxlabs/super-chat-core";
-import { CardRenderer, ThinkingState } from "@zzyzxlabs/super-chat-ui";
+import type { CardSpec } from "@super-solution/super-chat-core";
+import { CardRenderer, ThinkingState } from "@super-solution/super-chat-ui";
 import styles from "./home.module.css";
 import * as S from "./specs";
 

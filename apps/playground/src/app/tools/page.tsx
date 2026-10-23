@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useSyncExternalStore } from "react";
-import { McpClient, createHttpTransport, createMcpSkill, importMcpTools } from "@zzyzxlabs/super-chat-core";
+import { McpClient, createHttpTransport, createMcpSkill, importMcpTools } from "@super-solution/super-chat-core";
 import { PanelHeader } from "@/components/Shell";
 import { skills, toolRegistry } from "@/agent/setup";
 import { createDemoMcpTransport } from "@/agent/demo-mcp";

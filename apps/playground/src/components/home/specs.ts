@@ -1,7 +1,7 @@
 // Card specs for the homepage. Synthetic data, kept short so a card reads
 // at a glance inside a wall tile; the full samples live in card-samples.ts.
 
-import type { CardSpec } from "@zzyzxlabs/super-chat-core";
+import type { CardSpec } from "@super-solution/super-chat-core";
 
 const weeks = Array.from({ length: 13 }, (_, i) => `W${i + 1}`);
 const signups = [150, 158, 162, 174, 170, 188, 196, 204, 212, 220, 230, 238, 246];

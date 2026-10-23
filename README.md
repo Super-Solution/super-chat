@@ -7,11 +7,11 @@ gives the agent a **flexible visual vocabulary** to answer with.
 Not a chat app. The thing chat apps leave to you.
 
 ```bash
-npm install @zzyzxlabs/super-chat-core @zzyzxlabs/super-chat-react @zzyzxlabs/super-chat-ui
+npm install @super-solution/super-chat-core @super-solution/super-chat-react @super-solution/super-chat-ui
 ```
 
 ```ts
-import "@zzyzxlabs/super-chat-ui/styles.css";
+import "@super-solution/super-chat-ui/styles.css";
 ```
 
 `core` is isomorphic and depends on neither React nor an LLM SDK — a server,
@@ -19,9 +19,9 @@ CLI or worker installs it alone.
 
 | package | what it is |
 | --- | --- |
-| [`@zzyzxlabs/super-chat-core`](packages/core/README.md) | provider-agnostic engine — no React, isomorphic |
-| [`@zzyzxlabs/super-chat-react`](packages/react/README.md) | thread state, run control, card actions |
-| [`@zzyzxlabs/super-chat-ui`](packages/ui/README.md) | card renderers, chat primitives, context inspector, portable Mobile Agent assets |
+| [`@super-solution/super-chat-core`](packages/core/README.md) | provider-agnostic engine — no React, isomorphic |
+| [`@super-solution/super-chat-react`](packages/react/README.md) | thread state, run control, card actions |
+| [`@super-solution/super-chat-ui`](packages/ui/README.md) | card renderers, chat primitives, context inspector, portable Mobile Agent assets |
 | [`apps/playground`](apps/playground/README.md) | Three product-shaped agent experiences plus inspectable dev panels, **no API key needed** |
 
 **Try it without a key first.** The playground runs the real adapter, runtime,

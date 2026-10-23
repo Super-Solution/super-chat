@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AgentClient, AgentProvider, useAgentClient, useAgentState, useAttachments, useJobs, useThread, useThreadList } from "@zzyzxlabs/super-chat-react";
-import { BUILTIN_RENDERERS, CardRendererProvider, ContextInspector, Composer, DocumentQuoteProvider, Thread } from "@zzyzxlabs/super-chat-ui";
+import { AgentClient, AgentProvider, useAgentClient, useAgentState, useAttachments, useJobs, useThread, useThreadList } from "@super-solution/super-chat-react";
+import { BUILTIN_RENDERERS, CardRendererProvider, ContextInspector, Composer, DocumentQuoteProvider, Thread } from "@super-solution/super-chat-ui";
 import {
   ToolRegistry,
   createGenerateImageTool,
@@ -10,7 +10,7 @@ import {
   type RunEvent,
   type RunMode,
   type StoredFile,
-} from "@zzyzxlabs/super-chat-core";
+} from "@super-solution/super-chat-core";
 import {
   MODELS,
   PROVIDER_PROFILES,
