@@ -1,0 +1,280 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--sc-bg);
+  color: var(--sc-text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── site shell ───────────────────────────────────────────────────────────── */
+
+/* The homepage and the panels share one top bar. The bar stays put and the
+   content below it is the scroll container, so a panel's own sticky parts
+   still stick to the right edge. */
+.site { --site-nav-h: 61px; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+.site__main { flex: 1; min-height: 0; overflow-y: auto; }
+.site .dev { flex: 1; min-height: 0; height: auto; }
+
+.sitenav {
+  flex: none;
+  border-bottom: 1px solid #e2e2dc;
+  background: #f4f4f1;
+  color: #161616;
+  font-family: "IBM Plex Sans", "Segoe UI", -apple-system, Arial, "PingFang TC", "Microsoft JhengHei", sans-serif;
+}
+.sitenav__inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; min-height: 60px; display: flex; align-items: center; gap: 32px; }
+.sitenav__brand { display: flex; align-items: center; gap: 10px; color: #161616; text-decoration: none; font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-size: 15px; font-weight: 500; }
+.sitenav__mark { display: inline-flex; gap: 3px; }
+.sitenav__mark i { width: 6px; height: 6px; background: #161616; }
+.sitenav__mark i:first-child { background: #0f766e; }
+.sitenav__links { display: flex; gap: 24px; font-size: 14px; }
+.sitenav__links a { color: #3f3f3c; text-decoration: none; }
+.sitenav__links a:hover, .sitenav__links a[aria-current="page"] { color: #0f766e; }
+.sitenav__actions { margin-left: auto; display: flex; gap: 8px; }
+.sitenav__btn { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border: 1px solid #d0d0c9; border-radius: 4px; color: #161616; text-decoration: none; font-size: 14px; }
+.sitenav__btn--primary { border-color: #161616; background: #161616; color: #ffffff; font-weight: 600; }
+.sitenav__btn:focus-visible, .sitenav__links a:focus-visible, .sitenav__brand:focus-visible { outline: 2px solid #0f766e; outline-offset: 2px; }
+@media (max-width: 900px) {
+  .sitenav__links { display: none; }
+  .sitenav__inner { gap: 16px; }
+}
+
+/* ── dev shell ────────────────────────────────────────────────────────────── */
+
+.dev { display: grid; grid-template-columns: 232px minmax(0, 1fr); height: 100dvh; overflow: hidden; }
+.dev--experience { grid-template-columns: minmax(0, 1fr); }
+.dev--experience .dev__main { height: 100dvh; }
+
+.dev__nav {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--sc-border);
+  background: var(--sc-surface);
+  overflow-y: auto;
+  padding: 16px 12px;
+  gap: 4px;
+}
+.dev__brand { font-weight: 600; font-size: 14px; padding: 0 8px 14px; letter-spacing: -0.01em; }
+.dev__brand span { display: block; font-weight: 400; font-size: 11px; color: var(--sc-text-muted); margin-top: 2px; }
+
+.dev__link {
+  display: block;
+  padding: 7px 9px;
+  border-radius: 7px;
+  text-decoration: none;
+  color: var(--sc-text);
+  border: 1px solid transparent;
+}
+.dev__link:hover { background: var(--sc-surface-2); }
+.dev__link--on { background: var(--sc-surface-2); border-color: var(--sc-border); }
+.dev__link--on .dev__link-label { color: var(--sc-accent); }
+.dev__link-label { display: block; font-size: 13px; font-weight: 500; }
+.dev__link-hint { display: block; font-size: 11px; color: var(--sc-text-muted); margin-top: 1px; line-height: 1.35; }
+
+.dev__foot { margin-top: auto; padding: 14px 8px 0; display: grid; gap: 3px; }
+.dev__foot code { font-size: 10px; color: var(--sc-text-muted); }
+
+.dev__main { overflow-y: auto; min-width: 0; }
+/* The panel content box is the outermost query container the kit's components
+   get in this app. Panels render cards and composers outside a Thread, and
+   those measure the nearest container above them — without one they would
+   stay at desktop sizing however narrow the window gets. */
+.dev__page { container-type: inline-size; padding: 26px 30px 80px; max-width: 1080px; }
+
+.dev__head { margin-bottom: 22px; }
+.dev__title { font-size: 19px; margin: 0 0 6px; letter-spacing: -0.015em; }
+.dev__lede { margin: 0; font-size: 13px; line-height: 1.6; color: var(--sc-text-muted); max-width: 68ch; }
+
+.dev__section { margin-top: 34px; }
+.dev__section-title { font-size: 13px; font-weight: 600; margin: 0 0 4px; }
+.dev__section-note { font-size: 12px; color: var(--sc-text-muted); margin: 0 0 14px; line-height: 1.55; max-width: 68ch; }
+
+.dev__split { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: 16px; align-items: start; margin-bottom: 20px; }
+.dev__spec { min-width: 0; }
+.dev__spec-label { font-size: 11px; font-family: var(--sc-mono); color: var(--sc-text-muted); margin-bottom: 5px; }
+.dev__code { margin: 0; max-height: 340px; overflow: auto; font-size: 11px; }
+/* Cards here are rendered outside a Thread, so this is the query container
+   they size their own padding against. Without it they keep desktop padding
+   at any width — a card cannot measure itself. */
+.dev__preview { container-type: inline-size; min-width: 0; }
+.dev__preview > .sc-card:first-child { margin-top: 0; }
+
+/* Below the sidebar's width the nav becomes a scrolling strip along the top
+   rather than disappearing. Hiding it outright — which is what this rule used
+   to do — left a phone on whichever panel it happened to land on with no way
+   to reach any other one. P2 is "readable, not invested in", but a shell with
+   no navigation is not a lower tier of working, it is broken.
+
+   A strip, not a drawer: a drawer needs open state, a trigger, focus
+   management and an escape route, which is real work for a panel set nobody
+   is meant to browse on a phone. Horizontal scroll costs none of that. */
+@media (max-width: 900px) {
+  .dev { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .dev__nav {
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-right: 0;
+    border-bottom: 1px solid var(--sc-border);
+    scrollbar-width: none;
+  }
+  .dev__nav::-webkit-scrollbar { display: none; }
+  .dev__nav nav { display: flex; gap: 6px; }
+  .dev__brand { padding: 0 10px 0 0; white-space: nowrap; }
+  /* The panel title already says where you are, so the per-link hints and the
+     package footnotes are the first things to go. */
+  .dev__brand span,
+  .dev__foot,
+  .dev__link-hint { display: none; }
+  .dev__link { flex: none; white-space: nowrap; padding: 7px 10px; }
+  .dev__split { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ── shared bits ──────────────────────────────────────────────────────────── */
+
+.dev__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+
+.dev__tile {
+  display: block;
+  padding: 14px;
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius);
+  background: var(--sc-surface);
+  text-decoration: none;
+  color: var(--sc-text);
+}
+.dev__tile:hover { border-color: var(--sc-accent); }
+.dev__tile h3 { margin: 0 0 5px; font-size: 13px; }
+.dev__tile p { margin: 0; font-size: 12px; color: var(--sc-text-muted); line-height: 1.5; }
+.dev__tile code { font-size: 11px; }
+
+.dev__row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.dev__input {
+  flex: 1;
+  min-width: 220px;
+  padding: 8px 11px;
+  border-radius: var(--sc-radius-sm);
+  border: 1px solid var(--sc-border);
+  background: var(--sc-bg);
+  color: var(--sc-text);
+  font: inherit;
+  font-size: 13px;
+}
+.dev__input:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: -1px; }
+
+.dev__toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; }
+
+.dev__kindnav { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 20px; }
+.dev__kindnav a {
+  font-size: 11px;
+  font-family: var(--sc-mono);
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--sc-border);
+  background: var(--sc-surface);
+  color: var(--sc-text-muted);
+  text-decoration: none;
+}
+.dev__kindnav a:hover { border-color: var(--sc-accent); color: var(--sc-accent); }
+
+.dev__kind { scroll-margin-top: 16px; padding-top: 6px; }
+.dev__kind-head { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; margin-bottom: 8px; }
+.dev__kind-name { font-family: var(--sc-mono); font-size: 13px; font-weight: 600; }
+.dev__kind-summary { font-size: 12px; color: var(--sc-text-muted); line-height: 1.5; margin: 0 0 10px; max-width: 72ch; }
+
+/* run panel */
+/* Height comes from .dev__main, which the shell grid has already bounded —
+   not from the window, which stopped being the same thing once the nav
+   moved to a top strip on narrow screens. */
+.dev__run { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 0; height: 100%; }
+.dev__runmain { display: flex; flex-direction: column; min-width: 0; border-right: 1px solid var(--sc-border); }
+.dev__runside { overflow-y: auto; }
+.dev__runbar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--sc-border);
+}
+.dev__select {
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--sc-border);
+  background: var(--sc-bg);
+  color: var(--sc-text);
+  font: inherit;
+  font-size: 12px;
+}
+.dev__banner { margin: 0; padding: 8px 16px; font-size: 12px; line-height: 1.5; border-bottom: 1px solid var(--sc-border); background: color-mix(in srgb, var(--sc-info) 12%, transparent); color: var(--sc-info); }
+
+.dev__events { padding: 14px 16px; }
+.dev__event {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 11px;
+  font-family: var(--sc-mono);
+  border-bottom: 1px solid color-mix(in srgb, var(--sc-border) 50%, transparent);
+}
+.dev__event-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 5px; background: var(--sc-text-muted); }
+.dev__event--tool .dev__event-dot { background: var(--sc-accent); }
+.dev__event--card .dev__event-dot { background: var(--sc-positive); }
+.dev__event--user .dev__event-dot { background: var(--sc-warning); }
+.dev__event--error .dev__event-dot { background: var(--sc-negative); }
+.dev__event-body { min-width: 0; overflow-wrap: anywhere; }
+.dev__event-detail { color: var(--sc-text-muted); }
+
+@media (max-width: 900px) {
+  .dev__run { grid-template-columns: minmax(0, 1fr); }
+  .dev__runside { display: none; }
+}
+
+.dev__prompts { display: grid; gap: 6px; max-width: 520px; margin: 0 auto; }
+.dev__prompt {
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--sc-border);
+  background: var(--sc-bg);
+  color: var(--sc-text);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.45;
+  cursor: pointer;
+}
+.dev__prompt:hover { border-color: var(--sc-accent); }
+.dev__prompt strong { display: block; margin-bottom: 2px; }
+.dev__prompt span { color: var(--sc-text-muted); }
+
+.dev__score { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.dev__scorebar { flex: 1; height: 4px; border-radius: 999px; background: var(--sc-surface-2); overflow: hidden; max-width: 130px; }
+.dev__scorefill { height: 100%; background: var(--sc-accent); }
+
+/* animation catalog (/dev-ani) — one tile per motion, name + timing in the foot */
+.dev__anigrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.dev__ani {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius);
+  background: var(--sc-surface);
+}
+.dev__ani-demo { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 44px; }
+.dev__ani-foot { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.dev__ani-name { font-size: 11px; font-weight: 600; }
+.dev__ani-timing { font-size: 10px; color: var(--sc-text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* The plan is shown at two widths at once, to make the container query the
+   point: the narrow copy compacts on its own measurement, not the window's. */
+.dev__planrow { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 900px) {
+  .dev__planrow { grid-template-columns: minmax(0, 1fr); }
+}
