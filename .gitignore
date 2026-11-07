@@ -19,3 +19,6 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
+
+# local Claude Code state
+.claude/
