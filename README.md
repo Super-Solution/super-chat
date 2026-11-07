@@ -15,12 +15,18 @@ import "@supersolutions/super-chat-ui/styles.css";
 ```
 
 `core` is isomorphic and depends on neither React nor an LLM SDK — a server,
-CLI or worker installs it alone.
+CLI or worker installs it alone. The packages are layered and only depend
+downward: `core` ← `client` / `server` / `ui-core` ← `react` ← `ui`. Install
+only the layers you need (for example `core` + `server` for a headless proxy,
+or `core` + `client` for a non-React front end).
 
 | package | what it is |
 | --- | --- |
 | [`@supersolutions/super-chat-core`](packages/core/README.md) | provider-agnostic engine — no React, isomorphic |
-| [`@supersolutions/super-chat-react`](packages/react/README.md) | thread state, run control, card actions |
+| [`@supersolutions/super-chat-client`](packages/client/README.md) | framework-agnostic `AgentClient` and store — threads, run control, no React |
+| [`@supersolutions/super-chat-server`](packages/server/README.md) | `createProxyHandler` — the allowlisting BFF route for Next.js, Hono, Workers |
+| [`@supersolutions/super-chat-ui-core`](packages/ui-core/README.md) | headless UI logic — markdown, formatting, export — no React or DOM |
+| [`@supersolutions/super-chat-react`](packages/react/README.md) | React bindings over `client`: hooks, thread state, card actions |
 | [`@supersolutions/super-chat-ui`](packages/ui/README.md) | card renderers, chat primitives, context inspector, portable Mobile Agent assets |
 | [`apps/playground`](apps/playground/README.md) | Three product-shaped agent experiences plus inspectable dev panels, **no API key needed** |
 
@@ -305,6 +311,8 @@ The server half is ~10 lines and **allowlists paths**, because a proxy that
 forwards any path is an open relay for your API key:
 
 ```ts
+import { createProxyHandler } from "@supersolutions/super-chat-server";
+
 export const POST = createProxyHandler({
   providers: {
     openai: {

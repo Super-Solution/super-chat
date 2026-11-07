@@ -16,9 +16,16 @@ import type {
   TimelineCard,
 } from "@supersolutions/super-chat-core";
 import type { CardRendererProps } from "../renderer-registry.js";
-import { deltaTone, formatDelta, formatValue, toneClass } from "../format.js";
 import { CodeBlock } from "../agent/CodeBlock.js";
-import { newMarkdownStream, renderMarkdown, renderMarkdownStream } from "../markdown.js";
+import {
+  deltaTone,
+  formatDelta,
+  formatValue,
+  newMarkdownStream,
+  renderMarkdown,
+  renderMarkdownStream,
+  toneClass,
+} from "@supersolutions/super-chat-ui-core";
 import { CardActions } from "./CardActions.js";
 import { Chevron, StatusMark } from "./icons.js";
 

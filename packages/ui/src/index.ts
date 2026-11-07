@@ -38,8 +38,6 @@ export { EmailCardView, type EmailCardViewProps } from "./cards/Email.js";
 
 export { Thread, Composer, MessageView, LiveTurn } from "./Thread.js";
 export { ContextInspector } from "./ContextInspector.js";
-export { formatValue, formatDelta, toneClass, deltaTone } from "./format.js";
-export { threadToMarkdown, downloadThread } from "./export.js";
 export { ToastProvider, ConnectionBanner, useToast, type Toast } from "./Toast.js";
 export { DocumentQuoteProvider, useDocumentQuotes, type QuoteBus } from "./quotes.js";
 

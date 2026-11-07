@@ -25,7 +25,6 @@ export { DEFAULT_RETRY, isMultipartBody } from "./transport/types.js";
 export { bytesToBase64, base64ToBytes } from "./transport/binary.js";
 export { createDirectTransport, buildUrl, type DirectTransportConfig } from "./transport/direct.js";
 export { createProxyTransport, type ProxyTransportConfig, type ProxyEnvelope, type SerializedMultipartBody } from "./transport/proxy.js";
-export { createProxyHandler, pathMatches, type ProxyHandlerConfig, type ProxyProviderConfig } from "./transport/server.js";
 export { withRetry, backoffDelay, errorFromResponse, parseRetryAfter } from "./transport/retry.js";
 export { parseSSE, parseSSEJson, SSEDecoder, type SSEMessage } from "./transport/sse.js";
 

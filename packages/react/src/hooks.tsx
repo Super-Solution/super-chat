@@ -27,7 +27,7 @@ import {
   type ThreadMeta,
   type ToolDefinition,
 } from "@supersolutions/super-chat-core";
-import { AgentClient, type AgentClientConfig, type ThreadState } from "./client.js";
+import { AgentClient, type AgentClientConfig, type ThreadState } from "@supersolutions/super-chat-client";
 
 const AgentContext = createContext<AgentClient | null>(null);
 

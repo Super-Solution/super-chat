@@ -27,11 +27,11 @@ import {
   useSkills,
   useThread,
   useTools,
-  type TurnMeta,
 } from "@supersolutions/super-chat-react";
+import type { TurnMeta } from "@supersolutions/super-chat-client";
 import { CardRenderer, CardSkeleton } from "./renderer-registry.js";
 import { AttachIcon, Chevron, FileIcon, ImageIcon, StatusMark } from "./cards/icons.js";
-import { newMarkdownStream, renderMarkdown, renderMarkdownStream } from "./markdown.js";
+import { newMarkdownStream, renderMarkdown, renderMarkdownStream } from "@supersolutions/super-chat-ui-core";
 import { useDocumentQuotes } from "./quotes.js";
 import {
   applyPick,

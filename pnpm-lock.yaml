@@ -29,15 +29,24 @@ importers:
       '@gsap/react':
         specifier: ^2.1.2
         version: 2.1.2(gsap@3.15.0)(react@19.2.8)
+      '@supersolutions/super-chat-client':
+        specifier: workspace:*
+        version: link:../../packages/client
       '@supersolutions/super-chat-core':
         specifier: workspace:*
         version: link:../../packages/core
       '@supersolutions/super-chat-react':
         specifier: workspace:*
         version: link:../../packages/react
+      '@supersolutions/super-chat-server':
+        specifier: workspace:*
+        version: link:../../packages/server
       '@supersolutions/super-chat-ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@supersolutions/super-chat-ui-core':
+        specifier: workspace:*
+        version: link:../../packages/ui-core
       gsap:
         specifier: ^3.15.0
         version: 3.15.0
@@ -69,6 +78,9 @@ importers:
 
   apps/site:
     dependencies:
+      '@supersolutions/super-chat-client':
+        specifier: workspace:*
+        version: link:../../packages/client
       '@supersolutions/super-chat-core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -78,6 +90,9 @@ importers:
       '@supersolutions/super-chat-ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@supersolutions/super-chat-ui-core':
+        specifier: workspace:*
+        version: link:../../packages/ui-core
       marked:
         specifier: 16.4.0
         version: 16.4.0
@@ -104,6 +119,19 @@ importers:
         specifier: ^5.7.2
         version: 5.9.3
 
+  packages/client:
+    dependencies:
+      '@supersolutions/super-chat-core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(postcss@8.5.25)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
   packages/core:
     devDependencies:
       tsup:
@@ -115,6 +143,9 @@ importers:
 
   packages/react:
     dependencies:
+      '@supersolutions/super-chat-client':
+        specifier: workspace:*
+        version: link:../client
       '@supersolutions/super-chat-core':
         specifier: workspace:*
         version: link:../core
@@ -132,14 +163,33 @@ importers:
         specifier: ^5.7.2
         version: 5.9.3
 
+  packages/server:
+    dependencies:
+      '@supersolutions/super-chat-core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(postcss@8.5.25)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
   packages/ui:
     dependencies:
+      '@supersolutions/super-chat-client':
+        specifier: workspace:*
+        version: link:../client
       '@supersolutions/super-chat-core':
         specifier: workspace:*
         version: link:../core
       '@supersolutions/super-chat-react':
         specifier: workspace:*
         version: link:../react
+      '@supersolutions/super-chat-ui-core':
+        specifier: workspace:*
+        version: link:../ui-core
     devDependencies:
       '@types/react':
         specifier: ^19.0.2
@@ -153,6 +203,19 @@ importers:
       react-dom:
         specifier: ^19.0.0
         version: 19.2.8(react@19.2.8)
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(postcss@8.5.25)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
+  packages/ui-core:
+    dependencies:
+      '@supersolutions/super-chat-core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
       tsup:
         specifier: ^8.3.5
         version: 8.5.1(postcss@8.5.25)(typescript@5.9.3)

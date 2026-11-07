@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { createProxyHandler, pathMatches } from "./server.js";
-import { createProxyTransport } from "./proxy.js";
+import { createProxyTransport } from "@supersolutions/super-chat-core";
+import { createProxyHandler, pathMatches } from "./handler.js";
 
 const envelope = (over: Record<string, unknown> = {}) =>
   new Request("http://app.local/api/agent", {

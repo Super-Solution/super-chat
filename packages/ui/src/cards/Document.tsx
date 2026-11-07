@@ -19,7 +19,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DocumentCard } from "@supersolutions/super-chat-core";
 import type { MarkdownBlock } from "@supersolutions/super-chat-core";
-import { renderMarkdownWithAnchors } from "../markdown.js";
+import { renderMarkdownWithAnchors } from "@supersolutions/super-chat-ui-core";
 import type { CardRendererProps } from "../renderer-registry.js";
 import { useDocumentQuotes } from "../quotes.js";
 import { CardActions } from "./CardActions.js";

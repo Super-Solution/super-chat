@@ -25,7 +25,7 @@ BYOK-direct.
 
 ```ts
 // app/api/agent/route.ts  (Next.js App Router)
-import { createProxyHandler } from "@supersolutions/super-chat-core";
+import { createProxyHandler } from "@supersolutions/super-chat-server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";   // streaming must not be buffered or cached

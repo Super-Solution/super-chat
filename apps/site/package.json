@@ -8,7 +8,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@supersolutions/super-chat-client": "workspace:*",
     "@supersolutions/super-chat-core": "workspace:*",
+    "@supersolutions/super-chat-ui-core": "workspace:*",
     "@supersolutions/super-chat-react": "workspace:*",
     "@supersolutions/super-chat-ui": "workspace:*",
     "marked": "16.4.0",

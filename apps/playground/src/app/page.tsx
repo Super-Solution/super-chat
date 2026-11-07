@@ -26,7 +26,7 @@ const RENDERERS: CardRendererMap = { ...BUILTIN_RENDERERS, vendorQuote: VendorQu
 const INSTALL = "pnpm add @supersolutions/super-chat-core @supersolutions/super-chat-react @supersolutions/super-chat-ui";
 
 const PROXY_CODE = `// app/api/agent/route.ts
-import { createProxyHandler } from "@supersolutions/super-chat-core";
+import { createProxyHandler } from "@supersolutions/super-chat-server";
 
 export const POST = createProxyHandler({
   providers: {

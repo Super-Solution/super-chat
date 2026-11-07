@@ -4,7 +4,7 @@
 //
 // The wire format between client and BFF is intentionally trivial: the client
 // declares which provider, path, method and body it wants; the server decides
-// whether to allow it. `createProxyHandler` (server.ts) is the matching half,
+// whether to allow it. `createProxyHandler` (@supersolutions/super-chat-server) is the matching half,
 // and it allowlists paths — a proxy that forwards any path is an open relay for
 // your API key.
 

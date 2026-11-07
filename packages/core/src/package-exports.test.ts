@@ -33,7 +33,7 @@ afterEach(() => {
 });
 
 describe("published package export resolution", () => {
-  for (const name of ["core", "react", "ui"]) {
+  for (const name of ["core", "client", "server", "ui-core", "react", "ui"]) {
     const manifest: Manifest = JSON.parse(readFileSync(join(packageRoot, name, "package.json"), "utf8"));
     for (const [subpath, entry] of Object.entries(manifest.exports)) {
       const specifier = manifest.name + (subpath === "." ? "" : subpath.slice(1));

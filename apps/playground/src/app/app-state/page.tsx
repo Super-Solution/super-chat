@@ -10,8 +10,8 @@
 // by presets like any tool.
 
 import { useMemo, useState } from "react";
+import { AgentClient } from "@supersolutions/super-chat-client";
 import {
-  AgentClient,
   AgentProvider,
   useAppState,
   useContextTrace,

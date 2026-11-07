@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AgentClient, AgentProvider, useAgentClient, useAgentState, useAttachments, useJobs, useThread, useThreadList } from "@supersolutions/super-chat-react";
+import { AgentClient } from "@supersolutions/super-chat-client";
+import { AgentProvider, useAgentClient, useAgentState, useAttachments, useJobs, useThread, useThreadList } from "@supersolutions/super-chat-react";
 import { BUILTIN_RENDERERS, CardRendererProvider, ContextInspector, Composer, DocumentQuoteProvider, Thread } from "@supersolutions/super-chat-ui";
 import {
   ToolRegistry,

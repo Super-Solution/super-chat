@@ -15,7 +15,7 @@ import {
   type Message,
   type Transport,
 } from "@supersolutions/super-chat-core";
-import { AgentClient } from "./client.js";
+import { AgentClient } from "@supersolutions/super-chat-client";
 import { branchPosition, useBranches } from "./hooks.js";
 
 // ── Pre-fix reference (origin/main 6a965ed), used only by this test ─────────

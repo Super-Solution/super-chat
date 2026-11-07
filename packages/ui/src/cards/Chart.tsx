@@ -10,7 +10,7 @@
 import { useId, useMemo } from "react";
 import type { ChartCard } from "@supersolutions/super-chat-core";
 import type { CardRendererProps } from "../renderer-registry.js";
-import { formatValue } from "../format.js";
+import { formatValue } from "@supersolutions/super-chat-ui-core";
 
 const PALETTE = ["var(--sc-series-1)", "var(--sc-series-2)", "var(--sc-series-3)", "var(--sc-series-4)", "var(--sc-series-5)"];
 

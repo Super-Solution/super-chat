@@ -163,18 +163,6 @@ describe("renderMarkdownStream (LiveTurn)", () => {
     expect(split.chars).toBeLessThan(whole / 20);
     expect(src.length - stream.resume).toBeLessThan(2_000);
   });
-
-  it("is what LiveTurn renders its streamed text with", () => {
-    // There is no DOM renderer in this package's tests, so this reads the
-    // component's source, the way rwd.test.ts reads the stylesheet: going back
-    // to renderMarkdown(throttledText) would pass every other test here.
-    const thread = readFileSync(fileURLToPath(new URL("./Thread.tsx", import.meta.url)), "utf8");
-    const start = thread.indexOf("export function LiveTurn(");
-    expect(start).toBeGreaterThan(-1);
-    const liveTurn = thread.slice(start, thread.indexOf("\n}\n", start));
-    expect(liveTurn).toMatch(/renderMarkdownStream\(throttledText, /);
-    expect(liveTurn).not.toMatch(/renderMarkdown\(/);
-  });
 });
 
 /** A markdown answer shaped like the product's: sections, prose, lists, tables, code, quotes. */

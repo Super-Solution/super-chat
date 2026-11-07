@@ -13,7 +13,8 @@ import {
   type PartialToolCall,
   type Transport,
 } from "@supersolutions/super-chat-core";
-import { AgentClient, AgentProvider } from "@supersolutions/super-chat-react";
+import { AgentClient } from "@supersolutions/super-chat-client";
+import { AgentProvider } from "@supersolutions/super-chat-react";
 import { CardRenderer, CardRendererProvider, type CardRendererMap } from "../renderer-registry.js";
 import { LiveTurn } from "../Thread.js";
 import { BUILTIN_RENDERERS } from "./index.js";

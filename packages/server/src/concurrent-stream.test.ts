@@ -7,9 +7,8 @@
 // consumer receives exactly its own frames, in order.
 
 import { describe, expect, it, vi } from "vitest";
-import { createProxyHandler } from "./server.js";
-import { createProxyTransport } from "./proxy.js";
-import { parseSSEJson } from "./sse.js";
+import { createProxyTransport, parseSSEJson } from "@supersolutions/super-chat-core";
+import { createProxyHandler } from "./handler.js";
 
 /** An upstream that streams N labelled frames, interleaving with its peers. */
 function slowUpstream(framesPerStream: number) {

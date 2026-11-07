@@ -10,8 +10,7 @@
 //   • the client can never set Authorization (we drop inbound auth headers);
 //   • `authorize` gets the raw Request so you can attach your own session check.
 
-import { base64ToBytes } from "./binary.js";
-import type { ProxyEnvelope, SerializedMultipartBody } from "./proxy.js";
+import { base64ToBytes, type ProxyEnvelope, type SerializedMultipartBody } from "@supersolutions/super-chat-core";
 
 export type ProxyProviderConfig = {
   baseUrl: string;

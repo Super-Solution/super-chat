@@ -1,8 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { createDirectTransport } from "./direct.js";
-import { createProxyTransport, type SerializedMultipartBody } from "./proxy.js";
-import { createProxyHandler } from "./server.js";
-import type { MultipartBody } from "./types.js";
+import { createDirectTransport, createProxyTransport, type MultipartBody, type SerializedMultipartBody } from "@supersolutions/super-chat-core";
+import { createProxyHandler } from "./handler.js";
 
 const upload = (): MultipartBody => ({
   kind: "multipart",

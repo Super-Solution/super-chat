@@ -28,7 +28,7 @@ const STEPS: Step[] = [
   {
     title: "Add the proxy route",
     code: `// app/api/agent/route.ts
-import { createProxyHandler } from "@supersolutions/super-chat-core";
+import { createProxyHandler } from "@supersolutions/super-chat-server";
 
 export const POST = createProxyHandler({
   providers: {

@@ -12,7 +12,7 @@
 import { useState } from "react";
 import type { ChoiceCard, ConfirmCard, FormCard, FormField } from "@supersolutions/super-chat-core";
 import type { CardRendererProps } from "../renderer-registry.js";
-import { formatValue, toneClass } from "../format.js";
+import { formatValue, toneClass } from "@supersolutions/super-chat-ui-core";
 
 export function ChoiceCardView({ spec, card, respond, answered }: CardRendererProps<ChoiceCard>) {
   // `card.action` is the durable record; local state only covers the gap between

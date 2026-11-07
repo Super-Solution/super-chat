@@ -10,7 +10,10 @@
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
+    "@supersolutions/super-chat-client": "workspace:*",
     "@supersolutions/super-chat-core": "workspace:*",
+    "@supersolutions/super-chat-server": "workspace:*",
+    "@supersolutions/super-chat-ui-core": "workspace:*",
     "@supersolutions/super-chat-react": "workspace:*",
     "@supersolutions/super-chat-ui": "workspace:*",
     "gsap": "^3.15.0",

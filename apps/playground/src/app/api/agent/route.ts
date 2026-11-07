@@ -5,7 +5,7 @@
 // this route decides whether that call is allowed and attaches the key. That
 // split is why the same adapter code works BYOK-direct and server-proxied.
 
-import { createProxyHandler } from "@supersolutions/super-chat-core";
+import { createProxyHandler } from "@supersolutions/super-chat-server";
 
 export const runtime = "nodejs";
 // Streaming responses must not be buffered or cached by the framework.

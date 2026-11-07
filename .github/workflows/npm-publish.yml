@@ -47,7 +47,7 @@ jobs:
           const version = process.env.RELEASE_VERSION;
           if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-next\.(0|[1-9]\d*))?$/.test(version)) throw new Error('Unsupported release version');
           if (process.env.RELEASE_CHANNEL !== (version.includes('-') ? 'next' : 'latest')) throw new Error('Release channel mismatch');
-          for (const part of ['core', 'react', 'ui']) {
+          for (const part of ['core', 'client', 'server', 'ui-core', 'react', 'ui']) {
             const p = JSON.parse(fs.readFileSync(`packages/${part}/package.json`, 'utf8'));
             if (p.name !== `@supersolutions/super-chat-${part}` || p.version !== version || p.private === true) throw new Error('Committed package/version mismatch');
           }
@@ -63,11 +63,11 @@ jobs:
           npm_config_ignore_scripts: 'true'
         run: |
           mkdir -p "$RUNNER_TEMP/npm-release"
-          for part in core react ui; do
+          for part in core client server ui-core react ui; do
             pnpm --dir "packages/$part" pack --pack-destination "$RUNNER_TEMP/npm-release"
           done
       - name: Publish in dependency order using OIDC
         run: |
-          for part in core react ui; do
+          for part in core client server ui-core react ui; do
             npm publish "$RUNNER_TEMP/npm-release/supersolutions-super-chat-$part-$RELEASE_VERSION.tgz" --registry=https://registry.npmjs.org/ --access=public --tag="$RELEASE_CHANNEL" --ignore-scripts
           done

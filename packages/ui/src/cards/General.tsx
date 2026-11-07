@@ -20,7 +20,7 @@ import type {
   TreeNode,
 } from "@supersolutions/super-chat-core";
 import type { CardRendererProps } from "../renderer-registry.js";
-import { formatValue } from "../format.js";
+import { formatValue } from "@supersolutions/super-chat-ui-core";
 import { StatusMark, ToneIcon, type StatusMarkKind } from "./icons.js";
 
 export function ComparisonCardView({ spec }: CardRendererProps<ComparisonCard>) {
