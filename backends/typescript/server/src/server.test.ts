@@ -62,6 +62,46 @@ describe("createProxyHandler", () => {
     expect(upstream).not.toHaveBeenCalled();
   });
 
+  // The upstream URL is built with `new URL(base + path)`, which reinterprets these. If the
+  // allowlist saw the path as written, each would reach an endpoint the operator never opened.
+  it.each([
+    ["an encoded dot segment, which a URL parser resolves to the provider root", "/responses/%2e%2e"],
+    ["a mixed-case encoded dot segment", "/responses/%2E%2e"],
+    ["an encoded single dot segment", "/responses/%2e"],
+    ["a query smuggled into the path", "/responses/x?admin=1"],
+    ["a fragment", "/responses/x#frag"],
+    ["a backslash, which a URL parser reads as a slash", "/responses/..\\fine_tuning"],
+    ["an encoded slash", "/responses/a%2Fb"],
+    ["an encoded backslash", "/responses/a%5cb"],
+    ["a control character, which a URL parser strips", "/responses/a\nb"],
+    ["a NUL", "/responses/a\u0000b"],
+  ])("refuses %s", async (_name, path) => {
+    const upstream = okUpstream();
+    const res = await createProxyHandler(config(upstream as never))(envelope({ path, method: "GET", body: undefined }));
+
+    expect(res.status).toBe(403);
+    expect(upstream).not.toHaveBeenCalled();
+  });
+
+  it("still forwards ordinary names that merely look unusual", async () => {
+    // Refusing what a URL parser would reinterpret must not break legitimate ids.
+    for (const [path, forwarded] of [
+      ["/responses/resp%20id", "https://api.openai.com/v1/responses/resp%20id"],
+      ["/responses/100%25", "https://api.openai.com/v1/responses/100%25"],
+      ["/responses/a.b", "https://api.openai.com/v1/responses/a.b"],
+      ["/responses/...", "https://api.openai.com/v1/responses/..."],
+      ["/responses/%2e%2e%2e", "https://api.openai.com/v1/responses/%2e%2e%2e"],
+      ["//responses///resp_1/", "https://api.openai.com/v1/responses/resp_1"],
+    ] as const) {
+      const upstream = okUpstream();
+      const res = await createProxyHandler(config(upstream as never))(envelope({ path, method: "GET", body: undefined }));
+
+      expect(res.status, path).toBe(200);
+      const [url] = upstream.mock.calls[0] as unknown as [string];
+      expect(url, path).toBe(forwarded);
+    }
+  });
+
   it("ignores a client-supplied Authorization header", async () => {
     // The client must never be able to substitute its own credential.
     const upstream = okUpstream();

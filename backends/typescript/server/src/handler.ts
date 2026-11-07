@@ -232,11 +232,25 @@ export function createProxyHandler(config: ProxyHandlerConfig) {
   };
 }
 
-/** Resolve `.`/`..` segments and reject anything that escapes the root. */
+// The allowlist matches the path as written, but the upstream URL is then built with
+// `new URL(base + path)`, which reads some paths differently. Anything it would
+// reinterpret must be refused here, or the allowlist is checked against a path that is
+// not the one that gets requested:
+//   • `\` is a slash to a WHATWG URL parser (`/a/..\b` is `/a/../b`);
+//   • `?` and `#` start a query or a fragment (`/responses/x?admin=1` injects a query);
+//   • control characters are stripped (`/a\nb` is `/ab`);
+//   • an encoded `/` or `\` may be decoded by the upstream into a separator.
+const UNSAFE_PATH = /[\\?#\u0000-\u001f\u007f]|%(?:2f|5c)/i;
+// `.` and `..` spelled with percent-encoding (`%2e%2e`): a URL parser resolves them
+// (`/responses/%2e%2e` is `/`), a plain comparison with ".." does not.
+const ENCODED_DOT_SEGMENT = /^(?:\.|%2e){1,2}$/i;
+
+/** Resolve `.`/`..` segments; reject anything that escapes the root or that a URL parser would reinterpret. */
 function normalizePath(input: string): string | null {
-  if (typeof input !== "string" || !input.startsWith("/")) return null;
+  if (typeof input !== "string" || !input.startsWith("/") || UNSAFE_PATH.test(input)) return null;
   const out: string[] = [];
   for (const seg of input.split("/")) {
+    if (seg !== "." && seg !== ".." && ENCODED_DOT_SEGMENT.test(seg)) return null;
     if (seg === "" || seg === ".") continue;
     if (seg === "..") {
       if (out.length === 0) return null;
