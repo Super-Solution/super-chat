@@ -33,11 +33,14 @@ packages/
 backends/
   typescript/
     server/            -server  (createProxyHandler)
+  go/protocol/         Go port of super-protocol (validators, SSE parser)
+  python/              Python port of super-protocol (super_protocol)
+conformance/           language-neutral test data every port must reproduce
 ```
 
 A Vue, Svelte or Solid binding goes in `packages/bindings/<framework>/`. A Go or Rust backend goes
 in `backends/<language>/`; it implements the same contract in `super-protocol` instead of importing
-the TypeScript one. Rust backends are closed source and live in a private repository, not here.
+the TypeScript one, and is tested against `conformance/`. Rust backends are closed source and live in a private repository, not here.
 
 ## Routing through Super Router (or any gateway)
 
