@@ -8,6 +8,7 @@
   "bugs": { "url": "https://github.com/Super-Solution/super-chat/issues" },
   "keywords": ["agent", "llm", "ai", "chat", "streaming", "store", "framework-agnostic"],
   "type": "module",
+  "sideEffects": false,
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
