@@ -1,0 +1,25 @@
+{
+  "name": "@superchat/site",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3211",
+    "build": "next build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supersolutions/super-chat-core": "workspace:*",
+    "@supersolutions/super-chat-react": "workspace:*",
+    "@supersolutions/super-chat-ui": "workspace:*",
+    "marked": "16.4.0",
+    "next": "^15.1.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "typescript": "^5.7.2"
+  }
+}

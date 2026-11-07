@@ -1,0 +1,194 @@
+.page {
+  --ink: #2f272b;
+  --muted: #74676c;
+  --paper: #fffaf6;
+  --rose: #9f4762;
+  --plum: #35272e;
+  --line: #e4d8d2;
+  height: 100dvh;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.page ::selection { color: #fff; background: var(--rose); }
+.page button, .page select, .page input { font: inherit; }
+.page button { cursor: pointer; }
+
+.app { min-height: 0; display: grid; grid-template-columns: 248px minmax(0, 1fr); overflow: hidden; background: var(--paper); }
+.sidebar { min-height: 0; display: flex; flex-direction: column; padding: 25px 18px 20px; background: #f3ebe7; border-right: 1px solid var(--line); }
+.sidebarBrand { display: flex; align-items: center; gap: 11px; padding: 0 8px 24px; }
+.sidebarBrand div { display: grid; gap: 2px; }
+.sidebarBrand strong { font-family: Georgia, "Times New Roman", serif; font-size: 20px; font-weight: 500; }
+.sidebarBrand span { color: var(--muted); font-size: 13px; }
+.avatar, .avatarSmall { display: grid; flex: none; place-items: center; width: 40px; height: 40px; color: #fffaf6; background: var(--rose); border-radius: 50%; font: 500 19px Georgia, "Times New Roman", serif; }
+.avatarSmall { width: 34px; height: 34px; font-size: 16px; }
+.newChat { min-height: 42px; padding: 0 13px; color: #fff; background: var(--plum); border: 0; border-radius: 8px; font-weight: 650; text-align: left; }
+.newChat:hover { background: #4a3540; }
+.sidebar nav { display: grid; gap: 3px; margin-top: 32px; }
+.sidebar nav > strong { padding: 0 10px 8px; color: var(--muted); font-size: 13px; font-weight: 650; }
+.sidebar nav button { min-height: 40px; padding: 0 10px; overflow: hidden; color: #5e5157; background: transparent; border: 0; border-radius: 7px; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar nav button:hover, .sidebar nav .activeThread { color: var(--ink); background: #e9ded9; }
+.sidebar > p { margin: auto 8px 0; color: var(--muted); font-size: 13px; line-height: 1.4; }
+
+.chatShell { min-width: 0; min-height: 0; display: grid; grid-template-rows: 62px minmax(0, 1fr) auto; overflow: hidden; background: var(--paper); }
+.chatHeader { display: flex; align-items: center; justify-content: space-between; padding: 0 28px; border-bottom: 1px solid var(--line); background: rgb(255 250 246 / .96); }
+.chatHeader > div { display: flex; align-items: center; gap: 10px; }
+.chatHeader span { display: grid; gap: 1px; }
+.chatHeader strong { font-size: 14px; }
+.chatHeader small { color: var(--muted); font-size: 12px; }
+.chatHeader > button { padding: 7px 0 5px; color: var(--rose); background: transparent; border: 0; border-bottom: 1px solid #c58a9b; }
+
+.thread { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-color: #c6b8b2 transparent; }
+.threadInner { width: min(760px, calc(100% - 48px)); margin: 0 auto; padding: 48px 0 36px; }
+.assistantTurn { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 14px; align-items: start; }
+.assistantTurn + .assistantTurn, .userTurn + .assistantTurn { margin-top: 32px; }
+.messageBody { min-width: 0; padding-top: 5px; }
+.messageBody > strong { display: block; margin-bottom: 8px; font-size: 14px; }
+.messageBody > p { max-width: 64ch; margin: 0; color: #3d3438; font-size: 16px; line-height: 1.65; }
+.userTurn { display: flex; justify-content: flex-end; margin: 36px 0 0; }
+.userTurn p { max-width: min(78%, 560px); margin: 0; padding: 13px 17px; color: #33282d; background: #efe5e0; border-radius: 16px 16px 4px 16px; font-size: 15px; line-height: 1.55; }
+.prompts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 32px 0 0 48px; }
+.prompts button { min-height: 112px; padding: 16px; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 12px; text-align: left; font-weight: 680; transition: border-color 140ms ease, background 140ms ease; }
+.prompts button:hover { background: #fcf5f1; border-color: #cfaab5; }
+.prompts span { display: block; margin-top: 8px; color: var(--muted); font-size: 13px; font-weight: 400; line-height: 1.45; }
+.thinking { min-height: 34px; display: flex; align-items: center; color: var(--rose); }
+.thinking :global(.sc-shimmer) { color: var(--rose); font-size: 14px; }
+.cardLoading { width: min(100%, 500px); margin-top: 20px; }
+.cardLoading :global(.sc-card) { margin: 0; color: var(--ink); background: #f8f0ec; border-color: var(--line); box-shadow: none; }
+.cardLoading :global(.sc-skeleton__label) { color: var(--muted); }
+.cardLoading :global(.sc-skeleton__bar), .cardLoading :global(.sc-skeleton__surface) { background: linear-gradient(90deg, #eaded8 20%, #f7efeb 50%, #eaded8 80%); background-size: 200% 100%; }
+
+.breathCard {
+  width: min(100%, 510px);
+  min-height: 196px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 156px;
+  align-items: center;
+  gap: 18px;
+  margin-top: 22px;
+  padding: 24px;
+  color: #352b30;
+  background: #f8f1ed;
+  border: 1px solid #ddcfca;
+  border-radius: 14px;
+}
+.breathCopy strong, .presenceCard strong { display: block; font: 500 22px/1.2 Georgia, "Times New Roman", serif; }
+.breathCopy p, .presenceCard p { margin: 10px 0 0; color: #695b61; font-size: 14px; line-height: 1.55; }
+.breathCopy > span { display: block; margin-top: 18px; color: #8d5667; font-size: 12px; font-weight: 700; letter-spacing: .01em; }
+.breathVisual { position: relative; width: 148px; height: 148px; display: grid; place-items: center; }
+.breathHalo, .breathCore { position: absolute; display: block; border-radius: 50%; transform-origin: center; }
+.breathHalo { inset: 13px; background: #eddbdd; animation: quietBreath 10s cubic-bezier(.45, 0, .35, 1) infinite; }
+.breathCore { inset: 38px; background: #a6546c; box-shadow: 0 8px 22px rgb(91 51 65 / .15); animation: quietBreath 10s cubic-bezier(.45, 0, .35, 1) infinite; }
+.breathPhases { position: relative; z-index: 1; width: 84px; height: 22px; color: #fffaf6; font-size: 12px; font-weight: 700; text-align: center; }
+.breathPhases span { position: absolute; inset: 0; display: grid; place-items: center; white-space: nowrap; }
+.breatheIn { animation: breatheInLabel 10s linear infinite; }
+.breatheOut { animation: breatheOutLabel 10s linear infinite; }
+.breatheStatic { display: none !important; }
+
+.presenceCard {
+  width: min(100%, 510px);
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+  margin-top: 22px;
+  padding: 22px 24px;
+  color: #352b30;
+  background: #f7efeb;
+  border: 1px solid #ded0cb;
+  border-radius: 14px;
+}
+.presenceMark { padding-top: 1px; }
+.presenceCard > div:last-child > span { display: flex; align-items: center; gap: 8px; margin-top: 17px; color: #846d76; font-size: 12px; }
+.presenceCard > div:last-child > span i { width: 7px; height: 7px; background: #b25a73; border-radius: 50%; box-shadow: 0 0 0 4px rgb(178 90 115 / .1); }
+
+.keepsake { position: relative; width: min(100%, 510px); margin-top: 22px; padding: 22px 24px; overflow: hidden; color: #3a2b32; background: #fbefed; border: 1px solid #ddc4c8; border-radius: 14px; animation: keepsakeIn 340ms cubic-bezier(.16, 1, .3, 1) both; }
+.keepsakeHead { display: flex; align-items: center; justify-content: space-between; color: #8d5667; font-size: 13px; font-weight: 700; }
+.keepsakeHead svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.keepsake blockquote { max-width: 34ch; min-height: 68px; margin: 19px 0 10px; font: 400 23px/1.45 Georgia, "Times New Roman", serif; }
+.keepsake > p { margin: 0; color: #816c74; font-size: 13px; }
+.keepsake > button { display: inline-flex; align-items: center; gap: 8px; margin-top: 19px; padding: 7px 0 5px; color: var(--rose); background: transparent; border: 0; border-bottom: 1px solid #bd8294; font-weight: 680; }
+.keepsake > button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.heartField { position: absolute; inset: 0; pointer-events: none; }
+.heartField i { position: absolute; bottom: 19px; width: 9px; height: 9px; opacity: 0; background: #cc6c84; transform: rotate(45deg); animation: floatHeart 1.8s cubic-bezier(.16, .8, .32, 1) both; }
+.heartField i::before, .heartField i::after { content: ""; position: absolute; width: 100%; height: 100%; background: inherit; border-radius: 50%; }
+.heartField i::before { left: -50%; }
+.heartField i::after { top: -50%; }
+
+.composerArea { padding: 12px 24px 14px; background: var(--paper); border-top: 1px solid var(--line); }
+.runtimeBar { width: min(760px, 100%); display: grid; grid-template-columns: auto auto minmax(240px, 1fr); align-items: center; gap: 14px; margin: 0 auto 10px; }
+.runtimeBar label { display: flex; align-items: center; gap: 7px; }
+.runtimeBar label > span { color: var(--muted); font-size: 12px; }
+.runtimeBar select { max-width: 160px; padding: 5px 22px 5px 4px; color: #514349; background: transparent; border: 0; }
+.runDetails { position: relative; z-index: 12; min-width: 0; width: min(100%, 260px); height: 44px; justify-self: end; }
+.runDetails > details { width: 100%; }
+.runDetails > details[open] { position: absolute; right: 0; bottom: 0; width: min(340px, calc(100vw - 24px)); max-height: min(620px, calc(100dvh - 96px)); overflow-y: auto; }
+.composer { width: min(760px, 100%); display: grid; grid-template-columns: minmax(0, 1fr) 42px; align-items: center; margin: 0 auto; padding: 5px 6px 5px 17px; background: #fff; border: 1px solid #d6c8c2; border-radius: 15px; box-shadow: 0 8px 28px rgb(80 54 64 / .08); }
+.composer input { min-width: 0; min-height: 38px; color: var(--ink); background: transparent; border: 0; outline: 0; font-size: 16px; }
+.composer input::placeholder { color: #98878e; }
+.composer button { display: grid; place-items: center; width: 38px; height: 38px; color: #fff; background: var(--rose); border: 0; border-radius: 10px; }
+.composer button:disabled { cursor: not-allowed; opacity: .38; }
+.composer svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.composerArea > p { width: min(760px, 100%); margin: 7px auto 0; color: var(--muted); font-size: 12px; text-align: center; }
+
+.page button:focus-visible, .page select:focus-visible, .page input:focus-visible { outline: 3px solid rgb(159 71 98 / .38); outline-offset: 2px; }
+
+@keyframes keepsakeIn { from { opacity: 0; clip-path: inset(0 0 100% 0 round 14px); } to { opacity: 1; clip-path: inset(0 round 14px); } }
+@keyframes floatHeart { 0% { opacity: 0; transform: translateY(8px) rotate(45deg) scale(.7); } 20% { opacity: .75; } 100% { opacity: 0; transform: translateY(-110px) rotate(30deg) scale(1.05); } }
+@keyframes quietBreath { 0%, 100% { transform: scale(.72); opacity: .72; } 40% { transform: scale(1); opacity: 1; } }
+@keyframes breatheInLabel { 0%, 34% { opacity: 1; } 42%, 96% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes breatheOutLabel { 0%, 34% { opacity: 0; } 42%, 96% { opacity: 1; } 100% { opacity: 0; } }
+
+@media (max-width: 980px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .sidebar { display: none; }
+}
+
+@media (max-width: 700px) {
+  .chatHeader { padding-inline: 16px; }
+  .threadInner { width: calc(100% - 28px); padding: 28px 0 24px; }
+  .prompts { grid-template-columns: minmax(0, 1fr); gap: 8px; margin: 25px 0 0 48px; }
+  .prompts button { min-height: 78px; }
+  .userTurn p { max-width: 88%; }
+  .composerArea { padding: 10px 12px max(12px, env(safe-area-inset-bottom)); }
+  .runtimeBar { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .runtimeBar label { min-width: 0; display: grid; gap: 1px; }
+  .runtimeBar select { width: 100%; max-width: none; }
+  .runDetails { grid-column: 1 / -1; justify-self: stretch; width: 100%; }
+  .runDetails > details[open] { width: 100%; }
+  .keepsake { padding: 19px; }
+  .keepsake blockquote { min-height: 92px; font-size: 21px; }
+  .breathCard { grid-template-columns: minmax(0, 1fr) 128px; padding: 20px; }
+  .breathVisual { width: 126px; height: 126px; }
+  .breathHalo { inset: 11px; }
+  .breathCore { inset: 32px; }
+}
+
+@media (max-width: 460px) {
+  .breathCard { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .breathVisual { grid-row: 1; margin: 0 auto; }
+  .breathCopy { grid-row: 2; text-align: center; }
+  .breathCopy > span { margin-top: 12px; }
+  .presenceCard { grid-template-columns: 34px minmax(0, 1fr); padding: 19px; }
+}
+
+@media (max-height: 720px) and (min-width: 701px) {
+  .threadInner { padding-block: 28px 24px; }
+  .assistantTurn + .assistantTurn, .userTurn + .assistantTurn { margin-top: 22px; }
+  .userTurn { margin-top: 24px; }
+  .prompts { margin-top: 24px; }
+  .prompts button { min-height: 92px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .keepsake { animation: none; }
+  .heartField i { display: none; }
+  .breathHalo, .breathCore, .breatheIn, .breatheOut { animation: none; }
+  .breatheIn, .breatheOut { display: none !important; }
+  .breatheStatic { display: grid !important; }
+}
