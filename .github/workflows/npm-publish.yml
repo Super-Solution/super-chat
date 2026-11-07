@@ -1,0 +1,81 @@
+name: Publish npm packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Exact version committed in all three packages
+        required: true
+        type: string
+      channel:
+        description: latest for stable versions, next for prereleases
+        required: true
+        default: latest
+        type: choice
+        options: [latest, next]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'Super-Solution/super-chat' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      RELEASE_VERSION: ${{ inputs.version }}
+      RELEASE_CHANNEL: ${{ inputs.channel }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.12.0'
+          package-manager-cache: false
+      - name: Verify requested version and channel
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const version = process.env.RELEASE_VERSION;
+          if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-next\.(0|[1-9]\d*))?$/.test(version)) throw new Error('Unsupported release version');
+          if (process.env.RELEASE_CHANNEL !== (version.includes('-') ? 'next' : 'latest')) throw new Error('Release channel mismatch');
+          const dirs = { protocol: 'packages/protocol', core: 'packages/core', client: 'packages/client', 'ui-core': 'packages/ui-core', react: 'packages/bindings/react', ui: 'packages/bindings/react-ui', plugin: 'packages/integrations/plugin', router: 'packages/integrations/router', server: 'backends/typescript/server' };
+          for (const part of ['protocol', 'core', 'client', 'server', 'ui-core', 'router', 'react', 'ui', 'plugin']) {
+            const p = JSON.parse(fs.readFileSync(`${dirs[part]}/package.json`, 'utf8'));
+            if (p.name !== (part === 'protocol' ? '@supersolutions/super-protocol' : `@supersolutions/super-chat-${part}`) || p.version !== version || p.private === true) throw new Error('Committed package/version mismatch');
+          }
+          NODE
+      - name: Install locked dependencies
+        run: |
+          npm install --global pnpm@9.12.0 --ignore-scripts --no-audit --no-fund
+          pnpm install --frozen-lockfile --ignore-scripts
+      - name: Build release packages
+        run: pnpm build
+      - name: Pack all packages with resolved workspace dependencies
+        env:
+          npm_config_ignore_scripts: 'true'
+        run: |
+          mkdir -p "$RUNNER_TEMP/npm-release"
+          for part in protocol core client server ui-core router react ui plugin; do
+            case "$part" in
+              react) dir=packages/bindings/react ;;
+              ui) dir=packages/bindings/react-ui ;;
+              plugin|router) dir="packages/integrations/$part" ;;
+              server) dir=backends/typescript/server ;;
+              *) dir="packages/$part" ;;
+            esac
+            pnpm --dir "$dir" pack --pack-destination "$RUNNER_TEMP/npm-release"
+          done
+      - name: Publish in dependency order using OIDC
+        run: |
+          for part in protocol core client server ui-core router react ui plugin; do
+            npm publish "$RUNNER_TEMP/npm-release/$( [ "$part" = protocol ] && echo supersolutions-super-protocol || echo "supersolutions-super-chat-$part" )-$RELEASE_VERSION.tgz" --registry=https://registry.npmjs.org/ --access=public --tag="$RELEASE_CHANNEL" --ignore-scripts
+          done

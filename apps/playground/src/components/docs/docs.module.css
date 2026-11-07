@@ -1,0 +1,104 @@
+/* Docs and install pages, flavor B (Instrument): the same paper, ink, teal
+   and IBM Plex as the homepage, set for reading rather than persuading. */
+
+.page {
+  min-height: 100%;
+  background: #f7f7f4;
+  color: #161616;
+  font-family: "IBM Plex Sans", "Segoe UI", -apple-system, Arial, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+}
+.page a { color: #0f766e; text-underline-offset: 3px; }
+.page a:hover { color: #0b5a54; }
+.page :focus-visible { outline: 2px solid #0f766e; outline-offset: 2px; }
+.page ::selection { background: #cde9e5; }
+
+/* ── docs layout ──────────────────────────────────────────────────────── */
+.docs {
+  max-width: 1240px; margin: 0 auto; padding: 56px 24px 120px; box-sizing: border-box;
+  display: grid; grid-template-columns: 200px minmax(0, 1fr) 200px; gap: 56px; align-items: start;
+}
+.side, .toc { position: sticky; top: 32px; font-size: 14px; }
+.side ul, .toc ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.side ul + ul { margin-top: 24px; padding-top: 24px; border-top: 1px solid #e2e2dc; }
+.side a, .toc a { display: block; padding: 6px 0; color: #4a4a47; text-decoration: none; }
+.side a:hover, .toc a:hover { color: #161616; }
+.side a[aria-current="page"] { color: #161616; font-weight: 600; }
+.toc a { padding: 4px 0; font-size: 13px; }
+
+.article { min-width: 0; max-width: 72ch; }
+.next { display: inline-flex; margin-top: 56px; padding-top: 24px; border-top: 1px solid #e2e2dc; font-weight: 600; text-decoration: none; width: 100%; }
+
+/* Rendered markdown. */
+.prose :global(h1) { margin: 0 0 24px; font-size: clamp(36px, 4.4vw, 52px); line-height: 1.05; letter-spacing: -0.03em; font-weight: 700; }
+.prose :global(h2) { margin: 56px 0 16px; font-size: 26px; line-height: 1.2; letter-spacing: -0.02em; font-weight: 600; scroll-margin-top: 24px; }
+.prose :global(h3) { margin: 36px 0 12px; font-size: 19px; font-weight: 600; scroll-margin-top: 24px; }
+.prose :global(p), .prose :global(ul), .prose :global(ol) { margin: 0 0 18px; }
+.prose :global(li) { margin: 4px 0; }
+.prose :global(li > p) { margin: 0; }
+.prose :global(strong) { font-weight: 600; }
+.prose :global(hr) { margin: 40px 0; border: 0; border-top: 1px solid #e2e2dc; }
+.prose :global(code) { font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-size: 0.88em; padding: 1px 5px; border-radius: 3px; background: #ecece7; }
+.prose :global(pre) { margin: 0 0 24px; padding: 18px 22px; border: 1px solid #d9d9d3; border-radius: 6px; background: #ffffff; overflow-x: auto; font-size: 13px; line-height: 1.7; }
+.prose :global(pre code) { padding: 0; background: none; font-size: inherit; }
+.prose :global(blockquote) { margin: 0 0 18px; padding: 2px 0 2px 18px; border-left: 1px solid #b9b9b2; color: #4a4a47; }
+.prose :global(table) { width: 100%; margin: 0 0 24px; border-collapse: collapse; font-size: 14px; display: block; overflow-x: auto; }
+.prose :global(th), .prose :global(td) { padding: 9px 14px 9px 0; border-bottom: 1px solid #e2e2dc; text-align: left; vertical-align: top; }
+.prose :global(th) { font-weight: 600; border-bottom-color: #c9c9c2; }
+
+@media (max-width: 900px) {
+  .docs { grid-template-columns: minmax(0, 1fr); gap: 32px; padding-top: 32px; }
+  .toc { display: none; }
+  .side { position: static; }
+  .side ul { flex-direction: row; flex-wrap: wrap; gap: 4px 18px; }
+  .side ul + ul { margin-top: 12px; padding-top: 12px; }
+}
+
+/* ── install ──────────────────────────────────────────────────────────── */
+.install { max-width: 880px; margin: 0 auto; padding: 72px 24px 120px; box-sizing: border-box; display: flex; flex-direction: column; gap: 40px; }
+.h1 { margin: 0; font-size: clamp(40px, 5vw, 64px); line-height: 1; letter-spacing: -0.035em; font-weight: 700; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px 24px; }
+.segment { display: inline-flex; padding: 3px; border: 1px solid #d0d0c9; border-radius: 6px; background: #ffffff; }
+.segment button { min-height: 38px; padding: 0 14px; border: 0; border-radius: 4px; background: transparent; color: #4a4a47; font: inherit; font-size: 14px; cursor: pointer; }
+.segment button[aria-pressed="true"] { background: #161616; color: #ffffff; }
+.command { display: flex; align-items: stretch; gap: 8px; }
+.command pre { flex: 1; min-width: 0; margin: 0; padding: 16px 20px; border: 1px solid #d9d9d3; border-radius: 6px; background: #ffffff; overflow-x: auto; font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-size: 14px; line-height: 1.6; }
+.command button { flex: none; min-width: 84px; border: 1px solid #d0d0c9; border-radius: 6px; background: #ffffff; color: #161616; font: inherit; font-size: 14px; cursor: pointer; }
+.packages { margin: 0; display: grid; grid-template-columns: max-content 1fr; border-top: 1px solid #e2e2dc; }
+.packages dt, .packages dd { margin: 0; padding: 14px 0; border-bottom: 1px solid #e2e2dc; }
+.packages dt { padding-right: 28px; font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-size: 14px; }
+.packages dd { color: #4a4a47; }
+.packages .off { color: #a3a39d; }
+.steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 32px; counter-reset: step; }
+.steps li { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 0 12px; counter-increment: step; }
+.steps li::before { content: counter(step); grid-row: span 2; font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-size: 15px; color: #0f766e; line-height: 1.5; }
+.steps h2 { margin: 0 0 12px; font-size: 20px; line-height: 1.3; font-weight: 600; }
+.steps pre { margin: 0; padding: 16px 20px; border: 1px solid #d9d9d3; border-radius: 6px; background: #ffffff; overflow-x: auto; font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-size: 13px; line-height: 1.7; }
+.more { font-weight: 600; text-decoration: none; }
+
+@media (max-width: 600px) {
+  .install { padding-top: 40px; gap: 32px; }
+  .packages { grid-template-columns: minmax(0, 1fr); }
+  .packages dt { padding-bottom: 2px; border-bottom: 0; }
+  .packages dd { padding-top: 0; }
+  .command { flex-direction: column; }
+  .command button { min-height: 44px; }
+}
+
+/* ── motion: feedback only, nothing to wait through while reading ──────── */
+.toc a { transition: color 150ms ease-out, box-shadow 200ms ease-out; padding-left: 12px; box-shadow: inset 1px 0 0 #e2e2dc; }
+.toc a[aria-current="location"] { color: #161616; font-weight: 500; box-shadow: inset 1px 0 0 #161616; }
+.side a { transition: color 150ms ease-out; }
+.segment button { transition: background-color 160ms ease-out, color 160ms ease-out, transform 120ms ease-out; }
+.segment button:active, .command button:active { transform: scale(0.97); }
+@keyframes swapIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes stepIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.swap { animation: swapIn 200ms ease-out both; }
+.steps li { animation: stepIn 380ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.steps li:nth-child(2) { animation-delay: 60ms; }
+.steps li:nth-child(3) { animation-delay: 120ms; }
+@media (prefers-reduced-motion: reduce) {
+  .steps li { animation-name: swapIn; animation-duration: 160ms; }
+  .segment button:active, .command button:active { transform: none; }
+}

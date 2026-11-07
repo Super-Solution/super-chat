@@ -1,0 +1,24 @@
+{
+  "name": "superchat",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A generic agent-service frontend framework: serves contexts, skills and I/O, and crafts provider-correct requests.",
+  "license": "Apache-2.0",
+  "author": "SUPER SOLUTION LABS INC",
+  "packageManager": "pnpm@9.12.0",
+  "scripts": {
+    "build": "pnpm -r --filter \"./packages/**\" --filter \"./backends/**\" build",
+    "dev": "pnpm --filter @superchat/playground dev",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:rwd": "playwright test",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^22.10.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

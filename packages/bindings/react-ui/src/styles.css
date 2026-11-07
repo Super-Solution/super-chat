@@ -1,0 +1,2920 @@
+/* superchat UI baseline.
+ *
+ * Plain CSS with custom properties rather than Tailwind, so the package drops
+ * into any app without imposing a build step or a config merge. Override the
+ * tokens to theme it; every rule below reads from them.
+ *
+ * Consumers import this from source ("@supersolutions/super-chat-ui/styles.css" → src/styles.css),
+ * not from dist: the bundler cleans dist on every rebuild, and a consuming dev
+ * server that compiles during that window fails on a missing stylesheet. CSS
+ * needs no compilation, so there is nothing to gain by routing it through dist.
+ *
+ * Light and dark are both first-class: the media query is the default signal,
+ * and an explicit [data-theme] attribute wins over it in both directions.
+ *
+ * ── Breakpoint constants (UI-SPEC 5.1) ───────────────────────────────────
+ *
+ *   compact: 600px   phone portrait, narrow embedded sidebar
+ *   medium:  900px   tablet portrait, split view
+ *
+ * These are NOT custom properties, and the omission is deliberate: a query
+ * condition does not accept var(), and `@container (max-width: var(--x))`
+ * fails silently rather than erroring. So the values live here as prose and
+ * appear as literals at every query site that needs them (several, by now —
+ * see the responsive block at the foot of this file). rwd.test.ts enforces
+ * that no third literal ever joins them.
+ *
+ * Which query to reach for is a fixed rule, not a judgement call:
+ *
+ *   "how wide am I"      → @container. The kit is embedded; a host can drop
+ *                          Thread into a 380px sidebar inside a 1920px
+ *                          window, where a media query answers confidently
+ *                          and wrongly.
+ *   "what device is this" → @media (pointer / hover / prefers-*). Touch
+ *                          targets and iOS input zoom are device traits and
+ *                          have nothing to do with container width.
+ *
+ * Compact layout rules live in one block at the foot of this file rather
+ * than beside each component, so that "what does this look like on a phone"
+ * is answerable by reading one place. */
+
+:root {
+  --sc-bg: #ffffff;
+  --sc-surface: #f7f8fa;
+  --sc-surface-2: #eef0f4;
+  --sc-border: #e2e5ea;
+  --sc-text: #14161a;
+  --sc-text-muted: #646b76;
+  --sc-accent: #3a6df0;
+  --sc-accent-contrast: #ffffff;
+  --sc-negative-contrast: #ffffff;
+  --sc-positive: #17864b;
+  --sc-negative: #c8341f;
+  --sc-warning: #9a6400;
+  --sc-info: #2b6cb0;
+  --sc-radius: 12px;
+  --sc-radius-sm: 8px;
+  --sc-radius-xs: 4px;
+  --sc-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --sc-series-1: #3a6df0;
+  --sc-series-2: #17864b;
+  --sc-series-3: #b8860b;
+  --sc-series-4: #8b3fc4;
+  --sc-series-5: #c8341f;
+
+  /* Dark palette — private, declared once here and only ever referenced (never
+     redeclared) by the two triggers below: the OS-preference media query and
+     the explicit [data-theme="dark"] override. Without this indirection each
+     hex would need to be copied into both trigger blocks, since one has to
+     fire without the other (an explicit override must win even when the OS
+     preference disagrees) and plain CSS has no mixin to share a value block
+     across two unrelated selectors. This is the only place a dark hex literal
+     appears in the file. */
+  --sc-dark-bg: #0f1115;
+  --sc-dark-surface: #161920;
+  --sc-dark-surface-2: #1e222b;
+  --sc-dark-border: #2a2f3a;
+  --sc-dark-text: #e7e9ee;
+  --sc-dark-text-muted: #949cab;
+  --sc-dark-accent: #6b9bff;
+  --sc-dark-accent-contrast: #0f1115;
+  --sc-dark-negative-contrast: #0f1115;
+  --sc-dark-positive: #46c07f;
+  --sc-dark-negative: #ff6b57;
+  --sc-dark-warning: #e0a53a;
+  --sc-dark-info: #6b9bff;
+  --sc-dark-series-1: #6b9bff;
+  --sc-dark-series-2: #46c07f;
+  --sc-dark-series-3: #e0a53a;
+  --sc-dark-series-4: #c084fc;
+  --sc-dark-series-5: #ff6b57;
+  --sc-dark-shadow-overlay: 0 8px 24px rgb(0 0 0 / 0.5);
+
+  /* spacing scale — theme-independent, declared once here only */
+  --sc-sp-2: 2px;
+  --sc-sp-4: 4px;
+  --sc-sp-6: 6px;
+  --sc-sp-8: 8px;
+  --sc-sp-10: 10px;
+  --sc-sp-12: 12px;
+  --sc-sp-16: 16px;
+  --sc-sp-20: 20px;
+  --sc-sp-24: 24px;
+  --sc-sp-32: 32px;
+  --sc-sp-48: 48px;
+
+  /* font size & line-height — theme-independent, declared once here only.
+     Role-named, not value-named: a density change can move the underlying
+     px without the token lying about what it represents. */
+  --sc-fs-body: 15px;  /* message body, composer */
+  --sc-fs-ui: 13px;    /* card body, buttons, tables — UI default */
+  --sc-fs-meta: 12px;  /* auxiliary text, detail, table headers */
+  --sc-fs-micro: 11px; /* pills, overlines, footnotes */
+  --sc-fs-glyph: 9px;  /* decorative caret/marker glyphs — never prose */
+  --sc-fs-stat: 22px;  /* stat values */
+  --sc-fs-hero: 26px;  /* gauge headline value */
+  --sc-lh-tight: 1.25; /* large numbers, stat value */
+  --sc-lh-ui: 1.4;     /* labels, buttons, chips */
+  --sc-lh-prose: 1.7;  /* message body, callout body */
+
+  /* Typeface. The kit had no sans declaration at all before; it inherited
+     whatever the host happened to set. Inter leads progressively — used when
+     present, skipped silently otherwise, with no webfont fetch either way.
+
+     Ordering rule: EXPLICIT Latin faces, then CJK faces, then the generic
+     keywords last. `system-ui` and `ui-sans-serif` resolve per OS locale — on
+     a zh-TW Windows they resolve to Microsoft JhengHei — so putting them near
+     the front drags Latin text into a CJK face with weak Latin glyphs. Keeping
+     them at the back leaves them as a genuine last resort.
+
+     No comment may sit inside the value: custom properties keep comments in
+     their token stream, so a host reading --sc-sans back would get the comment
+     text along with the font list. */
+  --sc-sans:
+    "Inter", "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont,
+    "Helvetica Neue", Arial, Roboto,
+    "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", "Hiragino Sans",
+    ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji";
+
+  /* motion — theme-independent, declared once here only */
+  --sc-dur-1: 120ms; /* hover, button states */
+  --sc-dur-2: 160ms; /* width/height changes, entrances */
+  --sc-dur-3: 320ms; /* panel expand/collapse */
+  --sc-ease-out: cubic-bezier(0.2, 0, 0, 1);      /* entrances */
+  --sc-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1); /* size changes */
+
+  /* elevation — theme-independent, declared once here only */
+  --sc-z-base: 0;
+  --sc-z-sticky: 10;  /* composer, sticky-bottom bars */
+  --sc-z-menu: 20;    /* dropdown, mention menu */
+  --sc-z-toast: 30;
+  --sc-z-modal: 40;
+  --sc-shadow-overlay: 0 8px 24px rgb(0 0 0 / 0.16);
+}
+
+/* Dark, by OS preference. Excludes both explicit overrides via :not() rather
+   than relying on a specificity tie-break: [data-theme="light"] must win when
+   the OS prefers dark (handled below by simply not matching, so the light
+   :root above stands uncontested), and [data-theme="dark"] already wins on
+   its own higher specificity, so excluding it here just states that plainly
+   instead of leaving it implicit. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    --sc-bg: var(--sc-dark-bg);
+    --sc-surface: var(--sc-dark-surface);
+    --sc-surface-2: var(--sc-dark-surface-2);
+    --sc-border: var(--sc-dark-border);
+    --sc-text: var(--sc-dark-text);
+    --sc-text-muted: var(--sc-dark-text-muted);
+    --sc-accent: var(--sc-dark-accent);
+    --sc-accent-contrast: var(--sc-dark-accent-contrast);
+    --sc-negative-contrast: var(--sc-dark-negative-contrast);
+    --sc-positive: var(--sc-dark-positive);
+    --sc-negative: var(--sc-dark-negative);
+    --sc-warning: var(--sc-dark-warning);
+    --sc-info: var(--sc-dark-info);
+    --sc-series-1: var(--sc-dark-series-1);
+    --sc-series-2: var(--sc-dark-series-2);
+    --sc-series-3: var(--sc-dark-series-3);
+    --sc-series-4: var(--sc-dark-series-4);
+    --sc-series-5: var(--sc-dark-series-5);
+    --sc-shadow-overlay: var(--sc-dark-shadow-overlay);
+  }
+}
+
+/* Dark, by explicit override. Wins over both the OS preference and the light
+   default regardless of source order, purely on specificity (an attribute
+   selector outranks the media-query block above, which carries none). There
+   is no matching [data-theme="light"] block: with the media query above
+   excluding that case, the light values declared on the base :root already
+   stand on their own once nothing overrides them, so a dedicated light block
+   would just be restating them a third time. */
+:root[data-theme="dark"] {
+  --sc-bg: var(--sc-dark-bg);
+  --sc-surface: var(--sc-dark-surface);
+  --sc-surface-2: var(--sc-dark-surface-2);
+  --sc-border: var(--sc-dark-border);
+  --sc-text: var(--sc-dark-text);
+  --sc-text-muted: var(--sc-dark-text-muted);
+  --sc-accent: var(--sc-dark-accent);
+  --sc-accent-contrast: var(--sc-dark-accent-contrast);
+  --sc-negative-contrast: var(--sc-dark-negative-contrast);
+  --sc-positive: var(--sc-dark-positive);
+  --sc-negative: var(--sc-dark-negative);
+  --sc-warning: var(--sc-dark-warning);
+  --sc-info: var(--sc-dark-info);
+  --sc-series-1: var(--sc-dark-series-1);
+  --sc-series-2: var(--sc-dark-series-2);
+  --sc-series-3: var(--sc-dark-series-3);
+  --sc-series-4: var(--sc-dark-series-4);
+  --sc-series-5: var(--sc-dark-series-5);
+  --sc-shadow-overlay: var(--sc-dark-shadow-overlay);
+}
+
+/* ── primitives ───────────────────────────────────────────────────────────── */
+
+.sc-muted { color: var(--sc-text-muted); }
+.sc-mono { font-family: var(--sc-mono); font-size: 0.86em; }
+
+/* Visible to screen readers only. Needed wherever meaning is carried by a
+   glyph or an animation, which announce as nothing. */
+.sc-sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Loading skeleton. Bars carry no text, so the block is aria-busy and ships an
+   sr-only label rather than announcing as an empty card. */
+.sc-skeleton { display: grid; gap: var(--sc-sp-12); }
+.sc-skeleton__label {
+  display: flex;
+  align-items: center;
+  gap: var(--sc-sp-8);
+  color: var(--sc-text-muted);
+  font-size: var(--sc-fs-meta);
+}
+.sc-skeleton__body { display: grid; gap: var(--sc-sp-10); }
+.sc-skeleton__bar,
+.sc-skeleton__surface {
+  height: 10px;
+  border-radius: var(--sc-radius-xs);
+  background: linear-gradient(90deg, var(--sc-surface-2) 25%, var(--sc-border) 50%, var(--sc-surface-2) 75%);
+  background-size: 200% 100%;
+  animation: sc-shimmer 1.2s linear infinite;
+}
+.sc-skeleton__bar--title { width: 40%; }
+.sc-skeleton__media {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--sc-sp-10);
+}
+.sc-skeleton__media--single { grid-template-columns: minmax(0, 1fr); }
+.sc-skeleton__mediaitem {
+  width: 100%;
+  height: auto;
+  aspect-ratio: var(--sc-skeleton-ratio, 1 / 1);
+  border-radius: var(--sc-radius-sm);
+}
+.sc-skeleton__chart {
+  height: 180px;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sc-sp-10);
+  padding: var(--sc-sp-16);
+}
+.sc-skeleton__chart > span {
+  flex: 1;
+  min-width: 10px;
+  border-radius: var(--sc-radius-xs) var(--sc-radius-xs) 0 0;
+  background: color-mix(in srgb, var(--sc-accent) 22%, var(--sc-surface));
+}
+.sc-skeleton__table { display: grid; gap: var(--sc-sp-8); }
+.sc-skeleton__tablerow { display: grid; grid-template-columns: 1.3fr 1fr .7fr; gap: var(--sc-sp-8); }
+.sc-skeleton__tablerow > span { width: 100%; }
+
+.sc-tone--positive { color: var(--sc-positive); }
+.sc-tone--negative { color: var(--sc-negative); }
+.sc-tone--warning { color: var(--sc-warning); }
+.sc-tone--info { color: var(--sc-info); }
+
+.sc-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sc-sp-4);
+  padding: var(--sc-sp-2) var(--sc-sp-8);
+  border-radius: 999px;
+  background: var(--sc-surface-2);
+  border: 1px solid var(--sc-border);
+  font-size: var(--sc-fs-micro);
+  line-height: var(--sc-lh-ui);
+  white-space: nowrap;
+}
+.sc-pill--positive { color: var(--sc-positive); border-color: color-mix(in srgb, var(--sc-positive) 35%, transparent); }
+.sc-pill--negative { color: var(--sc-negative); border-color: color-mix(in srgb, var(--sc-negative) 35%, transparent); }
+.sc-pill--warning { color: var(--sc-warning); border-color: color-mix(in srgb, var(--sc-warning) 35%, transparent); }
+.sc-pill--info { color: var(--sc-info); border-color: color-mix(in srgb, var(--sc-info) 35%, transparent); }
+
+.sc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sc-sp-6);
+  padding: var(--sc-sp-8) var(--sc-sp-12);
+  border-radius: var(--sc-radius-sm);
+  border: 1px solid var(--sc-border);
+  background: var(--sc-surface);
+  color: var(--sc-text);
+  /* Buttons don't inherit the font by default and fell back to the UA face. */
+  font-family: inherit;
+  font-size: var(--sc-fs-ui);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--sc-dur-1) ease, border-color var(--sc-dur-1) ease;
+}
+.sc-btn:hover:not(:disabled) { background: var(--sc-surface-2); }
+.sc-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.sc-btn--primary { background: var(--sc-accent); border-color: var(--sc-accent); color: var(--sc-accent-contrast); }
+.sc-btn--primary:hover:not(:disabled) { filter: brightness(1.08); background: var(--sc-accent); }
+.sc-btn--danger { background: var(--sc-negative); border-color: var(--sc-negative); color: var(--sc-negative-contrast); }
+.sc-btn--ghost { background: transparent; }
+.sc-btn--sm { padding: var(--sc-sp-4) var(--sc-sp-8); font-size: var(--sc-fs-meta); }
+
+.sc-input {
+  width: 100%;
+  padding: var(--sc-sp-8) var(--sc-sp-10);
+  border-radius: var(--sc-radius-sm);
+  border: 1px solid var(--sc-border);
+  background: var(--sc-bg);
+  color: var(--sc-text);
+  font: inherit;
+  font-size: var(--sc-fs-ui);
+}
+.sc-input:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: -1px; }
+.sc-input-group { display: flex; align-items: center; gap: var(--sc-sp-6); }
+.sc-input-group__suffix { color: var(--sc-text-muted); font-size: var(--sc-fs-meta); }
+
+.sc-pre {
+  margin: var(--sc-sp-6) 0 0;
+  padding: var(--sc-sp-10) var(--sc-sp-12);
+  border-radius: var(--sc-radius-sm);
+  background: var(--sc-surface-2);
+  border: 1px solid var(--sc-border);
+  overflow-x: auto;
+  font-family: var(--sc-mono);
+  font-size: var(--sc-fs-meta);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.sc-pre--sm { font-size: var(--sc-fs-micro); max-height: 220px; overflow-y: auto; }
+
+.sc-spinner {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  margin-right: var(--sc-sp-6);
+  border: 2px solid var(--sc-border);
+  border-top-color: var(--sc-accent);
+  border-radius: 50%;
+  animation: sc-spin 700ms linear infinite;
+  vertical-align: -1px;
+}
+@keyframes sc-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-spinner { animation-duration: 2s; }
+  .sc-btn { transition: none; }
+  /* A skeleton still has to read as "not real content yet", so it keeps its
+     contrast but stops moving. */
+  .sc-skeleton__bar,
+  .sc-skeleton__surface { animation: none; background: var(--sc-surface-2); }
+  /* The caret stays put rather than blinking — it still marks the write head. */
+  .sc-msg__text--streaming::after { animation: none; }
+  .sc-media__viewport :is(img, video, audio) { transition: none; }
+}
+
+/* ── cards ────────────────────────────────────────────────────────────────── */
+
+/* A card is a query container so its INTERNALS size against the card rather
+   than the window — a card inside a 380px embedded thread compacts even when
+   the window is wide.
+
+   The card's own padding is a different question, and one it cannot answer
+   itself: an element is never its own query container, so .sc-card's padding
+   measures the nearest container ABOVE it. Inside a Thread that is .sc-thread
+   and it works. A host that renders cards outside a Thread has to declare
+   `container-type: inline-size` on whatever wraps them, or they will keep
+   desktop padding at any width. The playground does this on .dev__preview. */
+.sc-card {
+  container-type: inline-size;
+  margin: var(--sc-sp-12) 0;
+  padding: var(--sc-sp-12) var(--sc-sp-16);
+  border-radius: var(--sc-radius);
+  border: 1px solid var(--sc-border);
+  background: var(--sc-surface);
+  /* A card paints its own surface, so it owns its text color too. Inheriting
+     put the host's near-white text on a white card on any dark page. */
+  color: var(--sc-text);
+  font-family: var(--sc-sans);
+}
+.sc-card--interactive { border-color: color-mix(in srgb, var(--sc-accent) 45%, var(--sc-border)); }
+.sc-card--danger { border-color: color-mix(in srgb, var(--sc-negative) 45%, var(--sc-border)); }
+.sc-card--muted { background: transparent; border-style: dashed; }
+.sc-card--error { border-color: color-mix(in srgb, var(--sc-negative) 45%, var(--sc-border)); color: var(--sc-negative); }
+
+.sc-card__title { font-weight: 600; font-size: var(--sc-fs-ui); margin-bottom: var(--sc-sp-10); }
+.sc-card__head { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-sp-10); margin-bottom: var(--sc-sp-8); }
+.sc-card__prompt { margin: 0 0 var(--sc-sp-12); font-size: var(--sc-fs-ui); color: var(--sc-text-muted); }
+.sc-card__caption { margin-top: var(--sc-sp-8); font-size: var(--sc-fs-meta); }
+.sc-card__footnote { margin-top: var(--sc-sp-10); font-size: var(--sc-fs-meta); }
+.sc-card__actions { display: flex; align-items: center; gap: var(--sc-sp-8); margin-top: var(--sc-sp-12); flex-wrap: wrap; }
+/* Copy and Download are utilities, not part of the answer. With a mouse they
+   wait until the card is hovered or focused; on touch they stay visible, since
+   there is no hover to reveal them. Space is kept, so nothing shifts. */
+@media (hover: hover) and (pointer: fine) {
+  .sc-card__actions--aux { opacity: 0; transition: opacity var(--sc-dur-1) ease; }
+  .sc-card:hover .sc-card__actions--aux, .sc-card:focus-within .sc-card__actions--aux { opacity: 1; }
+}
+.sc-th-btn .sc-mark { display: inline-block; margin-left: var(--sc-sp-4); vertical-align: middle; }
+.sc-jump .sc-mark { display: inline-block; vertical-align: middle; }
+
+/* Card-internal separator. A hairline, nothing else — cards that need to set
+   one section apart from another use this instead of hand-rolling a
+   border-top. Per spec (2.B): at most one per card. */
+.sc-divider { border: none; border-top: 1px solid var(--sc-border); margin: var(--sc-sp-12) 0; }
+
+/* table */
+.sc-table-wrap { overflow-x: auto; }
+.sc-table { width: 100%; border-collapse: collapse; font-size: var(--sc-fs-ui); }
+.sc-table th, .sc-table td { padding: var(--sc-sp-8) var(--sc-sp-10); border-bottom: 1px solid var(--sc-border); }
+.sc-table th { font-weight: 600; font-size: var(--sc-fs-meta); color: var(--sc-text-muted); }
+.sc-table tbody tr:last-child td { border-bottom: none; }
+.sc-table--compact th, .sc-table--compact td { padding: var(--sc-sp-4) var(--sc-sp-8); font-size: var(--sc-fs-meta); }
+.sc-th-btn { background: none; border: none; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+.sc-table__more { margin-top: var(--sc-sp-8); }
+
+/* stats */
+.sc-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: var(--sc-sp-12); }
+/* Sentence case. An uppercase, tracked label over every number is the
+   generated-dashboard look; the value already carries the hierarchy. */
+.sc-stat__label { font-size: var(--sc-fs-meta); color: var(--sc-text-muted); }
+.sc-stat__value { font-size: var(--sc-fs-stat); font-weight: 600; line-height: var(--sc-lh-tight); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.sc-stat__delta { font-size: var(--sc-fs-meta); font-variant-numeric: tabular-nums; }
+.sc-stat__hint { font-size: var(--sc-fs-micro); margin-top: var(--sc-sp-2); }
+
+/* key/value */
+.sc-kv { margin: 0; display: grid; gap: var(--sc-sp-6); }
+.sc-kv__row { display: flex; justify-content: space-between; gap: var(--sc-sp-16); font-size: var(--sc-fs-ui); }
+.sc-kv__row dt { color: var(--sc-text-muted); }
+.sc-kv__row dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* chart */
+.sc-chart svg { width: 100%; height: auto; display: block; }
+.sc-chart__grid { stroke: var(--sc-border); stroke-width: 1; }
+.sc-chart__axis { stroke: var(--sc-border); stroke-width: 1; }
+/* The one exempt font-size in the file: this is painted inside the chart's SVG
+   user space, where the number is a coordinate rather than a type size. Same
+   carve-out 2.0.2 gives SVG spacing. The rwd test knows about this line. */
+.sc-chart__label { fill: var(--sc-text-muted); font-size: 10px; font-family: var(--sc-mono); }
+.sc-chart__annotation { stroke: currentColor; stroke-width: 1; stroke-dasharray: 4 3; }
+.sc-candle line { stroke: currentColor; stroke-width: 1; }
+.sc-candle rect { fill: currentColor; }
+.sc-candle--up { color: var(--sc-positive); }
+.sc-candle--down { color: var(--sc-negative); }
+.sc-legend { display: flex; flex-wrap: wrap; gap: var(--sc-sp-12); margin-top: var(--sc-sp-8); font-size: var(--sc-fs-meta); }
+.sc-legend__item { display: inline-flex; align-items: center; gap: var(--sc-sp-4); }
+.sc-legend__swatch { width: 9px; height: 9px; border-radius: var(--sc-radius-xs); }
+
+/* timeline */
+.sc-timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sc-sp-12); }
+.sc-timeline__item { display: flex; gap: var(--sc-sp-10); font-size: var(--sc-fs-ui); }
+.sc-timeline__dot { width: 8px; height: 8px; margin-top: var(--sc-sp-4); border-radius: 50%; background: currentColor; flex: none; }
+.sc-timeline__label { font-weight: 500; }
+.sc-timeline__at { font-size: var(--sc-fs-micro); }
+.sc-timeline__detail { font-size: var(--sc-fs-meta); margin-top: var(--sc-sp-2); }
+
+/* progress */
+.sc-progress { height: 5px; border-radius: 999px; background: var(--sc-surface-2); overflow: hidden; margin-bottom: var(--sc-sp-12); }
+.sc-progress__bar { height: 100%; background: var(--sc-accent); transition: width var(--sc-dur-2) var(--sc-ease-in-out); }
+.sc-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sc-sp-6); font-size: var(--sc-fs-ui); }
+.sc-step { display: flex; align-items: baseline; gap: var(--sc-sp-8); }
+/* Drawn marks have no text baseline; pin them to the first line instead. */
+.sc-step__icon, .sc-check__icon { flex: none; display: inline-flex; align-self: flex-start; width: 12px; height: 12px; margin-top: 3px; }
+.sc-mark { display: block; flex: none; }
+.sc-step--done .sc-step__icon { color: var(--sc-text); }
+.sc-step--active .sc-step__icon { color: var(--sc-accent); }
+.sc-step--failed .sc-step__icon, .sc-step--failed .sc-step__label { color: var(--sc-negative); }
+.sc-step--pending, .sc-step--skipped { color: var(--sc-text-muted); }
+.sc-step__detail { font-size: var(--sc-fs-meta); }
+
+/* media */
+.sc-media { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--sc-sp-10); }
+.sc-media--single { grid-template-columns: 1fr; }
+.sc-media__item { margin: 0; min-width: 0; }
+.sc-media__viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: var(--sc-radius-sm);
+  background: var(--sc-surface-2);
+}
+.sc-media__viewport--audio { aspect-ratio: auto; min-height: 54px; }
+.sc-media__viewport img,
+.sc-media__viewport video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  display: block;
+  object-fit: contain;
+  opacity: 0;
+  transition: opacity 160ms cubic-bezier(.16, 1, .3, 1);
+}
+.sc-media__viewport video { background: var(--sc-text); }
+.sc-media__viewport audio {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 54px;
+  display: block;
+  opacity: 0;
+  transition: opacity 160ms cubic-bezier(.16, 1, .3, 1);
+}
+.sc-media__item--ready :is(img, video, audio) { opacity: 1; }
+.sc-media__decode { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: inherit; }
+.sc-media__error {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--sc-sp-16);
+  color: var(--sc-negative);
+  font-size: var(--sc-fs-meta);
+  text-align: center;
+}
+.sc-media__audio { display: inline-flex; flex-direction: column; gap: var(--sc-sp-4); max-width: min(100%, 360px); }
+.sc-media__audio audio { width: 100%; }
+.sc-media__item figcaption { font-size: var(--sc-fs-micro); margin-top: var(--sc-sp-4); }
+
+/* diff */
+.sc-diff { font-family: var(--sc-mono); font-size: var(--sc-fs-meta); border-radius: var(--sc-radius-sm); overflow: hidden; border: 1px solid var(--sc-border); }
+.sc-diff__line { display: flex; gap: var(--sc-sp-8); padding: var(--sc-sp-2) var(--sc-sp-8); white-space: pre-wrap; word-break: break-word; }
+.sc-diff__sign { color: var(--sc-text-muted); flex: none; }
+.sc-diff__line--add { background: color-mix(in srgb, var(--sc-positive) 13%, transparent); }
+.sc-diff__line--del { background: color-mix(in srgb, var(--sc-negative) 13%, transparent); }
+
+/* comparison */
+.sc-compare th[scope="row"] { text-align: left; font-weight: 500; max-width: 220px; }
+.sc-compare td, .sc-compare th { text-align: center; vertical-align: top; }
+.sc-compare th:first-child, .sc-compare td:first-child { text-align: left; }
+.sc-compare__note { font-size: var(--sc-fs-micro); font-weight: 400; margin-top: var(--sc-sp-2); }
+/* Neutral, not accent: a "best" cell is data emphasis, not something you can
+   click. Accent stays scarce so it keeps meaning "act here". */
+.sc-compare__best { background: var(--sc-surface-2); }
+.sc-compare__yes, .sc-compare__no { display: inline-flex; vertical-align: middle; }
+.sc-compare__yes { color: var(--sc-text); }
+.sc-compare__no { color: var(--sc-text-muted); }
+.sc-compare__key th[scope="row"] { font-weight: 600; }
+
+/* checklist */
+.sc-checkgroup + .sc-checkgroup { margin-top: var(--sc-sp-12); }
+.sc-checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sc-sp-8); font-size: var(--sc-fs-ui); }
+.sc-check { display: flex; align-items: baseline; gap: var(--sc-sp-8); }
+.sc-check__body { display: flex; flex-direction: column; gap: var(--sc-sp-2); min-width: 0; }
+.sc-check__detail { font-size: var(--sc-fs-meta); }
+/* Done is the normal state, so it takes the text color; only a blocked item
+   is colored. A green tick on every row made the list a traffic light. */
+.sc-check--done .sc-check__icon { color: var(--sc-text); }
+/* The mark says blocked; the label stays readable text, not a red sentence. */
+.sc-check--blocked .sc-check__icon { color: var(--sc-negative); }
+.sc-check--todo .sc-check__icon { color: var(--sc-text-muted); }
+.sc-check--na { color: var(--sc-text-muted); }
+.sc-check--na .sc-check__label { text-decoration: line-through; }
+
+/* callout */
+/* One even border tinted by tone, a drawn mark, plain text. A thick colored
+   left rule with a filled icon disc is the stock generated alert. */
+.sc-callout { display: flex; gap: var(--sc-sp-10); align-items: flex-start; }
+.sc-callout__icon { flex: none; display: inline-flex; margin-top: 2px; }
+.sc-callout__title { font-weight: 600; font-size: var(--sc-fs-ui); margin-bottom: var(--sc-sp-2); }
+.sc-callout__body { font-size: var(--sc-fs-ui); line-height: var(--sc-lh-prose); }
+.sc-callout--info { color: var(--sc-info); }
+.sc-callout--note { color: var(--sc-text-muted); }
+.sc-callout--success { color: var(--sc-positive); }
+.sc-callout--warning { color: var(--sc-warning); border-color: color-mix(in srgb, var(--sc-warning) 35%, var(--sc-border)); background: color-mix(in srgb, var(--sc-warning) 5%, var(--sc-surface)); }
+.sc-callout--danger { color: var(--sc-negative); border-color: color-mix(in srgb, var(--sc-negative) 35%, var(--sc-border)); background: color-mix(in srgb, var(--sc-negative) 5%, var(--sc-surface)); }
+.sc-callout__title, .sc-callout__body { color: var(--sc-text); }
+
+/* citations */
+.sc-cites { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sc-sp-12); counter-reset: cite; }
+.sc-cite { display: flex; gap: var(--sc-sp-10); font-size: var(--sc-fs-ui); }
+.sc-cite__n {
+  flex: none;
+  width: 19px; height: 19px;
+  display: grid; place-items: center;
+  border-radius: var(--sc-radius-xs);
+  background: var(--sc-surface-2);
+  border: 1px solid var(--sc-border);
+  font-size: var(--sc-fs-micro);
+  font-family: var(--sc-mono);
+}
+.sc-cite__body { min-width: 0; }
+.sc-cite__head { display: flex; align-items: center; gap: var(--sc-sp-8); flex-wrap: wrap; }
+.sc-cite__head a { color: var(--sc-accent); text-decoration: none; }
+.sc-cite__head a:hover { text-decoration: underline; }
+.sc-cite__title { font-weight: 500; }
+.sc-cite__meta { font-size: var(--sc-fs-micro); margin-top: var(--sc-sp-2); }
+.sc-cite__snippet {
+  margin: var(--sc-sp-6) 0 0;
+  padding: var(--sc-sp-6) var(--sc-sp-10);
+  border-left: 2px solid var(--sc-border);
+  font-size: var(--sc-fs-meta);
+  line-height: 1.55;
+  color: var(--sc-text-muted);
+}
+
+/* funnel
+   ────────────────────────────────────────────────────────────────────────────
+   One grid for the whole funnel, with each row as `display: contents`, so all
+   four columns line up across rows. Per-row grids would let a longer label
+   push one track shorter than its neighbours, and a bar chart whose baseline
+   moves between rows is not a bar chart.
+
+   The value sits in its own column rather than inside the bar. It used to ride
+   the bar in --sc-accent-contrast, which is only legible ON the accent: once a
+   stage got small enough that the number outgrew its bar, the digits spilled
+   onto the track and landed at ~1.14:1 — invisible, in both themes. Nothing
+   about that is fixable with a colour, because the text crosses two
+   backgrounds. Widening the bar to fit its label was the other option and it
+   is worse: bar length IS the datum here.
+
+   Out here the number is --sc-text on the card, always legible, and the values
+   form a scannable column — which is what makes stages comparable at all. */
+.sc-funnel {
+  display: grid;
+  grid-template-columns: minmax(90px, 150px) 1fr auto 48px;
+  gap: var(--sc-sp-8) var(--sc-sp-10);
+  align-items: center;
+  font-size: var(--sc-fs-ui);
+}
+.sc-funnel__row { display: contents; }
+.sc-funnel__label { display: flex; flex-direction: column; gap: var(--sc-sp-2); min-width: 0; }
+.sc-funnel__note { font-size: var(--sc-fs-micro); }
+.sc-funnel__track { background: var(--sc-surface-2); border-radius: var(--sc-radius-sm); overflow: hidden; }
+.sc-funnel__bar {
+  /* Height is the bar's own now that it carries no text. A solid fill: the
+     fading gradient implied a value the bar didn't have. */
+  height: 14px;
+  background: var(--sc-accent);
+  border-radius: var(--sc-radius-xs);
+  /* A stage that rounds to nothing still has to read as a bar, not as an empty
+     track — otherwise "0.4%" and "no data" look identical. */
+  min-width: 2%;
+  transition: width var(--sc-dur-2) var(--sc-ease-in-out);
+}
+.sc-funnel__value { text-align: right; font-size: var(--sc-fs-meta); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sc-funnel__rate { text-align: right; font-size: var(--sc-fs-meta); font-variant-numeric: tabular-nums; }
+.sc-funnel__drop { color: var(--sc-negative); font-weight: 600; }
+
+/* gauge */
+.sc-gauge { display: flex; align-items: baseline; gap: var(--sc-sp-10); margin-bottom: var(--sc-sp-10); }
+.sc-gauge__value { font-size: var(--sc-fs-hero); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; letter-spacing: -0.01em; }
+.sc-gauge__label { font-size: var(--sc-fs-ui); color: var(--sc-text-muted); }
+.sc-gauge__track { position: relative; height: 8px; border-radius: 999px; background: var(--sc-surface-2); overflow: hidden; }
+/* Bands stay faint; only the one holding the reading gets full presence. */
+.sc-gauge__band { position: absolute; top: 0; bottom: 0; background: currentColor; opacity: 0.16; }
+.sc-gauge__band--on { opacity: 0.5; }
+.sc-gauge__needle {
+  position: absolute; top: -3px; bottom: -3px;
+  width: 3px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  background: var(--sc-text);
+  transition: left var(--sc-dur-2) var(--sc-ease-in-out);
+}
+.sc-gauge__scale { display: flex; justify-content: space-between; align-items: center; gap: var(--sc-sp-10); margin-top: var(--sc-sp-6); font-size: var(--sc-fs-micro); }
+.sc-gauge__bandlabels { display: flex; gap: var(--sc-sp-10); }
+.sc-gauge__bandlabel--on { color: var(--sc-text); font-weight: 600; }
+
+/* tree */
+.sc-tree, .sc-tree__children { list-style: none; margin: 0; padding: 0; }
+.sc-tree__children { margin-left: var(--sc-sp-8); padding-left: var(--sc-sp-12); border-left: 1px solid var(--sc-border); }
+.sc-treenode { font-size: var(--sc-fs-ui); }
+.sc-treenode__row { display: flex; gap: var(--sc-sp-8); align-items: baseline; padding: var(--sc-sp-4) 0; flex-wrap: wrap; }
+.sc-treenode__label { font-weight: 500; }
+.sc-treenode__mark { flex: none; align-self: center; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.sc-treenode__detail { font-size: var(--sc-fs-meta); }
+
+/* choice */
+.sc-choices { display: grid; gap: var(--sc-sp-8); }
+.sc-choice {
+  display: flex;
+  align-items: center;
+  gap: var(--sc-sp-12);
+  width: 100%;
+  padding: var(--sc-sp-10) var(--sc-sp-12);
+  border-radius: var(--sc-radius-sm);
+  border: 1px solid var(--sc-border);
+  background: var(--sc-bg);
+  color: var(--sc-text);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.sc-choice:hover:not(:disabled) { border-color: var(--sc-accent); }
+.sc-choice:disabled { opacity: 0.55; cursor: not-allowed; }
+.sc-choice--selected { border-color: var(--sc-accent); background: color-mix(in srgb, var(--sc-accent) 9%, var(--sc-bg)); }
+.sc-choice__img { width: 26px; height: 26px; border-radius: 50%; flex: none; object-fit: cover; }
+.sc-choice__body { display: flex; flex-direction: column; gap: var(--sc-sp-2); flex: 1; min-width: 0; }
+.sc-choice__label { font-size: var(--sc-fs-ui); font-weight: 500; }
+.sc-choice__desc { font-size: var(--sc-fs-meta); }
+.sc-choice__meta { display: flex; gap: var(--sc-sp-16); flex: none; }
+.sc-choice__metaitem { display: flex; flex-direction: column; align-items: flex-end; font-size: var(--sc-fs-meta); font-variant-numeric: tabular-nums; }
+
+/* form */
+.sc-form { display: grid; gap: var(--sc-sp-12); }
+.sc-field { display: grid; gap: var(--sc-sp-4); }
+.sc-field__label { font-size: var(--sc-fs-meta); color: var(--sc-text-muted); }
+
+/* ── thread ───────────────────────────────────────────────────────────────── */
+
+.sc-thread { container-type: inline-size; flex: 1; overflow-y: auto; padding: var(--sc-sp-20); scroll-behavior: smooth; font-family: var(--sc-sans); }
+/* Reading size, not UI size: the empty state is the first screen a user meets,
+   and it is prose to be read rather than chrome to be scanned. */
+.sc-empty { color: var(--sc-text-muted); text-align: center; padding: var(--sc-sp-48) var(--sc-sp-20); font-size: var(--sc-fs-body); }
+
+/* The thread needs a positioned parent for the jump button to anchor to, but
+   must not itself become the scroll container's offset parent. */
+/* Also a container, so .sc-thread's own padding has something to query: an
+   element is never its own query container, only its descendants'. */
+.sc-threadwrap { container-type: inline-size; position: relative; flex: 1; min-height: 0; display: flex; }
+
+.sc-jump {
+  position: absolute;
+  bottom: var(--sc-sp-16);
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sc-sp-6);
+  padding: var(--sc-sp-6) var(--sc-sp-12);
+  border-radius: 999px;
+  border: 1px solid var(--sc-border);
+  background: var(--sc-surface);
+  color: var(--sc-text);
+  font-family: inherit;
+  font-size: var(--sc-fs-meta);
+  cursor: pointer;
+  box-shadow: var(--sc-shadow-overlay);
+  z-index: var(--sc-z-sticky);
+}
+.sc-jump:hover { background: var(--sc-surface-2); }
+
+/* Date divider: a hairline with the label sitting in it. */
+.sc-daydivider {
+  display: flex;
+  align-items: center;
+  gap: var(--sc-sp-12);
+  margin: var(--sc-sp-24) 0 var(--sc-sp-16);
+  color: var(--sc-text-muted);
+  font-size: var(--sc-fs-micro);
+}
+.sc-daydivider::before,
+.sc-daydivider::after { content: ""; flex: 1; height: 1px; background: var(--sc-border); }
+
+/* Per-message footer: facts first, then actions. Always visible — a hover-only
+   control does not exist on a touch device. */
+.sc-msgmeta {
+  display: flex;
+  align-items: center;
+  gap: var(--sc-sp-8);
+  margin-top: var(--sc-sp-8);
+  color: var(--sc-text-muted);
+  font-size: var(--sc-fs-micro);
+}
+.sc-msgmeta__facts { font-variant-numeric: tabular-nums; }
+
+/* Streaming cursor: a block that sits after the last character of the answer.
+   Uses ::after on the prose container so it needs no extra DOM node and cannot
+   be swallowed by the markdown render. */
+.sc-msg__text--streaming::after {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: var(--sc-sp-2);
+  vertical-align: -0.15em;
+  background: var(--sc-accent);
+}
+.sc-msg__text--paused::after { animation: sc-caret 1s step-end infinite; }
+@keyframes sc-caret { 50% { opacity: 0; } }
+
+.sc-msg { margin-bottom: var(--sc-sp-24); }
+.sc-tooloutput { display: grid; gap: var(--sc-sp-10); }
+/* A card whose spec is still arriving. What it shows is real, so it gets no
+   shimmer over it — just a write-head along its bottom edge while more is
+   coming, which goes when the validated card replaces it. */
+.sc-cardstream > .sc-card { position: relative; }
+.sc-cardstream > .sc-card::after {
+  content: "";
+  position: absolute;
+  left: var(--sc-radius);
+  right: var(--sc-radius);
+  bottom: -1px;
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--sc-accent) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: sc-shimmer 1.2s linear infinite;
+  opacity: 0.7;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sc-cardstream > .sc-card::after { animation: none; background: var(--sc-accent); opacity: 0.4; }
+}
+.sc-msg--user { display: flex; justify-content: flex-end; }
+.sc-bubble {
+  max-width: min(76%, 620px);
+  padding: var(--sc-sp-8) var(--sc-sp-12);
+  border-radius: var(--sc-radius) var(--sc-radius) var(--sc-radius-xs) var(--sc-radius);
+  background: var(--sc-surface-2);
+  color: var(--sc-text);
+  border: 1px solid var(--sc-border);
+  font-size: var(--sc-fs-body);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+/* Assistant text now renders through renderMarkdown() into real block
+   elements (<p>, <ul>, <pre>…), which supply their own spacing via margins
+   below — pre-wrap here would preserve the source's raw newlines on top of
+   that, doubling the gap between blocks. Word wrapping still applies. */
+.sc-msg__text { font-size: var(--sc-fs-body); line-height: var(--sc-lh-prose); word-break: break-word; }
+
+.sc-prose h2, .sc-prose h3, .sc-prose h4,
+.sc-prose h5, .sc-prose h6 { margin: var(--sc-sp-16) 0 var(--sc-sp-6); font-size: var(--sc-fs-body); }
+.sc-prose p { margin: 0 0 var(--sc-sp-8); }
+.sc-prose ul, .sc-prose ol { margin: 0 0 var(--sc-sp-8); padding-left: var(--sc-sp-20); }
+/* A nested list is inside its parent's <li>, so its own bottom margin would
+   add to the item's line spacing rather than to the gap after the list. */
+.sc-prose li > ul, .sc-prose li > ol { margin-bottom: 0; }
+.sc-prose code { font-family: var(--sc-mono); font-size: 0.88em; background: var(--sc-surface-2); padding: var(--sc-sp-2) var(--sc-sp-4); border-radius: var(--sc-radius-xs); }
+.sc-prose pre {
+  margin: var(--sc-sp-6) 0 var(--sc-sp-8);
+  padding: var(--sc-sp-10) var(--sc-sp-12);
+  border-radius: var(--sc-radius-sm);
+  background: var(--sc-surface-2);
+  border: 1px solid var(--sc-border);
+  overflow-x: auto;
+  font-family: var(--sc-mono);
+  font-size: var(--sc-fs-meta);
+  line-height: 1.5;
+}
+.sc-prose pre code { background: none; padding: 0; border-radius: 0; font-size: 1em; }
+.sc-prose a { color: var(--sc-accent); }
+
+/* Document constructs. These arrived with the document previewer: a report is
+   the first thing anyone writes that has a table in it, and until the renderer
+   grew one these came out as literal pipes and angle brackets. */
+.sc-prose blockquote {
+  margin: 0 0 var(--sc-sp-8);
+  padding: var(--sc-sp-2) 0 var(--sc-sp-2) var(--sc-sp-12);
+  /* border-first, like every other level in the kit — a tinted background here
+     would compete with cards for the same "this is a surface" signal. */
+  border-left: 2px solid var(--sc-border);
+  color: var(--sc-text-muted);
+}
+.sc-prose blockquote > :last-child { margin-bottom: 0; }
+.sc-prose hr { margin: var(--sc-sp-16) 0; border: 0; border-top: 1px solid var(--sc-border); }
+.sc-prose del { text-decoration: line-through; color: var(--sc-text-muted); }
+
+/* The table scrolls inside its own box. A wide table is the single most common
+   way an embedded transcript ends up with a horizontal scrollbar on the PAGE,
+   and at 360px almost any table is wide. */
+.sc-prose .sc-md-table {
+  display: block;
+  overflow-x: auto;
+  width: 100%;
+  margin: 0 0 var(--sc-sp-8);
+  border-collapse: collapse;
+  font-size: var(--sc-fs-meta);
+}
+.sc-prose .sc-md-table th,
+.sc-prose .sc-md-table td {
+  padding: var(--sc-sp-6) var(--sc-sp-10);
+  border-bottom: 1px solid var(--sc-border);
+  text-align: left;
+}
+.sc-prose .sc-md-table th { color: var(--sc-text-muted); font-weight: 600; white-space: nowrap; }
+.sc-prose .sc-md-table tbody tr:last-child td { border-bottom: 0; }
+.sc-prose .sc-md-left { text-align: left; }
+.sc-prose .sc-md-center { text-align: center; }
+.sc-prose .sc-md-right { text-align: right; }
+
+/* thinking bar — collapsed by default, but shows the latest reasoning line
+   inline while it streams, so "is it thinking about the right thing" is
+   answerable without opening it. */
+.sc-think { margin-bottom: var(--sc-sp-8); }
+.sc-think__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sc-sp-8);
+  width: 100%;
+  padding: var(--sc-sp-2) 0;
+  border: none;
+  background: none;
+  color: var(--sc-text-muted);
+  font-family: inherit;
+  font-size: var(--sc-fs-meta);
+  text-align: left;
+  cursor: pointer;
+}
+.sc-think__label { flex: none; }
+@keyframes sc-shimmer { to { background-position: -200% 0; } }
+
+.sc-tools { margin: var(--sc-sp-8) 0; }
+.sc-tools__head {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sc-sp-8);
+  padding: var(--sc-sp-4) var(--sc-sp-8);
+  border-radius: var(--sc-radius-sm);
+  border: 1px solid var(--sc-border);
+  background: var(--sc-surface);
+  color: var(--sc-text-muted);
+  font-size: var(--sc-fs-meta);
+  cursor: pointer;
+  font-family: inherit;
+}
+.sc-tools__icon { font-size: var(--sc-fs-glyph); }
+.sc-tools__summary { font-variant-numeric: tabular-nums; }
+.sc-tools__list { list-style: none; margin: var(--sc-sp-8) 0 0; padding: 0; display: grid; gap: var(--sc-sp-10); }
+.sc-tools__item { padding-left: var(--sc-sp-10); border-left: 2px solid var(--sc-border); }
+.sc-tools__row { display: flex; align-items: center; gap: var(--sc-sp-8); font-size: var(--sc-fs-meta); }
+/* Fixed width so the glyph column stays aligned whether a row shows a glyph or
+   a spinner — a list that shifts as calls resolve is hard to read. */
+.sc-tools__status { flex: none; width: 12px; text-align: center; color: var(--sc-text-muted); }
+/* Duration pushes to the right edge; success is stated, not celebrated. */
+.sc-tools__ms { margin-left: auto; font-variant-numeric: tabular-nums; }
+.sc-tools__row .sc-spinner { margin: 0; }
+
+.sc-jobchip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sc-sp-8);
+  padding: var(--sc-sp-4) var(--sc-sp-12);
+  margin-bottom: var(--sc-sp-8);
+  border-radius: var(--sc-radius-sm);
+  background: var(--sc-surface-2);
+  border: 1px solid var(--sc-border);
+  font-size: var(--sc-fs-meta);
+}
+
+.sc-composer {
+  container-type: inline-size;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sc-sp-8);
+  padding: var(--sc-sp-12) var(--sc-sp-16);
+  /* The bottom inset keeps the send control clear of the iPhone home
+     indicator. max() rather than a plain add, so a desktop browser — where
+     the inset is 0 — keeps the designed 12px and does not collapse to none. */
+  padding-bottom: max(var(--sc-sp-12), env(safe-area-inset-bottom));
+  border-top: 1px solid var(--sc-border);
+  background: var(--sc-bg);
+  position: sticky;
+  bottom: 0;
+  z-index: var(--sc-z-sticky);
+  font-family: var(--sc-sans);
+}
+.sc-composer__input {
+  flex: 1;
+  min-height: 40px;
+  max-height: 180px;
+  padding: var(--sc-sp-10) var(--sc-sp-12);
+  border-radius: var(--sc-radius-sm);
+  border: 1px solid var(--sc-border);
+  background: var(--sc-surface);
+  color: var(--sc-text);
+  font: inherit;
+  font-size: var(--sc-fs-body);
+  resize: none; /* height is driven by the auto-grow handler, not a drag handle */
+}
+.sc-composer__input:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: -1px; }
+
+/* Quoted document spans, staged in the composer. Accent-bordered because a
+   quote is the one thing in the composer that came from somewhere else — the
+   user needs to see at a glance what is riding along with their message. */
+.sc-quotes { list-style: none; margin: 0 0 var(--sc-sp-8); padding: 0; display: grid; gap: var(--sc-sp-6); }
+.sc-quote {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sc-sp-8);
+  padding: var(--sc-sp-4) var(--sc-sp-8);
+  border-radius: var(--sc-radius-sm);
+  /* The whole chip is tinted, not one edge: a colored left rule is the
+     generated-UI tell, and the source label already says where it came from. */
+  border: 1px solid color-mix(in srgb, var(--sc-accent) 35%, var(--sc-border));
+  background: color-mix(in srgb, var(--sc-accent) 5%, var(--sc-surface));
+  font-size: var(--sc-fs-meta);
+}
+.sc-quote__doc { flex: none; color: var(--sc-accent); font-weight: 500; }
+/* One line, clipped: a long quote must never grow the composer, which is the
+   same rule the thinking bar's peek follows. */
+.sc-quote__text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--sc-text-muted);
+}
+.sc-quote__remove {
+  flex: none;
+  border: 0;
+  background: none;
+  color: var(--sc-text-muted);
+  font: inherit;
+  font-size: var(--sc-fs-micro);
+  cursor: pointer;
+  padding: 0 var(--sc-sp-2);
+}
+.sc-quote__remove:hover { color: var(--sc-text); }
+
+/* ── edit review ──────────────────────────────────────────────────────────
+   The diff IS the approval, so it is built to be read line by line rather than
+   skimmed: monospace, one change per row, and a sign in front of every line so
+   the meaning survives without colour. */
+
+.sc-editreview__rev { color: var(--sc-text-muted); font-weight: 400; font-size: var(--sc-fs-micro); }
+.sc-hunks { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sc-sp-10); }
+.sc-hunk { border: 1px solid var(--sc-border); border-radius: var(--sc-radius-sm); overflow: hidden; }
+/* Deselected hunks stay legible rather than disappearing — the user has to be
+   able to re-read what they are declining. */
+.sc-hunk--off { opacity: 0.55; }
+.sc-hunk__head {
+  display: flex;
+  align-items: center;
+  gap: var(--sc-sp-8);
+  padding: var(--sc-sp-6) var(--sc-sp-8);
+  background: var(--sc-surface);
+  border-bottom: 1px solid var(--sc-border);
+  cursor: pointer;
+}
+.sc-hunk__where { font-size: var(--sc-fs-micro); color: var(--sc-text-muted); }
+.sc-hunk__body { padding: var(--sc-sp-6) 0; font-size: var(--sc-fs-meta); line-height: 1.5; overflow-x: auto; }
+.sc-hunk__line { display: flex; gap: var(--sc-sp-8); padding: 0 var(--sc-sp-8); white-space: pre-wrap; word-break: break-word; }
+.sc-hunk__sign { flex: none; width: 10px; text-align: center; color: var(--sc-text-muted); user-select: none; }
+.sc-hunk__text { min-width: 0; }
+.sc-hunk__line--del { background: color-mix(in srgb, var(--sc-negative) 13%, transparent); }
+.sc-hunk__line--add { background: color-mix(in srgb, var(--sc-positive) 13%, transparent); }
+.sc-hunk__note { padding: var(--sc-sp-2) var(--sc-sp-8); font-size: var(--sc-fs-micro); color: var(--sc-text-muted); }
+
+/* ── email draft ──────────────────────────────────────────────────────────── */
+
+.sc-email__fields { display: grid; gap: var(--sc-sp-6); margin-bottom: var(--sc-sp-8); }
+.sc-email__row { display: flex; align-items: center; gap: var(--sc-sp-8); }
+.sc-email__label { flex: none; width: 56px; font-size: var(--sc-fs-meta); color: var(--sc-text-muted); }
+.sc-email__body { width: 100%; resize: vertical; font-family: inherit; line-height: var(--sc-lh-prose); }
+.sc-email__warn { margin: var(--sc-sp-8) 0 0; padding: var(--sc-sp-8) var(--sc-sp-10); border-radius: var(--sc-radius-sm); }
+
+/* ── panel / inspector ────────────────────────────────────────────────────── */
+
+.sc-panel { padding: var(--sc-sp-16); font-size: var(--sc-fs-ui); font-family: var(--sc-sans); }
+.sc-panel__title { font-weight: 600; font-size: var(--sc-fs-ui); margin-bottom: var(--sc-sp-12); }
+.sc-panel__section { margin-bottom: var(--sc-sp-20); }
+/* A group heading in sentence case and weight, not uppercase tracking. */
+.sc-panel__label { font-size: var(--sc-fs-meta); font-weight: 600; color: var(--sc-text-muted); margin-bottom: var(--sc-sp-8); }
+.sc-panel__row { display: flex; justify-content: space-between; gap: var(--sc-sp-12); font-size: var(--sc-fs-meta); padding: var(--sc-sp-2) 0; }
+
+.sc-bar { margin-bottom: var(--sc-sp-10); }
+.sc-bar__head { display: flex; justify-content: space-between; font-size: var(--sc-fs-meta); margin-bottom: var(--sc-sp-4); }
+.sc-bar__track { height: 5px; border-radius: 999px; background: var(--sc-surface-2); overflow: hidden; }
+.sc-bar__fill { height: 100%; background: var(--sc-accent); }
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   agent surfaces
+   ──────────────────────────────────────────────────────────────────────────
+   Thinking states, orbs, code blocks, to-dos and the rich composer.
+
+   Everything below reads from the same tokens as the rules above, so the
+   light/dark handling is inherited rather than repeated: the reference designs
+   these follow hardcode a grey ramp per theme, and that ramp is exactly what
+   --sc-text-muted / --sc-surface already are.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── shimmer ──────────────────────────────────────────────────────────────
+   A brightness valley sweeping through the text. Painted as a wide gradient
+   clipped to the glyphs, so it costs one animated background-position and
+   never touches layout. */
+
+.sc-shimmer {
+  font-size: var(--sc-fs-ui);
+  line-height: 18px;
+  font-weight: 500;
+  color: var(--sc-text-muted);
+}
+/* The shimmer only takes over the text colour where clipping a background to
+   the glyphs actually works. Without the guard, a browser that ignores
+   background-clip:text renders transparent text on a transparent background —
+   the label disappears rather than degrading to a plain one. */
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .sc-shimmer {
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    background: linear-gradient(
+      90deg,
+      var(--sc-text-muted) 0%,
+      var(--sc-text-muted) 30%,
+      color-mix(in srgb, var(--sc-text-muted) 45%, transparent) 45%,
+      color-mix(in srgb, var(--sc-text-muted) 45%, transparent) 55%,
+      var(--sc-text-muted) 70%,
+      var(--sc-text-muted) 100%
+    );
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    animation: sc-shine 2.25s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
+  }
+}
+
+@keyframes sc-shine {
+  0%, 18% { background-position: 100% 0; }
+  82%, 100% { background-position: 0% 0; }
+}
+
+/* ── thinking + reasoning ─────────────────────────────────────────────── */
+
+.sc-think {
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+  margin-bottom: var(--sc-sp-10);
+  animation: sc-fade-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes sc-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+.sc-think__head {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sc-sp-6);
+  align-self: flex-start;
+  min-height: 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: default;
+}
+.sc-think__head--clickable { cursor: pointer; }
+
+.sc-think__label {
+  font-size: var(--sc-fs-ui);
+  line-height: 18px;
+  font-weight: 500;
+  /* softer than the verb, so "for Ns" sits behind it in the hierarchy */
+  color: color-mix(in srgb, var(--sc-text-muted) 78%, transparent);
+  letter-spacing: -0.005em;
+}
+.sc-think__verb { color: var(--sc-text-muted); }
+
+.sc-think__chevron {
+  color: var(--sc-text-muted);
+  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  /* the path is an up caret; the collapsed summary points down */
+  transform: rotate(180deg);
+}
+.sc-think__head[aria-expanded="true"] .sc-think__chevron { transform: rotate(0deg); }
+
+.sc-think__collapsible {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition: grid-template-rows 320ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease;
+}
+.sc-think__collapsible--closed { grid-template-rows: 0fr; opacity: 0; pointer-events: none; }
+.sc-think__inner { min-height: 0; overflow: hidden; }
+
+/* The viewport grows with the content, then caps. While thinking the stream is
+   pushed up behind a soft fade; once the user unfolds it, it scrolls natively
+   and the fades follow the scroll position. */
+.sc-think__viewport {
+  margin-top: var(--sc-sp-6);
+  overflow: hidden;
+  transition: height 360ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.sc-think__viewport--scroll { overflow-y: auto; scrollbar-width: none; }
+.sc-think__viewport--scroll::-webkit-scrollbar { display: none; }
+
+.sc-think__stream {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sc-sp-4);
+  transition: transform 560ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.sc-think__line {
+  margin: 0;
+  height: 40px;
+  line-height: 20px;
+  font-size: var(--sc-fs-ui);
+  font-weight: 425;
+  color: var(--sc-text-muted);
+  letter-spacing: -0.005em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  animation: sc-fade-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ── streaming caret ──────────────────────────────────────────────────── */
+
+.sc-caret {
+  display: inline-block;
+  width: 8px;
+  height: 1.05em;
+  margin-left: var(--sc-sp-2);
+  background: var(--sc-text);
+  vertical-align: text-bottom;
+  animation: sc-caret-blink 1s step-end infinite;
+}
+/* solid while tokens land; a caret that blinks mid-stream reads as a stall */
+.sc-caret--steady { animation: none; opacity: 1; }
+@keyframes sc-caret-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+/* ── orb ──────────────────────────────────────────────────────────────────
+   Geometry comes in as custom properties from Orb.tsx; these keyframes only
+   interpolate between the positions it computed. */
+
+.sc-orb {
+  --sc-orb-ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  --sc-orb-ease-in-out: cubic-bezier(0.66, 0, 0.34, 1);
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  color: var(--sc-text);
+}
+.sc-orb[data-pill] {
+  gap: 7px;
+  height: 30px;
+  padding: 0 11px 0 5px;
+  border-radius: 999px;
+  background: var(--sc-bg);
+  border: 1px solid var(--sc-border);
+}
+.sc-orb__label {
+  font-size: var(--sc-fs-micro);
+  font-weight: 425;
+  line-height: 1;
+  color: var(--sc-text-muted);
+  white-space: nowrap;
+}
+.sc-orb__glyph {
+  position: relative;
+  display: block;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  overflow: hidden;
+  contain: strict;
+}
+
+/* lattice (S) */
+.sc-orb__lattice {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 28px;
+  height: 28px;
+  transform-origin: 0 0;
+  transform: scale(var(--sc-orb-k, 1)) translate(6.5px, 6.5px);
+  --sc-orb-rest: 0.17;
+  --sc-orb-dim: 0.08;
+}
+.sc-orb__cell {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: var(--sc-orb-rest);
+}
+.sc-orb__lattice[data-variant="S1"] .sc-orb__cell,
+.sc-orb__lattice[data-variant="S2"] .sc-orb__cell { animation: sc-orb-wave 1.7s var(--sc-orb-ease-in-out) infinite both; }
+.sc-orb__lattice[data-variant="S4"] .sc-orb__cell { animation: sc-orb-wave 1.6s var(--sc-orb-ease-in-out) infinite both; }
+.sc-orb__lattice[data-variant="S3"] .sc-orb__cell,
+.sc-orb__lattice[data-variant="S5"] .sc-orb__cell { animation: sc-orb-comet 1.7s var(--sc-orb-ease-smooth) infinite both; }
+.sc-orb__lattice[data-variant="S3"] .sc-orb__cell[data-still],
+.sc-orb__lattice[data-variant="S5"] .sc-orb__cell[data-still] { animation: none; opacity: var(--sc-orb-dim); }
+
+@keyframes sc-orb-wave {
+  0% { opacity: var(--sc-orb-rest); transform: scale(1); animation-timing-function: cubic-bezier(0.66, 0, 0.34, 1); }
+  28% { opacity: 1; transform: scale(1.18); animation-timing-function: cubic-bezier(0.66, 0, 0.34, 1); }
+  56%, 100% { opacity: var(--sc-orb-rest); transform: scale(1); }
+}
+@keyframes sc-orb-comet {
+  0% { opacity: 1; transform: scale(1.2); animation-timing-function: linear; }
+  45%, 100% { opacity: var(--sc-orb-rest); transform: scale(1); }
+}
+
+/* lens (B) */
+.sc-orb__lens {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 28px;
+  height: 28px;
+  transform-origin: 0 0;
+  transform: scale(var(--sc-orb-k, 1));
+}
+.sc-orb__shape {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--sc-orb-d, 7px);
+  height: var(--sc-orb-d, 7px);
+  margin: calc(var(--sc-orb-d, 7px) / -2) 0 0 calc(var(--sc-orb-d, 7px) / -2);
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.sc-orb__lens[data-variant="B1"] .sc-orb__shape { --sc-orb-d: 6px; animation: sc-orb-focus 4s var(--sc-orb-ease-smooth) infinite both; }
+.sc-orb__lens[data-variant="B1"] .sc-orb__shape--a { --sc-orb-ox: -4.5px; --sc-orb-oy: -4.5px; animation-delay: 0s; }
+.sc-orb__lens[data-variant="B1"] .sc-orb__shape--b { --sc-orb-ox: 4.5px; --sc-orb-oy: -4.5px; animation-delay: -3s; }
+.sc-orb__lens[data-variant="B1"] .sc-orb__shape--c { --sc-orb-ox: 4.5px; --sc-orb-oy: 4.5px; animation-delay: -2s; }
+.sc-orb__lens[data-variant="B1"] .sc-orb__shape--d { --sc-orb-ox: -4.5px; --sc-orb-oy: 4.5px; animation-delay: -1s; }
+
+@keyframes sc-orb-focus {
+  0%, 100% { opacity: 0.05; filter: blur(2px); transform: translate(var(--sc-orb-ox), var(--sc-orb-oy)) scale(1.12); animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+  12% { opacity: 1; filter: blur(0); transform: translate(var(--sc-orb-ox), var(--sc-orb-oy)) scale(1); animation-timing-function: linear; }
+  22% { opacity: 1; filter: blur(0); transform: translate(var(--sc-orb-ox), var(--sc-orb-oy)) scale(1); animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+  38% { opacity: 0.3; filter: blur(1.2px); transform: translate(var(--sc-orb-ox), var(--sc-orb-oy)) scale(1.06); animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+  58% { opacity: 0.1; filter: blur(1.8px); transform: translate(var(--sc-orb-ox), var(--sc-orb-oy)) scale(1.1); animation-timing-function: linear; }
+  82% { opacity: 0.05; filter: blur(2px); transform: translate(var(--sc-orb-ox), var(--sc-orb-oy)) scale(1.12); }
+}
+
+.sc-orb__lens[data-variant="B2"] .sc-orb__shape { animation: sc-orb-revolve 3.3s linear infinite both; }
+.sc-orb__lens[data-variant="B2"] .sc-orb__shape--b { animation-delay: -1.1s; }
+.sc-orb__lens[data-variant="B2"] .sc-orb__shape--c { animation-delay: -2.2s; }
+
+@keyframes sc-orb-revolve {
+  0% { opacity: 1; filter: blur(0); transform: rotate(0deg) translateY(6.5px) scale(1); }
+  25% { opacity: 0.55; filter: blur(1.3px); transform: rotate(90deg) translateY(6.5px) scale(0.82); }
+  50% { opacity: 0.28; filter: blur(2.4px); transform: rotate(180deg) translateY(6.5px) scale(0.66); }
+  75% { opacity: 0.55; filter: blur(1.3px); transform: rotate(270deg) translateY(6.5px) scale(0.82); }
+  100% { opacity: 1; filter: blur(0); transform: rotate(360deg) translateY(6.5px) scale(1); }
+}
+
+.sc-orb__lens[data-variant="B3"] .sc-orb__shape { animation: sc-orb-bloom 4.2s linear infinite both; }
+.sc-orb__lens[data-variant="B3"] .sc-orb__shape--b { animation-delay: -1.4s; }
+.sc-orb__lens[data-variant="B3"] .sc-orb__shape--c { animation-delay: -2.8s; }
+
+@keyframes sc-orb-bloom {
+  0% { opacity: 0; filter: blur(0); transform: scale(0.35); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
+  8% { opacity: 1; filter: blur(0); transform: scale(0.55); animation-timing-function: linear; }
+  24% { opacity: 1; filter: blur(0); transform: scale(0.72); animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+  42% { opacity: 0.1; filter: blur(1.8px); transform: scale(1.5); }
+  62%, 100% { opacity: 0; filter: blur(2.8px); transform: scale(2.4); }
+}
+
+.sc-orb__lens[data-variant="B4"] .sc-orb__shape--a { animation: sc-orb-converge 3.6s linear infinite both; }
+.sc-orb__lens[data-variant="B4"] .sc-orb__shape--b { animation: sc-orb-breathe 3.6s ease-in-out infinite both; }
+.sc-orb__lens[data-variant="B4"] .sc-orb__shape--c { display: none; }
+
+@keyframes sc-orb-converge {
+  0% { transform: translate(0px, -5px) scale(1); filter: blur(0); animation-timing-function: linear; }
+  10% { transform: translate(0px, -5px) scale(1); filter: blur(0); animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  22% { transform: translate(2.15px, -1.25px) scale(0.72); filter: blur(0.8px); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  33% { transform: translate(4.3px, 2.5px) scale(1); filter: blur(0); animation-timing-function: linear; }
+  43% { transform: translate(4.3px, 2.5px) scale(1); filter: blur(0); animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  55% { transform: translate(0px, 2.5px) scale(0.72); filter: blur(0.8px); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  66% { transform: translate(-4.3px, 2.5px) scale(1); filter: blur(0); animation-timing-function: linear; }
+  77% { transform: translate(-4.3px, 2.5px) scale(1); filter: blur(0); animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  88% { transform: translate(-2.15px, -1.25px) scale(0.72); filter: blur(0.8px); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  100% { transform: translate(0px, -5px) scale(1); filter: blur(0); }
+}
+
+.sc-orb__lens[data-variant="B5"] .sc-orb__shape { animation: sc-orb-handoff 2.8s linear infinite both; }
+.sc-orb__lens[data-variant="B5"] .sc-orb__shape--c { animation-delay: -1.4s; }
+.sc-orb__lens[data-variant="B5"] .sc-orb__shape--b { animation-name: sc-orb-breathe; animation-duration: 3.6s; }
+
+@keyframes sc-orb-handoff {
+  0% { opacity: 0; filter: blur(2.4px); transform: translateX(-11px) scale(0.55); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  22% { opacity: 1; filter: blur(0); transform: translateX(-1px) scale(1); animation-timing-function: linear; }
+  37% { opacity: 1; filter: blur(0); transform: translateX(0) scale(1); animation-timing-function: linear; }
+  52% { opacity: 1; filter: blur(0); transform: translateX(1px) scale(1); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  70%, 100% { opacity: 0; filter: blur(2.4px); transform: translateX(11px) scale(0.55); }
+}
+
+@keyframes sc-orb-breathe {
+  0%, 100% { opacity: 0.16; filter: blur(2.4px); transform: scale(1.2); }
+  50% { opacity: 0.32; filter: blur(1.6px); transform: scale(0.98); }
+}
+
+/* ring (C) */
+.sc-orb__ring { position: absolute; inset: 0; transform: scale(var(--sc-orb-k, 1)); --sc-orb-ring-rest: 0.26; }
+.sc-orb__ringdot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3px;
+  height: 3px;
+  margin: -1.5px 0 0 -1.5px;
+  border-radius: 50%;
+  background: currentColor;
+  transform: translate(var(--sc-orb-rx), var(--sc-orb-ry));
+}
+.sc-orb__ring[data-variant="C1"] .sc-orb__ringdot { opacity: var(--sc-orb-ring-rest); animation: sc-orb-ring-chase 1.6s linear infinite both; }
+@keyframes sc-orb-ring-chase {
+  0%, 11% { opacity: 1; }
+  12.5%, 100% { opacity: var(--sc-orb-ring-rest); }
+}
+.sc-orb__ring[data-variant="C2"] .sc-orb__ringdot { animation: sc-orb-ring-pulse 2s ease-in-out infinite both; }
+@keyframes sc-orb-ring-pulse {
+  0%, 100% { opacity: 0.18; transform: translate(var(--sc-orb-rx), var(--sc-orb-ry)) scale(0.7); }
+  50% { opacity: 1; transform: translate(var(--sc-orb-rx), var(--sc-orb-ry)) scale(1.15); }
+}
+.sc-orb__ring[data-variant="C3"] .sc-orb__ringdot,
+.sc-orb__ring[data-variant="C5"] .sc-orb__ringdot { animation: sc-orb-ring-comet 1.8s ease-in-out infinite both; }
+@keyframes sc-orb-ring-comet {
+  0%, 100% { opacity: 0.08; }
+  12% { opacity: 1; animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  35% { opacity: 0.5; }
+  60% { opacity: 0.12; }
+}
+.sc-orb__ring[data-variant="C4"] .sc-orb__ringdot { animation: sc-orb-ring-stagger 1.6s ease-in-out infinite both; }
+@keyframes sc-orb-ring-stagger {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.15; }
+}
+
+/* helix (G) — a projected wireframe globe */
+.sc-orb__helix { position: absolute; inset: 0; transform: scale(var(--sc-orb-k, 1)); }
+.sc-orb__helixdot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2px;
+  height: 2px;
+  margin: -1px 0 0 -1px;
+  border-radius: 50%;
+  background: currentColor;
+  /* the first baked pose, so a dot that is not animating still sits on the
+     sphere instead of collapsing onto the centre */
+  transform: translate(var(--sc-g0x), var(--sc-g0y));
+  opacity: var(--sc-g0o);
+  will-change: transform, opacity;
+}
+.sc-orb__helix[data-variant="G1"] .sc-orb__helixdot { animation: sc-orb-globe-spin 4.5s linear infinite both; }
+.sc-orb__helix[data-variant="G2"] .sc-orb__helixdot { animation: sc-orb-globe-spin 3.6s linear infinite both; }
+.sc-orb__helix[data-variant="G3"] .sc-orb__helixdot,
+.sc-orb__helix[data-variant="G4"] .sc-orb__helixdot { animation: sc-orb-globe-ringturn 2.8s linear infinite both; }
+.sc-orb__helix[data-variant="G5"] .sc-orb__helixdot { animation: sc-orb-globe-breathe 3.6s linear infinite both; }
+
+@keyframes sc-orb-globe-spin {
+  0%, 100% { transform: translate(var(--sc-g0x), var(--sc-g0y)); opacity: var(--sc-g0o); }
+  12.5% { transform: translate(var(--sc-g1x), var(--sc-g1y)); opacity: var(--sc-g1o); }
+  25% { transform: translate(var(--sc-g2x), var(--sc-g2y)); opacity: var(--sc-g2o); }
+  37.5% { transform: translate(var(--sc-g3x), var(--sc-g3y)); opacity: var(--sc-g3o); }
+  50% { transform: translate(var(--sc-g4x), var(--sc-g4y)); opacity: var(--sc-g4o); }
+  62.5% { transform: translate(var(--sc-g5x), var(--sc-g5y)); opacity: var(--sc-g5o); }
+  75% { transform: translate(var(--sc-g6x), var(--sc-g6y)); opacity: var(--sc-g6o); }
+  87.5% { transform: translate(var(--sc-g7x), var(--sc-g7y)); opacity: var(--sc-g7o); }
+}
+
+@keyframes sc-orb-globe-ringturn {
+  0% { transform: translate(var(--sc-g0x), var(--sc-g0y)); opacity: var(--sc-g0o); }
+  2.5% { transform: translate(var(--sc-g1x), var(--sc-g1y)); opacity: var(--sc-g1o); }
+  5% { transform: translate(var(--sc-g2x), var(--sc-g2y)); opacity: var(--sc-g2o); }
+  7.5%, 10% { transform: translate(var(--sc-g3x), var(--sc-g3y)); opacity: var(--sc-g3o); }
+  12.5% { transform: translate(var(--sc-g4x), var(--sc-g4y)); opacity: var(--sc-g4o); }
+  15% { transform: translate(var(--sc-g5x), var(--sc-g5y)); opacity: var(--sc-g5o); }
+  17.5%, 20% { transform: translate(var(--sc-g6x), var(--sc-g6y)); opacity: var(--sc-g6o); }
+  22.5% { transform: translate(var(--sc-g7x), var(--sc-g7y)); opacity: var(--sc-g7o); }
+  25% { transform: translate(var(--sc-g8x), var(--sc-g8y)); opacity: var(--sc-g8o); }
+  27.5%, 30% { transform: translate(var(--sc-g9x), var(--sc-g9y)); opacity: var(--sc-g9o); }
+  32.5% { transform: translate(var(--sc-g10x), var(--sc-g10y)); opacity: var(--sc-g10o); }
+  35% { transform: translate(var(--sc-g11x), var(--sc-g11y)); opacity: var(--sc-g11o); }
+  37.5%, 40% { transform: translate(var(--sc-g12x), var(--sc-g12y)); opacity: var(--sc-g12o); }
+  42.5% { transform: translate(var(--sc-g13x), var(--sc-g13y)); opacity: var(--sc-g13o); }
+  45% { transform: translate(var(--sc-g14x), var(--sc-g14y)); opacity: var(--sc-g14o); }
+  47.5%, 50% { transform: translate(var(--sc-g15x), var(--sc-g15y)); opacity: var(--sc-g15o); }
+  52.5% { transform: translate(var(--sc-g16x), var(--sc-g16y)); opacity: var(--sc-g16o); }
+  55% { transform: translate(var(--sc-g17x), var(--sc-g17y)); opacity: var(--sc-g17o); }
+  57.5%, 60% { transform: translate(var(--sc-g18x), var(--sc-g18y)); opacity: var(--sc-g18o); }
+  62.5% { transform: translate(var(--sc-g19x), var(--sc-g19y)); opacity: var(--sc-g19o); }
+  65% { transform: translate(var(--sc-g20x), var(--sc-g20y)); opacity: var(--sc-g20o); }
+  67.5%, 70% { transform: translate(var(--sc-g21x), var(--sc-g21y)); opacity: var(--sc-g21o); }
+  72.5% { transform: translate(var(--sc-g22x), var(--sc-g22y)); opacity: var(--sc-g22o); }
+  75% { transform: translate(var(--sc-g23x), var(--sc-g23y)); opacity: var(--sc-g23o); }
+  77.5%, 80% { transform: translate(var(--sc-g24x), var(--sc-g24y)); opacity: var(--sc-g24o); }
+  82.5% { transform: translate(var(--sc-g25x), var(--sc-g25y)); opacity: var(--sc-g25o); }
+  85% { transform: translate(var(--sc-g26x), var(--sc-g26y)); opacity: var(--sc-g26o); }
+  87.5%, 90% { transform: translate(var(--sc-g27x), var(--sc-g27y)); opacity: var(--sc-g27o); }
+  92.5% { transform: translate(var(--sc-g28x), var(--sc-g28y)); opacity: var(--sc-g28o); }
+  95% { transform: translate(var(--sc-g29x), var(--sc-g29y)); opacity: var(--sc-g29o); }
+  97.5%, 100% { transform: translate(var(--sc-g30x), var(--sc-g30y)); opacity: var(--sc-g30o); }
+}
+
+@keyframes sc-orb-globe-breathe {
+  0% { transform: translate(var(--sc-g0x), var(--sc-g0y)); opacity: var(--sc-g0o); }
+  19% { transform: translate(var(--sc-g1x), var(--sc-g1y)); opacity: var(--sc-g1o); }
+  25% { transform: translate(var(--sc-g2x), var(--sc-g2y)); opacity: var(--sc-g2o); }
+  44% { transform: translate(var(--sc-g3x), var(--sc-g3y)); opacity: var(--sc-g3o); }
+  50% { transform: translate(var(--sc-g4x), var(--sc-g4y)); opacity: var(--sc-g4o); }
+  69% { transform: translate(var(--sc-g5x), var(--sc-g5y)); opacity: var(--sc-g5o); }
+  75% { transform: translate(var(--sc-g6x), var(--sc-g6y)); opacity: var(--sc-g6o); }
+  94% { transform: translate(var(--sc-g7x), var(--sc-g7y)); opacity: var(--sc-g7o); }
+  100% { transform: translate(var(--sc-g8x), var(--sc-g8y)); opacity: var(--sc-g8o); }
+}
+
+/* morph (M) */
+.sc-orb__morph { position: absolute; inset: 0; transform: scale(var(--sc-orb-k, 1)); }
+.sc-orb__morphdot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3px;
+  height: 3px;
+  margin: -1.5px 0 0 -1.5px;
+  border-radius: 50%;
+  background: currentColor;
+  transform: translate(var(--sc-m1)); /* resting shape, see .sc-orb__helixdot */
+  animation: sc-orb-morph 4.8s cubic-bezier(0.4, 0, 0.2, 1) infinite both;
+}
+@keyframes sc-orb-morph {
+  0%, 5% { transform: translate(var(--sc-m1)); }
+  25%, 30% { transform: translate(var(--sc-m2)); }
+  50%, 55% { transform: translate(var(--sc-m3)); }
+  75%, 80% { transform: translate(var(--sc-m4)); }
+  100% { transform: translate(var(--sc-m1)); }
+}
+.sc-orb__morph[data-variant="M2"],
+.sc-orb__morph[data-variant="M4"] { animation: sc-orb-morph-twist 9.6s linear infinite; }
+.sc-orb__morph[data-variant="M5"] .sc-orb__morphdot { animation: sc-orb-morph-scatter 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite both; }
+@keyframes sc-orb-morph-scatter {
+  0%, 12% { transform: translate(var(--sc-m1)); opacity: 1; }
+  38%, 62% { transform: translate(var(--sc-m2)); opacity: calc(1 - 0.6 * var(--sc-m-depth, 0)); }
+  88%, 100% { transform: translate(var(--sc-m1)); opacity: 1; }
+}
+@keyframes sc-orb-morph-twist {
+  from { transform: scale(var(--sc-orb-k, 1)) rotate(0deg); }
+  to { transform: scale(var(--sc-orb-k, 1)) rotate(360deg); }
+}
+
+/* ── code block ───────────────────────────────────────────────────────────
+   The gutter is a real grid column, not a ::before counter, so a hand
+   selection copies the code without dragging the line numbers along. */
+
+.sc-code {
+  margin: var(--sc-sp-10) 0;
+  border-radius: var(--sc-radius);
+  background: var(--sc-bg);
+  border: 1px solid var(--sc-border);
+  overflow: hidden;
+}
+.sc-code__head {
+  display: flex;
+  align-items: center;
+  gap: var(--sc-sp-8);
+  padding: var(--sc-sp-8) var(--sc-sp-10) var(--sc-sp-8) var(--sc-sp-12);
+  border-bottom: 1px solid var(--sc-border);
+}
+.sc-code__file { display: inline-flex; align-items: center; gap: 7px; min-width: 0; }
+.sc-code__icon { display: block; color: var(--sc-text-muted); flex: none; }
+.sc-code__lang {
+  font-family: var(--sc-mono);
+  font-size: var(--sc-fs-meta);
+  line-height: 1;
+  color: var(--sc-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sc-code__copy {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sc-sp-4);
+  flex: none;
+  font: inherit;
+  font-size: var(--sc-fs-meta);
+  color: var(--sc-text-muted);
+  border: 0;
+  background: none;
+  padding: 3px 6px;
+  border-radius: var(--sc-radius-sm);
+  cursor: pointer;
+}
+.sc-code__copy:hover { color: var(--sc-text); background: var(--sc-surface-2); }
+/* only the first action gets pushed right; the rest sit beside it */
+.sc-code__copy + .sc-code__copy { margin-left: 0; }
+
+.sc-code__body {
+  position: relative;
+  padding: var(--sc-sp-10) 0;
+  font-family: var(--sc-mono);
+  font-size: var(--sc-fs-meta);
+  line-height: 20px;
+  overflow-x: auto;
+}
+/* the gutter rule, drawn once rather than per row */
+.sc-code__body::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 32px;
+  width: 1px;
+  background: var(--sc-border);
+}
+.sc-code__body--nogutter::before { display: none; }
+.sc-code__row { display: grid; grid-template-columns: 32px 1fr; min-width: min-content; }
+.sc-code__body--nogutter .sc-code__row { grid-template-columns: 1fr; }
+.sc-code__row--mark { background: color-mix(in srgb, var(--sc-accent) 10%, transparent); }
+.sc-code__ln {
+  user-select: none;
+  text-align: right;
+  padding: 0 7px;
+  color: var(--sc-text-muted);
+  font-size: var(--sc-fs-micro);
+}
+.sc-code__line { white-space: pre; padding: 0 var(--sc-sp-12) 0 var(--sc-sp-8); color: var(--sc-text); }
+.sc-code__more { margin: var(--sc-sp-8) 0 0 var(--sc-sp-8); }
+
+/* ── document artifact ────────────────────────────────────────────────────
+   A previewer, not an editor: no toolbar and no caret here, by design
+   (UI-SPEC 6.4). Body text keeps --sc-fs-body — a document is the one thing
+   on screen the user is actually reading. */
+
+.sc-doc { display: flex; flex-direction: column; gap: var(--sc-sp-8); }
+.sc-doc__head { display: flex; align-items: center; gap: var(--sc-sp-8); }
+.sc-doc__title { font-weight: 600; font-size: var(--sc-fs-ui); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-doc__rev { color: var(--sc-text-muted); font-size: var(--sc-fs-micro); flex: none; }
+.sc-doc__expand {
+  margin-left: auto;
+  flex: none;
+  padding: var(--sc-sp-4) var(--sc-sp-8);
+  border-radius: var(--sc-radius-sm);
+  border: 1px solid var(--sc-border);
+  background: var(--sc-bg);
+  color: var(--sc-text-muted);
+  font: inherit;
+  font-size: var(--sc-fs-meta);
+  cursor: pointer;
+}
+.sc-doc__expand:hover { color: var(--sc-text); background: var(--sc-surface-2); }
+
+/* Inline, the document is a preview: capped so one artifact cannot push the
+   rest of the conversation off screen. Opening it removes the cap. */
+.sc-doc__body { max-height: 320px; overflow-y: auto; font-size: var(--sc-fs-body); }
+.sc-doc--open .sc-doc__body { max-height: none; }
+.sc-doc__body ::selection { background: color-mix(in srgb, var(--sc-accent) 26%, transparent); }
+
+/* Left behind in the flow while the surface is open, so the transcript does
+   not jump by the card's height and lose the user's scroll position. */
+.sc-doc--placeholder { opacity: 0.5; }
+
+.sc-doc__quotebar {
+  display: flex;
+  align-items: center;
+  gap: var(--sc-sp-8);
+  padding: var(--sc-sp-6) var(--sc-sp-8);
+  border-radius: var(--sc-radius-sm);
+  border: 1px solid color-mix(in srgb, var(--sc-accent) 40%, var(--sc-border));
+  background: color-mix(in srgb, var(--sc-accent) 8%, var(--sc-bg));
+}
+.sc-doc__quotetext {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--sc-fs-meta);
+  color: var(--sc-text-muted);
+}
+
+.sc-doc__quotedismiss {
+  flex: none;
+  border: 0;
+  background: none;
+  color: var(--sc-text-muted);
+  font: inherit;
+  font-size: var(--sc-fs-micro);
+  cursor: pointer;
+  padding: 0 var(--sc-sp-2);
+}
+.sc-doc__quotedismiss:hover { color: var(--sc-text); }
+
+.sc-doc__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--sc-z-modal);
+  background: color-mix(in srgb, var(--sc-text) 38%, transparent);
+}
+.sc-doc__surface {
+  position: fixed;
+  z-index: var(--sc-z-modal);
+  top: var(--sc-sp-32);
+  bottom: var(--sc-sp-32);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(760px, calc(100% - var(--sc-sp-48)));
+  overflow-y: auto;
+  border-radius: var(--sc-radius);
+  background: var(--sc-bg);
+  box-shadow: var(--sc-shadow-overlay);
+}
+.sc-doc__surface .sc-doc { margin: 0; border: 0; }
+
+/* ── to-do list ───────────────────────────────────────────────────────── */
+
+.sc-todo {
+  margin: var(--sc-sp-10) 0;
+  font-size: var(--sc-fs-ui);
+  color: var(--sc-text);
+  background: var(--sc-surface);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius);
+  padding: var(--sc-sp-8) var(--sc-sp-12) var(--sc-sp-12);
+}
+.sc-todo__head {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: var(--sc-sp-8);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: var(--sc-text);
+  font: inherit;
+  font-size: var(--sc-fs-ui);
+  min-height: 22px;
+}
+.sc-todo__headicon { position: relative; width: 16px; height: 16px; flex: none; color: var(--sc-text-muted); }
+.sc-todo__headlist, .sc-todo__chevron, .sc-todo__headcheck { position: absolute; inset: 0; margin: auto; transition: opacity 140ms ease; }
+.sc-todo__headlist, .sc-todo__chevron { width: 13px; height: 13px; }
+/* the solid check reads smaller than an outlined glyph, so render it full size */
+.sc-todo__headcheck { width: 16px; height: 16px; color: var(--sc-positive); }
+.sc-todo__chevron { opacity: 0; transition: opacity 140ms ease, transform 220ms ease; }
+.sc-todo__head[aria-expanded="false"] .sc-todo__chevron { transform: rotate(-90deg); }
+/* hovering the header swaps whichever status glyph is showing for the chevron */
+.sc-todo__head:hover .sc-todo__headlist,
+.sc-todo__head:hover .sc-todo__pie,
+.sc-todo__head:hover .sc-todo__headcheck { opacity: 0; }
+.sc-todo__head:hover .sc-todo__chevron { opacity: 1; }
+.sc-todo__title { font-weight: 500; }
+.sc-todo__count { margin-left: auto; color: var(--sc-text-muted); font-variant-numeric: tabular-nums; }
+
+.sc-roll { display: inline-flex; align-items: baseline; }
+.sc-roll__digit { display: inline-block; overflow: hidden; height: 1em; line-height: 1em; }
+.sc-roll__inner { display: flex; flex-direction: column; transition: transform 350ms cubic-bezier(0.4, 0, 0.2, 1); }
+.sc-roll__inner span { height: 1em; line-height: 1em; }
+.sc-roll__inner--up { transform: translateY(-1em); }
+
+.sc-todo__collapsible {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition: grid-template-rows 280ms ease, opacity 200ms ease;
+}
+.sc-todo__collapsible--closed { grid-template-rows: 0fr; opacity: 0; pointer-events: none; }
+.sc-todo__inner { min-height: 0; overflow: hidden; }
+.sc-todo__list { list-style: none; display: flex; flex-direction: column; gap: var(--sc-sp-8); margin: 0; padding: var(--sc-sp-10) 0 0; }
+.sc-todo__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  line-height: 18px;
+  color: var(--sc-text-muted);
+  animation: sc-todo-in 360ms ease backwards;
+  animation-delay: calc(var(--sc-i, 0) * 50ms);
+}
+@keyframes sc-todo-in {
+  from { opacity: 0; transform: translateY(-7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.sc-todo__iconwrap { position: relative; width: 16px; height: 16px; flex: none; margin-top: 1px; }
+.sc-todo__icon {
+  position: absolute;
+  inset: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--sc-text-muted);
+  opacity: 0;
+  transition: opacity 320ms ease;
+}
+.sc-todo__icon--on { opacity: 1; }
+.sc-todo__icon--strong { color: var(--sc-text); }
+.sc-todo__icon--blocked { color: var(--sc-negative); }
+
+.sc-todo__label { position: relative; font-weight: 400; color: var(--sc-text-muted); }
+/* The shimmer is an overlay that ADDS brightness at the gradient's peaks; the
+   label underneath keeps a readable colour in every state. The obvious way to
+   write this — make the label transparent and let a gradient-clipped copy be
+   the only visible text — has a bad failure mode: anything that stops the
+   overlay from painting (a stalled transition, no background-clip support)
+   leaves the item blank. Here the worst case is a label that shimmers when it
+   should not. */
+.sc-todo__label::before {
+  content: attr(data-label);
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    var(--sc-text) 0%,
+    var(--sc-text) 30%,
+    transparent 45%,
+    transparent 55%,
+    var(--sc-text) 70%,
+    var(--sc-text) 100%
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  opacity: 0;
+  transition: opacity 360ms ease;
+  pointer-events: none;
+}
+.sc-todo__item--active .sc-todo__label::before {
+  opacity: 1;
+  animation: sc-shine 2.25s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
+}
+.sc-todo__item--done .sc-todo__label { color: var(--sc-text-muted); text-decoration: line-through; }
+.sc-todo__item--blocked .sc-todo__label { color: var(--sc-negative); }
+
+/* determinate progress pie in the header: filled share = done / total */
+@property --sc-todo-pie {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 0%;
+}
+.sc-todo__pie {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  color: var(--sc-text);
+  transition: opacity 140ms ease, --sc-todo-pie 400ms ease;
+}
+/* dotted outline, matching the pending items' circles */
+.sc-todo__piering { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; color: var(--sc-text-muted); }
+.sc-todo__pie::after {
+  content: "";
+  position: absolute;
+  inset: 2.6px;
+  border-radius: 50%;
+  background: conic-gradient(currentColor var(--sc-todo-pie, 0%), transparent 0);
+}
+
+/* ── plan progress ────────────────────────────────────────────────────────
+   Run-scoped ambient state, so it is styled to FILL its box and never to
+   place itself: no position, no width, no margin-inline. A framework that
+   ships "right sidebar" in the component has decided the host's layout for
+   it. What the component does own is density — collapsed, the list folds and
+   the segmented meter is left carrying progress on its own.
+
+   The motion is one idea, a thread advancing downward, told five ways:
+
+     spine fill    scaleY from the top as each step settles
+     drip          a light trickling down the ACTIVE step's spine only
+     check draw    stroke-dashoffset retracting on a pathLength="1" path
+     strike wipe   clip-path revealing a line-through overlay left to right
+     halo          two rings leaving the active node, half a cycle apart
+
+   Every one is transform, opacity or clip-path, so none of them read back
+   layout. The three that mark a state CHANGE (fill, draw, wipe) are
+   transitions rather than keyframes, which means they fire only when the
+   status actually flips and stay silent on mount — a list that arrives
+   already half-finished should not replay its own history. */
+
+.sc-plan {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sc-sp-8);
+  padding: var(--sc-sp-10) var(--sc-sp-12) var(--sc-sp-12);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius);
+  background: var(--sc-surface);
+  color: var(--sc-text);
+  font-family: var(--sc-sans);
+  animation: sc-fade-in var(--sc-dur-3) var(--sc-ease-out) both;
+}
+
+.sc-plan__head {
+  display: flex;
+  align-items: center;
+  gap: var(--sc-sp-8);
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--sc-fs-ui);
+  text-align: left;
+  cursor: pointer;
+  min-height: 20px;
+}
+.sc-plan__head:disabled { cursor: default; }
+
+/* Collapsed, this slot holds the active step's label instead of the title, so
+   it has to be able to give way rather than push the count off the row. */
+.sc-plan__title {
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sc-plan__count { margin-left: auto; color: var(--sc-text-muted); font-variant-numeric: tabular-nums; }
+.sc-plan__chevron {
+  flex: none;
+  color: var(--sc-text-muted);
+  transition: transform var(--sc-dur-3) var(--sc-ease-out);
+  /* the path is an up caret; collapsed points down */
+  transform: rotate(180deg);
+}
+.sc-plan__head[aria-expanded="true"] .sc-plan__chevron { transform: rotate(0deg); }
+
+/* ── meter ─────────────────────────────────────────────────────────────
+   One segment per step, so it reads as "which" and not only "how far" — a
+   single bar at 60% cannot say that step 4 failed. Lives outside the
+   collapsible: folded, it is the only thing left carrying progress. */
+.sc-plan__meter { display: flex; gap: var(--sc-sp-2); }
+.sc-plan__seg {
+  position: relative;
+  flex: 1;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--sc-surface-2);
+  overflow: hidden;
+}
+.sc-plan__seg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--sc-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--sc-dur-3) var(--sc-ease-out);
+  /* Staggered so a run that lands several steps at once fills left to right
+     instead of flashing the whole bar. */
+  transition-delay: calc(var(--sc-i, 0) * 40ms);
+}
+.sc-plan__seg[data-status="done"]::before { transform: scaleX(1); }
+.sc-plan__seg[data-status="skipped"]::before { transform: scaleX(1); background: var(--sc-text-muted); }
+.sc-plan__seg[data-status="failed"]::before { transform: scaleX(1); background: var(--sc-negative); }
+/* The running segment is full width but unfilled — a travelling highlight, so
+   "in progress" is distinguishable from "done" without reading the label. */
+.sc-plan__seg[data-status="active"]::before {
+  transform: scaleX(1);
+  background-image: linear-gradient(90deg, transparent, var(--sc-accent), transparent);
+  background-color: color-mix(in srgb, var(--sc-accent) 22%, transparent);
+  background-size: 55% 100%;
+  background-repeat: no-repeat;
+  animation: sc-plan-flow 1.6s linear infinite;
+}
+@keyframes sc-plan-flow {
+  from { background-position: -80% 0; }
+  to { background-position: 180% 0; }
+}
+
+/* ── list ──────────────────────────────────────────────────────────────── */
+
+.sc-plan__collapsible {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition: grid-template-rows var(--sc-dur-3) var(--sc-ease-in-out), opacity 200ms ease;
+}
+.sc-plan__collapsible--closed { grid-template-rows: 0fr; opacity: 0; pointer-events: none; }
+.sc-plan__inner { min-height: 0; overflow: hidden; }
+
+.sc-plan__list { list-style: none; margin: 0; padding: var(--sc-sp-4) 0 0; display: grid; }
+
+/* No row gap: the spine has to cross it, and a gap is not something a child
+   can span. The vertical rhythm comes from the body's own padding instead,
+   which the rail — a sibling grid item — stretches across. */
+.sc-plan__step {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  column-gap: var(--sc-sp-10);
+  align-items: start;
+}
+
+.sc-plan__rail { display: flex; flex-direction: column; align-items: center; height: 100%; }
+
+.sc-plan__node {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--sc-border);
+  background: var(--sc-bg);
+  color: var(--sc-accent-contrast);
+  transition: background-color 260ms ease, border-color 260ms ease;
+}
+.sc-plan__step[data-status="active"] .sc-plan__node { border-color: var(--sc-accent); }
+.sc-plan__step[data-status="done"] .sc-plan__node { background: var(--sc-accent); border-color: var(--sc-accent); }
+.sc-plan__step[data-status="failed"] .sc-plan__node {
+  background: var(--sc-negative);
+  border-color: var(--sc-negative);
+  color: var(--sc-negative-contrast);
+}
+.sc-plan__step[data-status="skipped"] .sc-plan__node { border-style: dashed; color: var(--sc-text-muted); }
+
+.sc-plan__glyph { width: 12px; height: 12px; overflow: visible; }
+/* pathLength="1" normalises the geometry, so one dash covers the whole path
+   whatever the viewBox is and the offset never has to be re-measured. */
+.sc-plan__draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  /* delayed behind the node fill, so the disc lands and THEN the mark is
+     written on it — reversed, the check appears to be erased */
+  transition: stroke-dashoffset 420ms var(--sc-ease-out) 90ms;
+}
+.sc-plan__step[data-status="done"] .sc-plan__draw,
+.sc-plan__step[data-status="failed"] .sc-plan__draw,
+.sc-plan__step[data-status="skipped"] .sc-plan__draw { stroke-dashoffset: 0; }
+
+/* Two rings, half a cycle apart, so the pulse is continuous rather than
+   beating. They are siblings (halo + node::after) rather than nested: a ring
+   inside a scaling ring would compound the transforms. */
+.sc-plan__halo,
+.sc-plan__node::after {
+  content: "";
+  position: absolute;
+  inset: -1.5px;
+  border-radius: 50%;
+  border: 1.5px solid var(--sc-accent);
+  opacity: 0;
+  pointer-events: none;
+}
+.sc-plan__step[data-status="active"] .sc-plan__halo,
+.sc-plan__step[data-status="active"] .sc-plan__node::after {
+  animation: sc-plan-halo 2.1s var(--sc-ease-out) infinite;
+}
+.sc-plan__step[data-status="active"] .sc-plan__node::after { animation-delay: -1.05s; }
+@keyframes sc-plan-halo {
+  0% { transform: scale(1); opacity: 0.5; }
+  70%, 100% { transform: scale(2.15); opacity: 0; }
+}
+
+/* ── spine ─────────────────────────────────────────────────────────────
+   flex:1 inside a full-height rail, so it always reaches the next node
+   whatever the label wrapped to. */
+.sc-plan__spine {
+  position: relative;
+  flex: 1;
+  width: 2px;
+  min-height: var(--sc-sp-12);
+  margin: var(--sc-sp-4) 0;
+  border-radius: 999px;
+  background: var(--sc-border);
+  overflow: hidden;
+}
+.sc-plan__spine::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--sc-accent);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 520ms var(--sc-ease-out);
+}
+.sc-plan__step[data-status="done"] .sc-plan__spine::before { transform: scaleY(1); }
+.sc-plan__step[data-status="skipped"] .sc-plan__spine::before { transform: scaleY(1); background: var(--sc-text-muted); }
+
+/* The drip. Only on the active step, and the one motion here that is purely
+   ambient — it says "this is where the work is" to someone who looked away
+   and came back. Percentage geometry, so it scales with however tall the
+   label made the spine. */
+.sc-plan__spine::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -40%;
+  height: 40%;
+  border-radius: 999px;
+  background: linear-gradient(to bottom, transparent, var(--sc-accent), transparent);
+  opacity: 0;
+}
+.sc-plan__step[data-status="active"] .sc-plan__spine::after {
+  animation: sc-plan-drip 1.45s var(--sc-ease-in-out) infinite;
+}
+@keyframes sc-plan-drip {
+  0% { top: -40%; opacity: 0; }
+  25%, 72% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* ── step body ─────────────────────────────────────────────────────────── */
+
+.sc-plan__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sc-sp-2);
+  min-width: 0;
+  padding-bottom: var(--sc-sp-16);
+}
+/* A thread continuing past the last node implies work that is not there. */
+.sc-plan__step[data-last] .sc-plan__body { padding-bottom: 0; }
+
+.sc-plan__label {
+  position: relative;
+  display: block;
+  font-size: var(--sc-fs-ui);
+  line-height: var(--sc-lh-ui);
+  color: var(--sc-text-muted);
+  transition: color 320ms ease;
+}
+.sc-plan__step[data-status="active"] .sc-plan__label { color: var(--sc-text); font-weight: 500; }
+.sc-plan__step[data-status="failed"] .sc-plan__label { color: var(--sc-negative); }
+
+/* The strike is an overlay COPY of the label, clipped left to right. Three
+   things this buys over the obvious approaches: it wipes rather than fades
+   (which text-decoration-color alone cannot do), it strikes every line of a
+   wrapped label (which one absolutely-positioned bar cannot), and if the
+   overlay fails to paint at all the real label underneath is untouched — the
+   same failure reasoning as the to-do shimmer. */
+.sc-plan__label::after {
+  content: attr(data-label);
+  position: absolute;
+  inset: 0;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  text-decoration: line-through;
+  text-decoration-color: var(--sc-text-muted);
+  text-decoration-thickness: 1px;
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 520ms var(--sc-ease-out);
+  pointer-events: none;
+}
+.sc-plan__step[data-status="done"] .sc-plan__label::after,
+.sc-plan__step[data-status="skipped"] .sc-plan__label::after { clip-path: inset(0 0 0 0); }
+
+.sc-plan__detail { font-size: var(--sc-fs-meta); line-height: var(--sc-lh-ui); color: var(--sc-text-muted); }
+/* A finished step's detail is history: still readable, no longer competing. */
+.sc-plan__step[data-status="done"] .sc-plan__detail,
+.sc-plan__step[data-status="skipped"] .sc-plan__detail { opacity: 0.6; }
+
+/* ── data table (bordered grid variant) ───────────────────────────────── */
+
+.sc-table--grid { border-collapse: separate; border-spacing: 0; border: 1px solid var(--sc-border); border-radius: var(--sc-radius); overflow: hidden; background: var(--sc-bg); }
+.sc-table--grid th, .sc-table--grid td { border-bottom: 1px solid var(--sc-border); border-right: 1px solid var(--sc-border); padding: 9px 12px; }
+.sc-table--grid th:last-child, .sc-table--grid td:last-child { border-right: none; }
+.sc-table--grid tbody tr:last-child td { border-bottom: none; }
+.sc-table--grid thead th { background: var(--sc-surface); }
+
+/* ── agent input ──────────────────────────────────────────────────────── */
+
+.sc-ai {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sc-sp-8);
+  padding: var(--sc-sp-12) var(--sc-sp-16);
+  padding-bottom: max(var(--sc-sp-12), env(safe-area-inset-bottom));
+}
+.sc-ai[data-disabled] { opacity: 0.6; pointer-events: none; }
+
+.sc-ai__attachments { display: flex; flex-wrap: wrap; gap: var(--sc-sp-6); }
+.sc-ai__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sc-sp-6);
+  max-width: 220px;
+  padding: 4px 6px 4px 9px;
+  border-radius: 999px;
+  background: var(--sc-surface-2);
+  border: 1px solid var(--sc-border);
+  font-size: var(--sc-fs-meta);
+  animation: sc-fade-in 200ms ease both;
+}
+.sc-ai__chip-icon { display: inline-flex; color: var(--sc-text-muted); flex: none; }
+.sc-ai__chip-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-ai__chip-x {
+  display: inline-flex;
+  padding: var(--sc-sp-2);
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--sc-text-muted);
+  cursor: pointer;
+  flex: none;
+}
+.sc-ai__chip-x:hover { color: var(--sc-text); background: var(--sc-border); }
+
+.sc-ai__frame {
+  position: relative;
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius);
+  background: var(--sc-surface);
+  transition: border-color 140ms ease;
+}
+.sc-ai__frame:focus-within { border-color: color-mix(in srgb, var(--sc-accent) 55%, var(--sc-border)); }
+
+.sc-ai__editor {
+  min-height: 44px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 12px 14px 4px;
+  font-size: var(--sc-fs-body);
+  line-height: 1.5;
+  color: var(--sc-text);
+  outline: none;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.sc-ai__editor[data-empty]::before {
+  content: attr(data-placeholder);
+  color: var(--sc-text-muted);
+  pointer-events: none;
+}
+
+/* skill pills live inline with the text and delete as one unit */
+.sc-ai__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sc-sp-2);
+  margin: 0 2px 0 1px;
+  padding: 1px 3px 1px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--sc-accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--sc-accent) 38%, transparent);
+  color: var(--sc-accent);
+  font-size: var(--sc-fs-meta);
+  vertical-align: baseline;
+  user-select: none;
+}
+.sc-ai__pill[data-start] { margin-left: 0; }
+.sc-ai__pill-label { line-height: 1.4; }
+.sc-ai__pill-x {
+  display: inline-flex;
+  padding: 1px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  opacity: 0.65;
+  cursor: pointer;
+}
+.sc-ai__pill-x:hover { opacity: 1; }
+
+.sc-ai__palette {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: calc(100% + 6px);
+  z-index: 20;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: var(--sc-sp-4);
+  border-radius: var(--sc-radius);
+  border: 1px solid var(--sc-border);
+  background: var(--sc-bg);
+  box-shadow: var(--sc-shadow-overlay);
+}
+.sc-ai__paletteitem {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: var(--sc-radius-sm);
+  background: none;
+  color: var(--sc-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sc-ai__paletteitem--on { background: var(--sc-surface-2); }
+.sc-ai__palettename { font-size: var(--sc-fs-ui); font-weight: 500; }
+.sc-ai__palettedesc { font-size: var(--sc-fs-micro); color: var(--sc-text-muted); }
+
+.sc-ai__bar { display: flex; align-items: center; gap: var(--sc-sp-8); padding: var(--sc-sp-6) var(--sc-sp-8) var(--sc-sp-8) var(--sc-sp-10); }
+.sc-ai__left, .sc-ai__right { display: flex; align-items: center; gap: var(--sc-sp-6); }
+.sc-ai__right { margin-left: auto; }
+
+.sc-ai__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--sc-border);
+  border-radius: 50%;
+  background: var(--sc-bg);
+  color: var(--sc-text-muted);
+  cursor: pointer;
+}
+.sc-ai__icon:hover:not(:disabled) { color: var(--sc-text); background: var(--sc-surface-2); }
+.sc-ai__icon:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.sc-ai__menuwrap { position: relative; }
+.sc-ai__menu {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 6px);
+  z-index: 20;
+  min-width: 190px;
+  padding: var(--sc-sp-4);
+  border-radius: var(--sc-radius);
+  border: 1px solid var(--sc-border);
+  background: var(--sc-bg);
+  box-shadow: var(--sc-shadow-overlay);
+  animation: sc-fade-in 120ms ease both;
+}
+.sc-ai__menu--wide { min-width: 280px; }
+.sc-ai__menuitem {
+  display: flex;
+  align-items: center;
+  gap: var(--sc-sp-8);
+  width: 100%;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: var(--sc-radius-sm);
+  background: none;
+  color: var(--sc-text);
+  font: inherit;
+  font-size: var(--sc-fs-ui);
+  text-align: left;
+  cursor: pointer;
+}
+.sc-ai__menuitem:hover { background: var(--sc-surface-2); }
+.sc-ai__menuchevron { margin-left: auto; color: var(--sc-text-muted); display: inline-flex; }
+.sc-ai__submenuwrap { position: relative; }
+.sc-ai__submenu {
+  position: absolute;
+  left: calc(100% + 4px);
+  bottom: 0;
+  min-width: 170px;
+  padding: var(--sc-sp-4);
+  border-radius: var(--sc-radius);
+  border: 1px solid var(--sc-border);
+  background: var(--sc-bg);
+  box-shadow: var(--sc-shadow-overlay);
+}
+
+.sc-ai__model {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sc-sp-6);
+  padding: 5px 10px;
+  border: 1px solid var(--sc-border);
+  border-radius: 999px;
+  background: var(--sc-bg);
+  color: var(--sc-text-muted);
+  font: inherit;
+  font-size: var(--sc-fs-meta);
+  cursor: pointer;
+}
+.sc-ai__model:hover:not(:disabled) { color: var(--sc-text); background: var(--sc-surface-2); }
+.sc-ai__modelitem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sc-sp-2);
+  width: 100%;
+  padding: 8px 9px;
+  border: 0;
+  border-radius: var(--sc-radius-sm);
+  background: none;
+  color: var(--sc-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sc-ai__modelitem:hover { background: var(--sc-surface-2); }
+.sc-ai__modelhead { display: flex; align-items: center; gap: var(--sc-sp-6); }
+.sc-ai__modelname { font-size: var(--sc-fs-ui); font-weight: 500; }
+.sc-ai__modelcheck { margin-left: auto; color: var(--sc-accent); display: inline-flex; }
+.sc-ai__modeldesc { font-size: var(--sc-fs-micro); color: var(--sc-text-muted); line-height: 1.4; }
+.sc-ai__modelctx { font-size: var(--sc-fs-micro); color: var(--sc-text-muted); font-variant-numeric: tabular-nums; }
+
+.sc-ai__enhance {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border: 1px solid var(--sc-border);
+  border-radius: 999px;
+  background: var(--sc-bg);
+  color: var(--sc-text-muted);
+  font: inherit;
+  font-size: var(--sc-fs-meta);
+  cursor: pointer;
+  animation: sc-fade-in 160ms ease both;
+}
+.sc-ai__enhance:hover { color: var(--sc-text); background: var(--sc-surface-2); }
+.sc-ai__enhance--on { color: var(--sc-accent); border-color: color-mix(in srgb, var(--sc-accent) 45%, var(--sc-border)); }
+
+.sc-ai__send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sc-accent);
+  color: var(--sc-accent-contrast);
+  cursor: pointer;
+  transition: opacity 120ms ease, filter 120ms ease;
+}
+.sc-ai__send:hover:not(:disabled) { filter: brightness(1.08); }
+.sc-ai__send:disabled { opacity: 0.35; cursor: not-allowed; }
+.sc-ai__send--stop { background: var(--sc-text); color: var(--sc-bg); }
+
+/* ── reduced motion ───────────────────────────────────────────────────────
+   Every animation above is decorative: it conveys "in progress", which the
+   surrounding text already says. So they stop outright rather than slow down,
+   and each family pins a legible resting frame. */
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-shimmer,
+  .sc-todo__item,
+  .sc-todo__item--active .sc-todo__label::before,
+  .sc-think,
+  .sc-think__line,
+  .sc-caret,
+  .sc-ai__menu,
+  .sc-ai__enhance,
+  .sc-ai__chip { animation: none; }
+
+  .sc-shimmer {
+    color: var(--sc-text-muted);
+    -webkit-text-fill-color: var(--sc-text-muted);
+    background: none;
+  }
+
+  .sc-think__viewport,
+  .sc-think__stream,
+  .sc-think__collapsible,
+  .sc-todo__collapsible,
+  .sc-todo__icon,
+  .sc-todo__label,
+  .sc-roll__inner { transition: none; }
+
+  /* The plan's resting frames. Every state it can be in still has to be
+     readable from the still image: the spine stays filled to the last settled
+     step, the check stays drawn, the strike stays struck. What goes is only
+     the travel — the two ambient loops (halo, drip) have no resting frame
+     worth pinning because their whole content is motion, so they simply never
+     start, and the accent ring on the active node carries "here" instead. */
+  .sc-plan,
+  .sc-plan__halo,
+  .sc-plan__node::after,
+  .sc-plan__spine::after,
+  .sc-plan__seg[data-status="active"]::before { animation: none; }
+
+  .sc-plan__chevron,
+  .sc-plan__collapsible,
+  .sc-plan__node,
+  .sc-plan__label,
+  .sc-plan__draw,
+  .sc-plan__seg::before,
+  .sc-plan__spine::before { transition: none; }
+
+  /* Without its sweep the gradient would sit frozen mid-bar, reading as a
+     half-finished step rather than a running one. Solid, dimmed against the
+     completed segments, says the same thing standing still. */
+  .sc-plan__seg[data-status="active"]::before {
+    background-image: none;
+    background-color: color-mix(in srgb, var(--sc-accent) 55%, transparent);
+  }
+
+  .sc-orb__cell,
+  .sc-orb__shape,
+  .sc-orb__ringdot,
+  .sc-orb__helixdot,
+  .sc-orb__morphdot,
+  .sc-orb__ring,
+  .sc-orb__helix,
+  .sc-orb__morph { animation: none !important; }
+  .sc-orb__cell[data-mid] { opacity: 1 !important; }
+  .sc-orb__shape { opacity: 0.3 !important; filter: blur(1.4px) !important; transform: none !important; }
+  .sc-orb__shape--a { opacity: 1 !important; filter: blur(0) !important; }
+  .sc-orb__ringdot, .sc-orb__helixdot, .sc-orb__morphdot { opacity: 0.7 !important; }
+}
+
+.sc-chips { display: flex; flex-wrap: wrap; gap: var(--sc-sp-4); }
+.sc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sc-sp-4); font-size: var(--sc-fs-meta); }
+.sc-note { padding: var(--sc-sp-8) var(--sc-sp-12); border-radius: var(--sc-radius-sm); font-size: var(--sc-fs-meta); margin-bottom: var(--sc-sp-6); }
+.sc-note--warning { background: color-mix(in srgb, var(--sc-warning) 14%, transparent); color: var(--sc-warning); }
+
+/* ── composer accessories ─────────────────────────────────────────────────── */
+
+/* The composer becomes a two-row surface only when it has accessories; without
+   them it stays the single line it was. `relative` anchors the suggest menu. */
+.sc-composer { position: relative; flex-wrap: wrap; }
+.sc-composer--stacked { flex-direction: column; align-items: stretch; }
+.sc-composer--stacked .sc-composer__input { width: 100%; }
+.sc-composer__bar { display: flex; align-items: center; gap: var(--sc-sp-8); }
+.sc-composer__spacer { flex: 1; }
+.sc-composer__tokens { font-size: var(--sc-fs-micro); color: var(--sc-text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.sc-composer__model {
+  padding: var(--sc-sp-4) var(--sc-sp-8);
+  border-radius: var(--sc-radius-sm);
+  border: 1px solid var(--sc-border);
+  background: transparent;
+  color: var(--sc-text-muted);
+  font-family: inherit;
+  font-size: var(--sc-fs-meta);
+  cursor: pointer;
+}
+
+/* aria-pressed carries the state for assistive tech; the border and text weight
+   carry it visually, so the toggle does not depend on colour alone. */
+.sc-toggle {
+  padding: var(--sc-sp-4) var(--sc-sp-10);
+  border-radius: 999px;
+  border: 1px solid var(--sc-border);
+  background: transparent;
+  color: var(--sc-text-muted);
+  font-family: inherit;
+  font-size: var(--sc-fs-meta);
+  cursor: pointer;
+}
+.sc-toggle--on {
+  border-color: var(--sc-accent);
+  color: var(--sc-accent);
+  font-weight: 500;
+}
+
+/* Attachment chips sit above the input, full width of the composer. */
+.sc-attachments { list-style: none; margin: 0 0 var(--sc-sp-8); padding: 0; display: flex; flex-wrap: wrap; gap: var(--sc-sp-6); width: 100%; }
+.sc-attachment {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sc-sp-6);
+  padding: var(--sc-sp-4) var(--sc-sp-8);
+  border-radius: var(--sc-radius-sm);
+  border: 1px solid var(--sc-border);
+  background: var(--sc-surface-2);
+  font-size: var(--sc-fs-meta);
+  max-width: 240px;
+}
+.sc-attachment__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-attachment__size { font-size: var(--sc-fs-micro); flex: none; }
+.sc-attachment__remove {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--sc-text-muted);
+  font: inherit;
+  font-size: var(--sc-fs-micro);
+  cursor: pointer;
+  flex: none;
+}
+.sc-attachment__remove:hover { color: var(--sc-negative); }
+
+/* Suggestion menu: a real overlay, so it gets the overlay shadow and z-index
+   rather than the border-only treatment in-flow elements use. */
+.sc-suggest {
+  position: absolute;
+  bottom: calc(100% + var(--sc-sp-4));
+  left: var(--sc-sp-16);
+  right: var(--sc-sp-16);
+  max-height: 260px;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: var(--sc-sp-4);
+  border-radius: var(--sc-radius);
+  border: 1px solid var(--sc-border);
+  background: var(--sc-bg);
+  box-shadow: var(--sc-shadow-overlay);
+  z-index: var(--sc-z-menu);
+}
+.sc-suggest__item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sc-sp-8);
+  width: 100%;
+  padding: var(--sc-sp-6) var(--sc-sp-8);
+  border: none;
+  border-radius: var(--sc-radius-sm);
+  background: none;
+  color: var(--sc-text);
+  font-family: inherit;
+  font-size: var(--sc-fs-ui);
+  text-align: left;
+  cursor: pointer;
+}
+.sc-suggest__item--active { background: var(--sc-surface-2); }
+.sc-suggest__label { font-weight: 500; flex: none; }
+.sc-suggest__hint { font-size: var(--sc-fs-meta); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── attachments inside a sent bubble ─────────────────────────────────────── */
+
+.sc-bubble__media { display: flex; flex-wrap: wrap; gap: var(--sc-sp-6); margin-bottom: var(--sc-sp-6); }
+.sc-bubble__img { max-width: 180px; max-height: 180px; border-radius: var(--sc-radius-sm); display: block; }
+.sc-bubble__file {
+  display: inline-flex;
+  padding: var(--sc-sp-2) var(--sc-sp-8);
+  border-radius: var(--sc-radius-sm);
+  background: var(--sc-bg);
+  border: 1px solid var(--sc-border);
+  font-size: var(--sc-fs-micro);
+}
+
+/* ── status line ──────────────────────────────────────────────────────────── */
+
+.sc-status { display: flex; align-items: center; font-size: var(--sc-fs-meta); }
+
+/* ── toasts and connection banner ─────────────────────────────────────────── */
+
+.sc-toasts {
+  position: fixed;
+  bottom: var(--sc-sp-20);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sc-sp-8);
+  z-index: var(--sc-z-toast);
+  pointer-events: none;
+}
+.sc-toast {
+  padding: var(--sc-sp-8) var(--sc-sp-16);
+  border-radius: var(--sc-radius);
+  border: 1px solid var(--sc-border);
+  background: var(--sc-surface);
+  color: var(--sc-text);
+  font-size: var(--sc-fs-meta);
+  box-shadow: var(--sc-shadow-overlay);
+  animation: sc-rise var(--sc-dur-2) var(--sc-ease-out);
+}
+.sc-toast--positive { border-color: color-mix(in srgb, var(--sc-positive) 45%, var(--sc-border)); }
+.sc-toast--negative { border-color: color-mix(in srgb, var(--sc-negative) 45%, var(--sc-border)); }
+.sc-toast--warning { border-color: color-mix(in srgb, var(--sc-warning) 45%, var(--sc-border)); }
+@keyframes sc-rise { from { opacity: 0; transform: translateY(4px); } }
+
+/* Offline is a condition, not an event — it stays until it changes, so it is a
+   banner in the layout rather than a toast that floats away. */
+.sc-connbanner {
+  padding: var(--sc-sp-8) var(--sc-sp-16);
+  background: color-mix(in srgb, var(--sc-warning) 14%, var(--sc-bg));
+  color: var(--sc-warning);
+  border-bottom: 1px solid color-mix(in srgb, var(--sc-warning) 35%, var(--sc-border));
+  font-size: var(--sc-fs-meta);
+  text-align: center;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   responsive
+   ──────────────────────────────────────────────────────────────────────────
+   Two sections, split by the rule in the file header: device traits ask
+   @media, width asks @container. One exception worth naming — a
+   position:fixed element's containing block IS the viewport, so the viewport
+   is its container and @media is the correct query for it (see .sc-toasts).
+
+   Everything width-driven lives here rather than beside its component, so
+   "what does this look like on a phone" is one block of reading.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── device: touch ────────────────────────────────────────────────────────
+   44px of hit area, not a 44px button. Inflating .sc-ai__icon to 44 would
+   thicken the composer bar and undo the density 4.3 settled on, so a
+   transparent ::after carries the target while the painted control keeps its
+   size. width:max(100%,44px) leaves already-wide controls alone instead of
+   shrinking them to a square. */
+@media (pointer: coarse) {
+  .sc-ai__icon,
+  .sc-ai__send,
+  .sc-ai__chip-x,
+  .sc-ai__pill-x,
+  .sc-ai__model,
+  .sc-ai__enhance,
+  .sc-code__copy,
+  .sc-quote__remove,
+  .sc-doc__quotedismiss,
+  .sc-jump { position: relative; }
+
+  .sc-ai__icon::after,
+  .sc-ai__send::after,
+  .sc-ai__chip-x::after,
+  .sc-ai__pill-x::after,
+  .sc-ai__model::after,
+  .sc-ai__enhance::after,
+  .sc-code__copy::after,
+  .sc-quote__remove::after,
+  .sc-doc__quotedismiss::after,
+  .sc-jump::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+  }
+
+  /* Neighbouring 28px controls 6px apart would have their 44px zones overlap
+     by ~10px, handing part of one target to the other. Widening the gap costs
+     4px of bar and removes most of that. */
+  .sc-ai__left,
+  .sc-ai__right { gap: var(--sc-sp-10); }
+
+  /* Menu rows are already wide; they only need height. */
+  .sc-ai__menuitem,
+  .sc-ai__modelitem,
+  .sc-ai__paletteitem { min-height: 44px; }
+}
+
+/* ── device: iOS focus zoom ───────────────────────────────────────────────
+   Safari zooms the page in when a focused field is under 16px, and does not
+   zoom back out. The threshold belongs to the browser, not to the layout: a
+   tablet at 768px is past the compact tier and zooms just the same. Keying
+   this on width was a category error — it is the pointer that predicts the
+   behaviour, exactly as the header's rule says.
+
+   16px is not a design size and gets no token: it is the number Safari stops
+   at, and naming it would imply it is ours to tune. */
+@media (pointer: coarse) {
+  .sc-ai__editor,
+  .sc-composer__input { font-size: 16px; }
+}
+
+/* ── device: no hover ─────────────────────────────────────────────────────
+   The to-do header swaps its status glyph for a chevron on hover. On a touch
+   device that swap is either unreachable or — worse — sticky, because a tap
+   can latch :hover until the next tap elsewhere, leaving the header showing a
+   chevron and hiding the progress pie for good.
+
+   The fix drops the swap rather than inverting it. The chevron is an
+   affordance hint; the pie is data. Trading data for a hint is the wrong way
+   round, and on touch the whole row is a button that visibly expands when
+   tapped, so the hint is redundant. */
+@media (hover: none) {
+  .sc-todo__head:hover .sc-todo__headlist,
+  .sc-todo__head:hover .sc-todo__pie,
+  .sc-todo__head:hover .sc-todo__headcheck { opacity: 1; }
+  .sc-todo__head:hover .sc-todo__chevron { opacity: 0; }
+}
+
+/* Keyboard users have no hover either. This is the same affordance reaching
+   the same place by a different route — it is not a touch rule, so it sits
+   outside the query above. */
+.sc-todo__head:focus-visible .sc-todo__headlist,
+.sc-todo__head:focus-visible .sc-todo__pie,
+.sc-todo__head:focus-visible .sc-todo__headcheck { opacity: 0; }
+.sc-todo__head:focus-visible .sc-todo__chevron { opacity: 1; }
+
+/* ── device: viewport-anchored overlays ───────────────────────────────────
+   position:fixed, so the viewport is the container and @media is right. Both
+   overlays share one block rather than taking two: they are the same question
+   asked about the same box, and splitting them would put a second width media
+   query in a file whose own test asserts there is exactly one. */
+@media (max-width: 600px) {
+  .sc-toasts {
+    left: var(--sc-sp-12);
+    right: var(--sc-sp-12);
+    transform: none;
+    align-items: stretch;
+  }
+  .sc-toast { text-align: center; }
+
+  /* A centred panel needs side margins a phone does not have, so an opened
+     document becomes a sheet: full width, anchored to the bottom, leaving a
+     strip of the conversation visible above it as the way back. */
+  .sc-doc__surface {
+    top: var(--sc-sp-48);
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: auto;
+    transform: none;
+    border-radius: var(--sc-radius) var(--sc-radius) 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* ── width: medium (container ≤ 900px) ────────────────────────────────────
+   Tablet portrait and split view. The thread is already single-column, so
+   this tier only pulls the bubble in from its desktop cap. */
+@container (max-width: 900px) {
+  .sc-bubble { max-width: min(84%, 620px); }
+}
+
+/* ── width: compact (container ≤ 600px) ───────────────────────────────────
+   Chrome shrinks, content does not. --sc-fs-body stays put and the composer
+   goes UP to 16px; what gives way is padding, gaps and meta rows. A phone is
+   read closer than a monitor but on less glass — shrinking the prose too
+   would charge the reader twice. */
+
+/* thread shell — queries .sc-threadwrap */
+@container (max-width: 600px) {
+  .sc-thread { padding: var(--sc-sp-12); }
+}
+
+/* thread contents — queries .sc-thread */
+@container (max-width: 600px) {
+  /* 76% of 360px is 274px: under thirteen CJK characters to a line. */
+  .sc-bubble { max-width: 88%; }
+  .sc-msg { margin-bottom: var(--sc-sp-16); }
+  .sc-daydivider { margin: var(--sc-sp-16) 0 var(--sc-sp-12); }
+
+  /* Cards keep 12px of air on each side. Bleeding them to the screen edge
+     saves 24px and costs the reading that they are objects inside a message
+     rather than full-width bands of page — the distinction all of section B
+     is built on. */
+  .sc-card { padding: var(--sc-sp-12); }
+
+  /* The empty state is the first screen a user meets, and on a phone the
+     keyboard eats half of it. Centred, the greeting lands under the fold and
+     the user sees blank space above an input. Top-aligned it survives. R1's
+     intent (the composer is the subject) is unchanged; centring was only how
+     that reads on a desktop. Size holds — this is prose, not chrome. */
+  .sc-empty { padding: var(--sc-sp-24) var(--sc-sp-12) var(--sc-sp-32); }
+
+  .sc-code__row { grid-template-columns: 26px 1fr; }
+  .sc-code__body::before { left: 26px; }
+  .sc-code__ln { padding: 0 var(--sc-sp-4); }
+  .sc-code__line { padding: 0 var(--sc-sp-8); }
+}
+
+/* card internals — queries .sc-card, so a card compacts on its own width
+   whether it sits in a narrow thread or standalone in a panel */
+@container (max-width: 600px) {
+  .sc-media { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+  /* Targets .sc-funnel, not the row: the row is display:contents and owns no
+     columns of its own. */
+  .sc-funnel { grid-template-columns: minmax(64px, 90px) 1fr auto 40px; gap: var(--sc-sp-6); }
+  .sc-compare th[scope="row"] { max-width: 140px; }
+  .sc-kv__row { gap: var(--sc-sp-8); }
+  .sc-callout { gap: var(--sc-sp-8); }
+  .sc-choice { gap: var(--sc-sp-8); padding: var(--sc-sp-8) var(--sc-sp-10); }
+  .sc-choice__meta { gap: var(--sc-sp-8); }
+  .sc-gauge__scale { gap: var(--sc-sp-6); }
+  .sc-legend { gap: var(--sc-sp-8); }
+  /* Tighter cells fit one more column before the wrapper has to scroll. The
+     scroll itself stays: turning a table into stacked key/value pairs loses
+     the comparison that is the whole reason those kinds exist. */
+  .sc-email__row { flex-direction: column; align-items: stretch; gap: var(--sc-sp-2); }
+  .sc-email__label { width: auto; }
+  .sc-hunk__body { font-size: var(--sc-fs-micro); }
+  .sc-table th, .sc-table td { padding: var(--sc-sp-6) var(--sc-sp-8); }
+  .sc-table--grid th, .sc-table--grid td { padding: var(--sc-sp-6) var(--sc-sp-8); }
+  .sc-stats { gap: var(--sc-sp-8); }
+}
+
+/* composer — queries .sc-ai */
+@container (max-width: 600px) {
+  /* "Claude Opus 4.5" would push the send button off the bar. */
+  .sc-ai__model > span {
+    max-width: 6em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Icon-only, but still named: hiding the label with display:none would
+     strip the button's accessible name, so it goes sr-only instead. The busy
+     state keeps its "Cancel" — that one is not decoration. */
+  .sc-ai__enhance:not(.sc-ai__enhance--busy) > span {
+    position: absolute;
+    width: 1px; height: 1px;
+    margin: -1px; padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Menus are anchored to their trigger, so a fixed 190/280px can run off the
+     right edge on a narrow screen. cqw measures the composer, which is what
+     they actually have to fit inside — and stays correct when the composer is
+     a 380px sidebar in a wide window, which vw would not. */
+  .sc-ai__menu,
+  .sc-ai__menu--wide { min-width: 0; width: max-content; max-width: 78cqw; }
+
+  /* The submenu opened sideways: 190 + 170 = 360px, off-screen on any phone.
+     Compact turns it into an indented group inside the parent menu, so the
+     menu grows down instead of across. No DOM or state change — the same
+     markup reads as a nested list. */
+  .sc-ai__submenu {
+    position: static;
+    min-width: 0;
+    margin: var(--sc-sp-2) 0 var(--sc-sp-2) var(--sc-sp-12);
+    padding: 0 0 0 var(--sc-sp-8);
+    border: 0;
+    border-left: 1px solid var(--sc-border);
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .sc-ai__chip { max-width: 60cqw; }
+}
+
+/* plan — queries .sc-plan, so it compacts on its own width. This is the case
+   the container/media split exists for: the plan's natural home is a narrow
+   rail inside a wide window, where a media query would answer confidently and
+   wrongly. */
+@container (max-width: 600px) {
+  .sc-plan__step { column-gap: var(--sc-sp-8); }
+  .sc-plan__body { padding-bottom: var(--sc-sp-12); }
+}

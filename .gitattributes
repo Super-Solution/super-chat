@@ -1,0 +1,11 @@
+# Normalize line endings so a Windows checkout does not produce whole-file diffs
+# for collaborators on macOS/Linux.
+* text=auto eol=lf
+
+# Lockfiles are generated; collapse them in diffs and reviews.
+pnpm-lock.yaml linguist-generated=true -diff
+
+# Binary-ish assets, never line-ending converted.
+*.png binary
+*.jpg binary
+*.woff2 binary

@@ -1,0 +1,76 @@
+{
+  "name": "@supersolutions/super-protocol",
+  "version": "0.1.0",
+  "description": "Apache-2.0 shared protocol for the Super Solution libs: plugin manifest, chat plugin contract, inference gateway and editor card types. Types and validators only, no runtime dependencies.",
+  "license": "Apache-2.0",
+  "author": "SUPER SOLUTION LABS INC",
+  "homepage": "https://github.com/Super-Solution/super-chat/tree/main/packages/protocol#readme",
+  "bugs": {
+    "url": "https://github.com/Super-Solution/super-chat/issues"
+  },
+  "keywords": [
+    "protocol",
+    "plugin",
+    "contracts",
+    "agent",
+    "chat"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./plugin": {
+      "types": "./dist/plugin.d.ts",
+      "import": "./dist/plugin.js",
+      "default": "./dist/plugin.js"
+    },
+    "./chat": {
+      "types": "./dist/chat.d.ts",
+      "import": "./dist/chat.js",
+      "default": "./dist/chat.js"
+    },
+    "./router": {
+      "types": "./dist/router.d.ts",
+      "import": "./dist/router.js",
+      "default": "./dist/router.js"
+    },
+    "./editor": {
+      "types": "./dist/editor.d.ts",
+      "import": "./dist/editor.js",
+      "default": "./dist/editor.js"
+    },
+    "./chart": {
+      "types": "./dist/chart.d.ts",
+      "import": "./dist/chart.js",
+      "default": "./dist/chart.js"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Super-Solution/super-chat.git",
+    "directory": "packages/protocol"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "prepublishOnly": "pnpm run build",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,318 @@
+/* The homepage wears flavor B (Instrument). Every kit card on it is the real
+   renderer; only the kit's tokens are overridden on these wrappers. */
+
+.flavorB {
+  --sc-bg: #ffffff;
+  --sc-surface: #ffffff;
+  --sc-surface-2: #f1f1ee;
+  --sc-border: #d9d9d3;
+  --sc-text: #161616;
+  --sc-text-muted: #5b5b57;
+  --sc-accent: #0f766e;
+  --sc-accent-contrast: #ffffff;
+  --sc-positive: #1a7f4b;
+  --sc-negative: #b42318;
+  --sc-warning: #9a6400;
+  --sc-info: #0f766e;
+  --sc-radius: 6px;
+  --sc-radius-sm: 4px;
+  --sc-radius-xs: 2px;
+  --sc-series-1: #0f766e;
+  --sc-series-2: #c2410c;
+  --sc-series-3: #5b5b57;
+  --sc-sans: "IBM Plex Sans", "Segoe UI", -apple-system, Arial, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --sc-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+
+.flavorC {
+  --sc-bg: #f5f6fa;
+  --sc-surface: #ffffff;
+  --sc-surface-2: #eef0f6;
+  --sc-border: #e6e7ef;
+  --sc-text: #1b1c26;
+  --sc-text-muted: #5d6072;
+  --sc-accent: #5450d6;
+  --sc-accent-contrast: #ffffff;
+  --sc-radius: 18px;
+  --sc-radius-sm: 12px;
+  --sc-radius-xs: 8px;
+  --sc-series-1: #5450d6;
+  --sc-series-2: #d97706;
+  --sc-sans: "Plus Jakarta Sans", "Segoe UI", -apple-system, Arial, sans-serif;
+}
+/* C layers with shadow instead of hairlines. This is the one rule the token
+   set can't express yet (roadmap 4.3 adds --sc-shadow-card). */
+.flavorC :global(.sc-card) { border-color: transparent; box-shadow: 0 1px 2px rgb(24 26 48 / 0.06), 0 6px 20px rgb(24 26 48 / 0.08); }
+
+.home {
+  background: #f4f4f1;
+  color: #161616;
+  font-family: "IBM Plex Sans", "Segoe UI", -apple-system, Arial, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+}
+.home a { color: #0f766e; }
+.home a:hover { color: #0b5a54; }
+.home :focus-visible { outline: 2px solid #0f766e; outline-offset: 2px; }
+.mono { font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 112px 24px; box-sizing: border-box; }
+.stack { display: flex; flex-direction: column; gap: 16px; max-width: 840px; }
+.h2 { margin: 0; font-size: clamp(34px, 4.6vw, 56px); line-height: 1.04; letter-spacing: -0.03em; font-weight: 700; }
+.h3 { margin: 0; font-size: 32px; line-height: 1.15; letter-spacing: -0.02em; font-weight: 600; }
+.lede { margin: 0; font-size: 19px; line-height: 1.6; color: #4a4a47; }
+.dark .lede { color: #a9b3b0; }
+.split { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(460px, 100%), 1fr)); gap: 56px; align-items: start; }
+.white { background: #ffffff; border-top: 1px solid #e2e2dc; }
+.paper { background: #f4f4f1; border-top: 1px solid #e2e2dc; }
+
+/* A plain surface. The grid overlay it had implied a canvas nobody draws on. */
+.dark { background: #0d1110; color: #f2f5f4; }
+
+.btn, .btnPrimary {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 22px;
+  border-radius: 4px; text-decoration: none; font-weight: 600; font-size: 15px; cursor: pointer;
+}
+.home .btnPrimary { background: #0f766e; border: 1px solid #0f766e; color: #ffffff; }
+.home .btn { background: #ffffff; border: 1px solid #d0d0c9; color: #161616; }
+
+/* ── hero ─────────────────────────────────────────────────────────────── */
+.hero { max-width: 1200px; margin: 0 auto; padding: 0 24px; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; gap: 48px; overflow: hidden; }
+.heroCopy { flex: 1 1 420px; min-width: 0; padding: 72px 0; display: flex; flex-direction: column; align-items: flex-start; gap: 22px; }
+.h1 { margin: 0; font-size: clamp(48px, 6.2vw, 88px); line-height: 0.97; letter-spacing: -0.045em; font-weight: 700; }
+.heroLede { margin: 0; max-width: 560px; font-size: 20px; line-height: 1.55; color: #4a4a47; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.install { display: flex; align-items: center; gap: 10px; min-height: 48px; max-width: 100%; box-sizing: border-box; padding: 0 6px 0 16px; border: 1px solid #d0d0c9; border-radius: 4px; background: #ffffff; font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-size: 13px; }
+.install code { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.install button { min-height: 36px; padding: 0 12px; border: 1px solid #d0d0c9; border-radius: 4px; background: #ffffff; color: #161616; font: inherit; font-size: 12px; cursor: pointer; }
+
+/* The wall: three columns of real cards and library tiles, each column a
+   doubled track that slides by half its height so the loop is seamless. */
+.wall {
+  flex: 1.35 1 560px; min-width: 0; height: 760px;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 9%, #000 91%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 9%, #000 91%, transparent 100%);
+}
+.col { overflow: hidden; min-width: 0; }
+.track { display: flex; flex-direction: column; animation: wallScroll 64s linear infinite; }
+.reverse { animation-direction: reverse; animation-duration: 76s; }
+.slow { animation-duration: 88s; }
+.wall:hover .track, .wall:focus-within .track { animation-play-state: paused; }
+.half { display: flex; flex-direction: column; gap: 16px; padding-bottom: 16px; }
+@keyframes wallScroll { from { transform: translateY(0); } to { transform: translateY(-50%); } }
+
+/* A card measures its nearest container, so each tile is one. */
+.tile { container-type: inline-size; }
+.tile :global(.sc-card) { margin: 0; }
+.focal :global(.sc-card) { border: 2px solid #0f766e; box-shadow: 0 14px 34px rgb(15 118 110 / 0.2); }
+.lib { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 6px; background: #161616; color: #e9eeec; font-size: 12px; line-height: 1.5; }
+.lib pre { margin: 0; font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-size: 11px; line-height: 1.6; color: #d6dcda; white-space: pre-wrap; }
+.paperTile { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border: 1px solid #d9d9d3; border-radius: 6px; background: #ffffff; font-size: 13px; }
+
+@media (max-width: 600px) {
+  .wall { height: 460px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .wall .col:nth-child(3) { display: none; }
+  .heroCopy { padding: 48px 0 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track { animation: none; }
+}
+
+/* ── four layers ──────────────────────────────────────────────────────── */
+
+.streaming { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(460px, 100%), 1fr)); gap: 32px; align-items: center; }
+.toggle { display: flex; gap: 6px; }
+.toggle button { min-height: 40px; padding: 0 14px; border-radius: 4px; font: inherit; font-size: 14px; cursor: pointer; border: 1px solid rgb(255 255 255 / 0.2); background: transparent; color: #f2f5f4; }
+.toggle button[aria-pressed="true"] { border-color: #5eead4; background: #5eead4; color: #04201c; }
+.specPane { margin: 0; padding: 14px 18px; border: 1px solid rgb(255 255 255 / 0.12); border-radius: 6px; background: rgb(255 255 255 / 0.04); font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-size: 12px; line-height: 1.7; color: #d6dcda; overflow-x: auto; white-space: pre; box-sizing: border-box; height: 234px; }
+/* Ten lines at full length: "rows": [, eight rows, ]. Fixed, so streaming
+   lines in never moves anything below it. */
+.caret { display: inline-block; width: 7px; height: 13px; vertical-align: -2px; background: #5eead4; }
+.liveCard { container-type: inline-size; padding: 20px; border-radius: 8px; display: grid; }
+/* The finished card sits invisibly in the same cell and sets the size. */
+.ghost, .live { grid-area: 1 / 1; min-width: 0; }
+.ghost { visibility: hidden; }
+.live { align-self: start; }
+.streamSection { min-height: calc(100dvh - var(--site-nav-h, 61px)); display: flex; align-items: center; }
+.streamSection > .wrap { width: 100%; padding-block: 56px; }
+.liveCard :global(.sc-card) { margin: 0; box-shadow: 0 24px 60px rgb(0 0 0 / 0.45); }
+.flavorC.liveCard { background: #f5f6fa; }
+
+/* ── showcase tabs ────────────────────────────────────────────────────── */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tabs button { min-height: 44px; padding: 0 18px; border-radius: 4px; font: inherit; font-size: 15px; cursor: pointer; border: 1px solid #d0d0c9; background: #ffffff; color: #161616; }
+.tabs button[aria-selected="true"] { border-color: #161616; background: #161616; color: #ffffff; }
+.stage { padding: 32px; border-radius: 8px; background: #161616; }
+.stageGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 16px; align-items: start; }
+.stageGrid > div { container-type: inline-size; min-width: 0; }
+.stageGrid :global(.sc-card) { margin: 0; }
+.wide { grid-column: 1 / -1; }
+
+/* ── code & lists ─────────────────────────────────────────────────────── */
+.code { margin: 0; padding: 20px 24px; border: 1px solid #d9d9d3; border-radius: 6px; background: #f1f1ee; overflow-x: auto; font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-size: 13px; line-height: 1.7; color: #2b2b29; }
+.dark .code { border-color: rgb(255 255 255 / 0.12); background: rgb(255 255 255 / 0.04); color: #d6dcda; }
+.points { margin: 0; padding: 0; list-style: none; border-top: 1px solid #e6e6e1; }
+.points li { padding: 14px 0; border-bottom: 1px solid #e6e6e1; font-size: 17px; font-weight: 500; }
+.customCard { container-type: inline-size; }
+.customCard :global(.sc-card) { margin: 0; }
+
+/* ── materials ────────────────────────────────────────────────────────── */
+.surface { display: flex; flex-direction: column; gap: 16px; padding: 20px 22px; border: 1px solid #d9d9d3; border-radius: 6px; background: #fcfcfb; box-shadow: 0 20px 50px rgb(0 0 0 / 0.08); }
+.thinking { display: flex; align-items: center; gap: 10px; }
+.thinking i { width: 8px; height: 8px; background: #0f766e; }
+.tools { display: flex; flex-direction: column; border: 1px solid #e6e6e1; border-radius: 4px; background: #ffffff; font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-size: 12px; }
+.tools div { display: flex; gap: 12px; padding: 8px 12px; border-bottom: 1px solid #efefeb; }
+.tools div:last-child { border-bottom: 0; }
+.tools span:last-child { margin-left: auto; }
+.ok { color: #1a7f4b; }
+.run { color: #0f766e; }
+.bad { color: #b42318; }
+.quoteRow { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid #d9d9d3; border-radius: 6px; background: #ffffff; }
+.quote { display: flex; gap: 8px; padding: 6px 10px; border: 1px solid #b5d6d2; border-radius: 4px; background: #f2faf9; font-size: 12px; }
+.quote span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sendRow { display: flex; gap: 8px; }
+.sendRow input { flex: 1; min-width: 0; min-height: 40px; padding: 0 12px; border: 1px solid #d9d9d3; border-radius: 4px; font: inherit; font-size: 14px; }
+.sendRow button { min-height: 40px; padding: 0 16px; border: 1px solid #0f766e; border-radius: 4px; background: #0f766e; color: #ffffff; font: inherit; font-size: 14px; }
+
+/* ── backend & runtime ────────────────────────────────────────────────── */
+.flow { display: flex; flex-wrap: wrap; align-items: stretch; border: 1px solid rgb(255 255 255 / 0.14); border-radius: 6px; overflow: hidden; }
+.flowStep { flex: 1 1 260px; display: flex; flex-direction: column; gap: 6px; padding: 22px 24px; }
+.flowStep strong { font-size: 18px; font-weight: 600; }
+.flowStep span { font-size: 15px; color: #a9b3b0; }
+.flowStep small { font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-size: 12px; color: #8b9591; }
+.flowServer { background: #0f766e; }
+.flowServer span, .flowServer small { color: #ccfbf1; }
+.flowArrow { display: flex; align-items: center; padding: 0 10px; font-size: 18px; color: #5eead4; }
+.cells { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); border-top: 1px solid rgb(255 255 255 / 0.12); border-left: 1px solid rgb(255 255 255 / 0.12); }
+.cell { display: flex; flex-direction: column; gap: 8px; padding: 22px; border-right: 1px solid rgb(255 255 255 / 0.12); border-bottom: 1px solid rgb(255 255 255 / 0.12); }
+.cell strong { font-size: 16px; font-weight: 600; }
+.cell span { font-size: 14px; color: #a9b3b0; }
+.divider { padding-top: 48px; border-top: 1px solid rgb(255 255 255 / 0.12); }
+.trace { border: 1px solid #d9d9d3; border-radius: 6px; background: #ffffff; color: #161616; overflow: hidden; box-shadow: 0 24px 60px rgb(0 0 0 / 0.45); }
+.traceHead { padding: 12px 16px 8px; display: flex; align-items: baseline; gap: 10px; font-size: 13px; }
+.traceHead span { font-size: 12px; color: #5b5b57; }
+.traceBar { display: flex; height: 12px; margin: 0 16px 12px; border: 1px solid #d9d9d3; }
+.trace table { width: calc(100% - 32px); margin: 0 16px 12px; border-collapse: collapse; font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-size: 12px; }
+.trace td { padding: 7px 0; border-bottom: 1px solid #efefeb; }
+.trace tr:last-child td { border-bottom: 0; }
+.trace td:last-child { text-align: right; }
+.included { color: #1a7f4b; }
+.trimmed { color: #9a6400; }
+.dropped { color: #b42318; }
+.prov { display: flex; flex-wrap: wrap; gap: 12px; padding: 7px 16px; border-top: 1px solid #e6e6e1; background: #f7f7f5; font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-size: 11px; color: #5b5b57; }
+.prov span:last-child { margin-left: auto; }
+
+/* ── flavors ──────────────────────────────────────────────────────────── */
+.flavorGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 16px; }
+.flavorPanel { display: flex; flex-direction: column; gap: 18px; padding: 32px; container-type: inline-size; }
+.flavorPanel :global(.sc-card) { margin: 0; }
+.flavorName { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+.flavorPanelB { border: 1px solid #d9d9d3; border-radius: 6px; background: #fcfcfb; }
+.flavorPanelC { border-radius: 18px; background: #e9ebf4; }
+
+/* ── showcase products ────────────────────────────────────────────────── */
+.products { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 16px; }
+.product { display: flex; flex-direction: column; border: 1px solid #d9d9d3; border-radius: 6px; background: #fcfcfb; overflow: hidden; text-decoration: none; }
+.home .product { color: #161616; }
+.home .product:hover { border-color: #161616; color: #161616; }
+.productArt { height: 200px; padding: 22px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; }
+.productBody { padding: 22px; display: flex; flex-direction: column; gap: 6px; }
+.productBody strong { font-size: 22px; font-weight: 600; }
+.artLegal { background: #fbfaf8; border-bottom: 1px solid #eeece8; font-family: Georgia, "Times New Roman", serif; color: #4c4d49; }
+.artLegal mark { background: #f6e1e2; box-shadow: inset 0 -2px 0 #9b111e; color: #2b2c29; }
+.artCompanion { justify-content: flex-end; background: #fffaf6; border-bottom: 1px solid #e4d8d2; color: #2f272b; }
+.artCompanion p { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 18px; line-height: 1.5; }
+.artCompanion span { align-self: flex-start; padding: 8px 14px; border-radius: 10px; background: #9f4762; color: #ffffff; font-size: 13px; }
+.artDefi { background: #0c171c; color: #edf4f6; }
+
+/* ── faq & footer ─────────────────────────────────────────────────────── */
+.faq { display: flex; flex-direction: column; border-top: 1px solid #d0d0c9; }
+.faq details { padding: 20px 0; border-bottom: 1px solid #d0d0c9; }
+.faq summary { cursor: pointer; font-size: 18px; font-weight: 600; }
+.faq p { margin: 10px 0 0; color: #4a4a47; }
+.foot { max-width: 1200px; margin: 0 auto; padding: 72px 24px 48px; display: flex; flex-direction: column; gap: 48px; }
+.footLine { font-size: clamp(36px, 5vw, 64px); line-height: 1; letter-spacing: -0.04em; font-weight: 700; }
+.footCols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); gap: 32px; font-size: 14px; }
+.footCols div { display: flex; flex-direction: column; gap: 8px; }
+.home .footCols a { color: #a9b3b0; text-decoration: none; }
+.home .footCols a:hover { color: #f2f5f4; }
+.footCols small { color: #8b9591; font-size: 14px; }
+
+/* ── motion ───────────────────────────────────────────────────────────────
+   One idea, repeated at each layer: an answer being assembled. Arrivals
+   decelerate; nothing bounces. Loops run only while on screen (see useInView);
+   under reduced motion, things change state by fading instead of moving. */
+@keyframes arriveIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes swapIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.arrive, .toolRow { animation: arriveIn 420ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.swap { display: inline-block; animation: swapIn 240ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Showcase: a tab's cards land in order, like one streamed turn. */
+.stageGrid > div { animation: arriveIn 460ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.stageGrid > div:nth-child(2) { animation-delay: 80ms; }
+.stageGrid > div:nth-child(3) { animation-delay: 160ms; }
+
+/* Backend: one request out through the four checks and back. */
+.flow { position: relative; }
+.lane { position: absolute; left: 0; right: 0; bottom: 10px; height: 8px; pointer-events: none; }
+.packetOut, .packetBack { position: absolute; inset: 0; opacity: 0; animation: 5s linear infinite paused; }
+.packetOut { animation-name: packetOut; }
+.packetBack { animation-name: packetBack; }
+.packetOut::before, .packetBack::before { content: ""; position: absolute; left: 0; top: 0; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; }
+.packetOut::before { background: #ffffff; box-shadow: 0 0 0 3px rgb(255 255 255 / 0.18); }
+.packetBack::before { background: #5eead4; box-shadow: 0 0 0 3px rgb(94 234 212 / 0.2); }
+@keyframes packetOut {
+  0% { transform: translateX(16%); opacity: 0; }
+  4% { opacity: 1; }
+  18% { transform: translateX(50%); }
+  44% { transform: translateX(50%); }
+  58% { transform: translateX(84%); opacity: 1; }
+  62%, 100% { transform: translateX(84%); opacity: 0; }
+}
+@keyframes packetBack {
+  0%, 60% { transform: translateX(84%); opacity: 0; }
+  64% { opacity: 1; }
+  84% { transform: translateX(16%); opacity: 1; }
+  88%, 100% { transform: translateX(16%); opacity: 0; }
+}
+.checks { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.check { opacity: 0.55; animation: checkLit 5s ease-out infinite paused; }
+@keyframes checkLit { 0%, 100% { opacity: 0.55; } 4%, 36% { opacity: 1; color: #ffffff; } }
+.flowRunning .packetOut, .flowRunning .packetBack, .flowRunning .check { animation-play-state: running; }
+@media (max-width: 900px) { .lane { display: none; } }
+
+/* Runtime: each layer takes its share of the budget as it lands. */
+.traceRow { transition: opacity 320ms ease-out, transform 320ms cubic-bezier(0.16, 1, 0.3, 1); }
+.traceRow[data-on="false"] { opacity: 0; transform: translateY(6px); }
+.traceSeg { display: block; transform-origin: left center; transition: transform 480ms cubic-bezier(0.16, 1, 0.3, 1); }
+.traceSeg[data-on="false"] { transform: scaleX(0); }
+
+/* Custom cards: the registered kind renders as it scrolls in. CSS only, and
+   fully visible wherever scroll timelines aren't supported. */
+@supports (animation-timeline: view()) {
+  .customCard { animation: renderIn linear both; animation-timeline: view(); animation-range: entry 0% entry 90%; }
+}
+@keyframes renderIn {
+  from { opacity: 0.25; clip-path: inset(0 0 100% 0 round 6px); }
+  to { opacity: 1; clip-path: inset(0 0 0 0 round 6px); }
+}
+
+/* Feedback: presses register, product previews lean in on hover. */
+.home .btnPrimary, .toggle button, .tabs button, .install button { transition: transform 120ms ease-out, background-color 150ms ease-out, color 150ms ease-out; }
+.home .btnPrimary:active, .toggle button:active, .tabs button:active, .install button:active { transform: scale(0.97); }
+.product { transition: border-color 150ms ease-out; }
+.productArt { transition: transform 520ms cubic-bezier(0.16, 1, 0.3, 1); }
+.product:hover .productArt, .product:focus-visible .productArt { transform: scale(1.02); }
+
+@media (prefers-reduced-motion: reduce) {
+  .arrive, .toolRow, .swap, .stageGrid > div { animation-name: fadeIn; animation-duration: 200ms; }
+  .packetOut, .packetBack { display: none; }
+  .check { animation: none; opacity: 1; }
+  .traceRow, .traceSeg { transform: none !important; }
+  .customCard { animation: none; }
+  .product:hover .productArt, .product:focus-visible .productArt { transform: none; }
+  .home .btnPrimary:active, .toggle button:active, .tabs button:active, .install button:active { transform: none; }
+}
