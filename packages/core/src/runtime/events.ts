@@ -27,6 +27,7 @@
 // written to history.
 
 import type { Card, CardAction, CardSpec } from "../cards/types.js";
+import { addUsage } from "../content/parts.js";
 import type { ContentPart, FinishReason, Usage } from "../content/types.js";
 import type { ContextTrace } from "../context/types.js";
 import type { JobHandle, JobStatus } from "../providers/types.js";
@@ -116,18 +117,6 @@ export type PartialToolCall = {
 
 export function initialRunState(runId: string, mode: RunMode): RunState {
   return { runId, mode, status: "idle", parts: [], cards: [], usage: {}, steps: 0, pendingTools: {}, partialTools: {} };
-}
-
-function mergeUsage(a: Usage, b?: Usage): Usage {
-  if (!b) return a;
-  const add = (x?: number, y?: number) => (x == null && y == null ? undefined : (x ?? 0) + (y ?? 0));
-  return {
-    inputTokens: add(a.inputTokens, b.inputTokens),
-    outputTokens: add(a.outputTokens, b.outputTokens),
-    totalTokens: add(a.totalTokens, b.totalTokens),
-    cachedInputTokens: add(a.cachedInputTokens, b.cachedInputTokens),
-    reasoningTokens: add(a.reasoningTokens, b.reasoningTokens),
-  };
 }
 
 /**
@@ -245,7 +234,7 @@ export function reduceRunEvent(state: RunState, event: RunEvent): RunState {
     // turn 3×, which is not a rounding error — it read as context overflow on
     // a model whose window it had not come close to.
     case "usage":
-      return { ...state, usage: mergeUsage(state.usage, event.usage) };
+      return { ...state, usage: addUsage(state.usage, event.usage) };
     case "step-finish":
       // Deliberately does NOT touch usage: the `usage` event above already
       // added this step. `steps` is owned by step-start.

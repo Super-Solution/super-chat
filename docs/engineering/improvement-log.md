@@ -67,6 +67,28 @@ Each round is one commit with its own regression tests. Scores: [`scorecard.md`]
   is now always defined (it was optional); callers that read it keep working.
 * Tests: six new in `execute-tools.test.ts`; all six fail on the old code.
 
+### Round 5 — Anthropic streaming and usage (`core/providers/anthropic`)
+
+* Audit: SSE dialect translation, stop reasons, usage mapping, error events.
+* **Defect (safety):** when the body ended without `message_stop` (a proxy or load balancer cut the stream), the
+  adapter closed every in-flight tool call by *repairing* its half-written arguments into valid JSON and reported a
+  normal finish. The run then executed the tool with input the model never finished (`{"path":"/data/arch` became
+  `{"path":"/data/arch"}`). Now such a stream is an `AgentError("network")` event: no `tool-call-end` is emitted for
+  unfinished calls and nothing is reported as finished. A stream that did receive a `stop_reason` and only lost the
+  final frame still closes out normally.
+* **Defect:** the in-stream `error` event (`overloaded_error`, `rate_limit_error`, …) was turned into a bare `Error`, so
+  the run saw `kind: "unknown"` (not retryable, wrong metering status). It is now typed like the equivalent HTTP status.
+* **Gap:** cache *writes* (`cache_creation_input_tokens`) were dropped, so a host could not price them. Added
+  `Usage.cacheCreationInputTokens` (optional, additive) and mapped it.
+* **Recorded, not changed (needs a decision):** `Usage.inputTokens` means different things per provider. OpenAI and
+  Super Router report it *including* cache hits; Anthropic reports it *excluding* cache reads and writes. A host that
+  computes `inputTokens - cachedInputTokens` is therefore wrong for Anthropic. Making Anthropic inclusive would change
+  numbers hosts already meter on, so it is only documented on `Usage` for now. Compatible alternative if wanted: an
+  opt-in `inclusiveInput` flag on the Anthropic provider config.
+* Refactor: `runAgent` and the event reducer each carried their own copy of "add two usages" (both missed new fields
+  the same way). One exported `addUsage` in `content/parts.ts` now serves both.
+* Tests: five stream/usage tests in `anthropic.test.ts` (three fail on the old code), `content/usage.test.ts`.
+
 ## 2026-11-08 — iteration 2
 
 Started from iteration 1's open items.

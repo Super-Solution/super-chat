@@ -6,10 +6,10 @@ import { ToolRegistry } from "../../tools/registry.js";
 import { runAgent } from "../../runtime/run.js";
 import type { RunEvent } from "../../runtime/events.js";
 import type { Transport, TransportRequest } from "../../transport/types.js";
-import type { NormalizedRequest } from "../types.js";
+import type { NormalizedRequest, StreamEvent } from "../types.js";
 import { createAnthropicProvider } from "./adapter.js";
 import { buildAnthropicRequest, toAnthropicMessages } from "./map-in.js";
-import { finishFromAnthropic, partsFromAnthropic } from "./map-out.js";
+import { finishFromAnthropic, partsFromAnthropic, usageFromAnthropic } from "./map-out.js";
 import { streamAnthropic } from "./stream.js";
 import type { AnthropicResponse } from "./wire.js";
 
@@ -221,6 +221,64 @@ describe("streamAnthropic", () => {
     const finish = out.find((e) => (e as { type: string }).type === "finish") as { finishReason: string; usage: { totalTokens: number } };
     expect(finish.finishReason).toBe("tool-calls");
     expect(finish.usage.totalTokens).toBe(105);
+  });
+
+  const drain = async (events: ReadableStream<Uint8Array>) => {
+    const out: StreamEvent[] = [];
+    for await (const e of streamAnthropic(events)) out.push(e);
+    return out;
+  };
+  const start = { type: "message_start", message: { ...respondText(""), content: [], usage: { input_tokens: 80 } } };
+  const toolBlock = { type: "content_block_start", index: 0, content_block: { type: "tool_use", id: "toolu_1", name: "rm", input: {} } };
+
+  it("does not run a tool whose arguments were cut off by a dropped stream", async () => {
+    // The body ends mid-arguments, with no content_block_stop and no message_stop.
+    const out = await drain(
+      sse([start, toolBlock, { type: "content_block_delta", index: 0, delta: { type: "input_json_delta", partial_json: '{"path":"/data/arch' } }]),
+    );
+    expect(out.some((e) => e.type === "tool-call-end")).toBe(false);
+    const err = out.find((e) => e.type === "error");
+    expect(err).toMatchObject({ error: { kind: "network", retryable: true } });
+    expect(out.some((e) => e.type === "finish")).toBe(false);
+  });
+
+  it("reports a stream cut before the model finished as an error, not as a normal finish", async () => {
+    const out = await drain(
+      sse([
+        start,
+        { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } },
+        { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "Half an ans" } },
+      ]),
+    );
+    expect(out.map((e) => e.type)).toEqual(["start", "text-delta", "error"]);
+  });
+
+  it("still closes out a stream that lost only its final frame after the stop reason arrived", async () => {
+    const out = await drain(
+      sse([start, { type: "message_delta", delta: { stop_reason: "end_turn" }, usage: { output_tokens: 5 } }]),
+    );
+    expect(out.at(-1)).toMatchObject({ type: "finish", finishReason: "stop" });
+    expect(out.some((e) => e.type === "error")).toBe(false);
+  });
+
+  it("types an in-stream error so an overload is retryable like an HTTP 529", async () => {
+    const out = await drain(sse([start, { type: "error", error: { type: "overloaded_error", message: "Overloaded" } }]));
+    expect(out.find((e) => e.type === "error")).toMatchObject({
+      error: { kind: "overloaded", retryable: true, message: "Overloaded" },
+    });
+
+    const bad = await drain(sse([start, { type: "error", error: { type: "authentication_error", message: "bad key" } }]));
+    expect(bad.find((e) => e.type === "error")).toMatchObject({ error: { kind: "auth" } });
+  });
+
+  it("reports cache writes next to cache reads, and leaves inputTokens as Anthropic counts it", () => {
+    expect(usageFromAnthropic({ input_tokens: 10, output_tokens: 5, cache_read_input_tokens: 700, cache_creation_input_tokens: 90 })).toEqual({
+      inputTokens: 10,
+      outputTokens: 5,
+      totalTokens: 15,
+      cachedInputTokens: 700,
+      cacheCreationInputTokens: 90,
+    });
   });
 });
 

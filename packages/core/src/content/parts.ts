@@ -4,6 +4,7 @@
 import type {
   ContentPart,
   MediaSource,
+  Usage,
   Message,
   MessageRole,
   ToolCallStatus,
@@ -119,4 +120,30 @@ export function appendReasoning(parts: ContentPart[], delta: string, signature?:
 export function stripUiOnlyParts(m: Message): Message {
   const parts = m.parts.filter((p) => p.type !== "artifact");
   return parts.length === m.parts.length ? m : { ...m, parts };
+}
+
+const USAGE_KEYS = [
+  "inputTokens",
+  "outputTokens",
+  "totalTokens",
+  "cachedInputTokens",
+  "cacheCreationInputTokens",
+  "reasoningTokens",
+] as const satisfies readonly (keyof Usage)[];
+
+/**
+ * Sum two usages field by field. A field that neither side reports stays
+ * `undefined` rather than becoming 0, so "the provider did not say" survives
+ * aggregation. Shared by the run loop and the event reducer so they cannot
+ * disagree about a total.
+ */
+export function addUsage(a: Usage, b: Usage | undefined): Usage {
+  if (!b) return a;
+  const out: Usage = {};
+  for (const key of USAGE_KEYS) {
+    const x = a[key];
+    const y = b[key];
+    out[key] = x == null && y == null ? undefined : (x ?? 0) + (y ?? 0);
+  }
+  return out;
 }

@@ -61,6 +61,12 @@ export function finishFromAnthropic(reason: AnthropicStopReason | null | undefin
   }
 }
 
+/**
+ * Anthropic's `input_tokens` counts only the tokens after the last cache
+ * breakpoint: cache reads and writes are reported next to it, not inside it
+ * (the opposite of OpenAI). `Usage` documents that, and the cache fields carry
+ * what a host needs to price them.
+ */
 export function usageFromAnthropic(usage: AnthropicUsage | undefined): Usage {
   if (!usage) return {};
   const input = usage.input_tokens ?? 0;
@@ -70,5 +76,8 @@ export function usageFromAnthropic(usage: AnthropicUsage | undefined): Usage {
     outputTokens: output,
     totalTokens: input + output,
     ...(usage.cache_read_input_tokens != null ? { cachedInputTokens: usage.cache_read_input_tokens } : {}),
+    ...(usage.cache_creation_input_tokens != null
+      ? { cacheCreationInputTokens: usage.cache_creation_input_tokens }
+      : {}),
   };
 }

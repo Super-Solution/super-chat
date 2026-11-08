@@ -11,7 +11,7 @@
 // Everything after that — tool dispatch, card suspension, stop conditions,
 // history append — is identical, which is the point.
 
-import { assistantMessage, nextId } from "../content/parts.js";
+import { addUsage, assistantMessage, nextId } from "../content/parts.js";
 import type { ContentPart, FinishReason, Message, Usage } from "../content/types.js";
 import { stripCardPayload, type Card, type CardAction, type CardSpec } from "../cards/types.js";
 import { makeCard } from "../cards/registry.js";
@@ -595,17 +595,6 @@ function collectStream(stream: AsyncIterable<StreamEvent>) {
       modelId,
       ...(responseId ? { responseId } : {}),
     }),
-  };
-}
-
-function addUsage(a: Usage, b: Usage): Usage {
-  const add = (x?: number, y?: number) => (x == null && y == null ? undefined : (x ?? 0) + (y ?? 0));
-  return {
-    inputTokens: add(a.inputTokens, b.inputTokens),
-    outputTokens: add(a.outputTokens, b.outputTokens),
-    totalTokens: add(a.totalTokens, b.totalTokens),
-    cachedInputTokens: add(a.cachedInputTokens, b.cachedInputTokens),
-    reasoningTokens: add(a.reasoningTokens, b.reasoningTokens),
   };
 }
 

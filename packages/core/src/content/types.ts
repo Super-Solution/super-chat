@@ -110,11 +110,21 @@ export type Message = {
 };
 
 export type Usage = {
+  /**
+   * Prompt tokens. Whether this INCLUDES the cache fields below is the provider's
+   * own convention and is not normalised: OpenAI and Super Router report it
+   * inclusive (uncached = `inputTokens - cachedInputTokens`); Anthropic reports
+   * only the tokens after the last cache breakpoint, so its cache hits and writes
+   * are additional. A host that prices cache tokens separately must branch on the
+   * provider that produced the usage.
+   */
   inputTokens?: number;
   outputTokens?: number;
   totalTokens?: number;
   /** Prompt-cache hits, when the provider reports them. */
   cachedInputTokens?: number;
+  /** Tokens written to the prompt cache (billed above the input rate by providers that charge for it). */
+  cacheCreationInputTokens?: number;
   reasoningTokens?: number;
 };
 

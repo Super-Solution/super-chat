@@ -6,6 +6,7 @@
 // text_delta, thinking_delta, signature_delta (the thinking replay token,
 // arriving at the END of a thinking block), input_json_delta (tool args).
 
+import { AgentError, type AgentErrorKind } from "../../errors.js";
 import { parseSSEJson } from "../../transport/sse.js";
 import { repairToolArguments } from "../../tools/repair.js";
 import type { StreamEvent } from "../types.js";
@@ -87,7 +88,7 @@ export async function* streamAnthropic(body: ReadableStream<Uint8Array>): AsyncG
       }
 
       case "error":
-        yield { type: "error", error: new Error(event.error.message) };
+        yield { type: "error", error: streamError(event.error) };
         return;
 
       default:
@@ -95,8 +96,20 @@ export async function* streamAnthropic(body: ReadableStream<Uint8Array>): AsyncG
     }
   }
 
-  // Stream ended without message_stop (dropped connection). Close out what we
-  // have rather than leaving the consumer's reducer half-applied.
+  // The body ended without `message_stop`: a proxy or load balancer cut the
+  // stream. Whatever was received is NOT a finished turn, and a tool call still
+  // being written has incomplete arguments. Repairing those into valid JSON and
+  // running the tool (a half-written path, a truncated query) would act on input
+  // the model never finished, so no `tool-call-end` is emitted for them. A
+  // `stop_reason` having arrived means the model did finish; only the closing
+  // frame was lost.
+  if (stopReason === null) {
+    yield {
+      type: "error",
+      error: new AgentError("network", "The response stream ended before the model finished (no message_stop)."),
+    };
+    return;
+  }
   for (const pending of toolsByIndex.values()) {
     const { value, repaired } = repairToolArguments(pending.args || "{}");
     yield { type: "tool-call-end", callId: pending.callId, name: pending.name, input: value, repaired };
@@ -104,4 +117,20 @@ export async function* streamAnthropic(body: ReadableStream<Uint8Array>): AsyncG
   const usage = usageFromAnthropic({ ...(inputUsage ?? {}), ...(outputUsage ?? {}) });
   yield { type: "usage", usage };
   yield { type: "finish", finishReason: finishFromAnthropic(stopReason), usage };
+}
+
+/** Anthropic's in-stream `error` event, typed so a mid-stream overload is retryable like an HTTP 529. */
+function streamError(error: { type: string; message: string }): AgentError {
+  const kinds: Record<string, AgentErrorKind> = {
+    overloaded_error: "overloaded",
+    api_error: "overloaded",
+    rate_limit_error: "rate-limit",
+    timeout_error: "timeout",
+    authentication_error: "auth",
+    permission_error: "auth",
+    invalid_request_error: "invalid-request",
+    not_found_error: "invalid-request",
+    request_too_large: "invalid-request",
+  };
+  return new AgentError(kinds[error.type] ?? "unknown", error.message, { provider: "anthropic", detail: error });
 }
