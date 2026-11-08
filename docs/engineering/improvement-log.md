@@ -89,6 +89,28 @@ Each round is one commit with its own regression tests. Scores: [`scorecard.md`]
   the same way). One exported `addUsage` in `content/parts.ts` now serves both.
 * Tests: five stream/usage tests in `anthropic.test.ts` (three fail on the old code), `content/usage.test.ts`.
 
+### Round 6 — OpenAI streaming has the same cut-off hazard (`core/providers/openai`)
+
+* Audit: both OpenAI dialects (Responses, Chat Completions — the latter being the path for every OpenAI-compatible
+  server) against the rule round 5 established: *a tool call is run only if the model finished writing its arguments*.
+* Defects, all reproduced against the old code:
+  * **Chat stream cut with no `finish_reason` and no `[DONE]`:** pending calls were repaired into valid JSON, executed,
+    and the turn finished as a normal `stop`/`tool-calls`.
+  * **Chat `finish_reason: "length"` (output cap) mid-arguments:** same, in the stream and in the non-streamed
+    `partsFromChat`.
+  * **Responses `response.incomplete`** (cap or filter) with a call still being written, and the non-streamed
+    `partsFromResponses`: same.
+  * **Responses `response.failed`:** the sync path throws the response's `error`, the stream path emitted a quiet
+    `finish: "error"` with no `error` event, so the user saw an empty turn with no reason. Now a typed `AgentError`
+    (`rate_limit_*` → rate-limit, `server_error` → overloaded, `invalid_*` → invalid-request, …).
+  * **Responses body with no terminal event:** returned silently, no finish, no error.
+* Fix: truncated bodies are `AgentError("network")` (retryable) events; a call is dropped when its arguments needed
+  repair *and* the response was cut off (output cap / filter). A call whose arguments are complete JSON is still run
+  even then, and a *completed* Responses object still supplies calls that only lost their `.done` frame. A server that
+  sends `[DONE]` without a `finish_reason` is still tolerated. `parseSSEJson` gained an optional `onDone` callback so the
+  adapter can tell "the server said it finished" from "the body ended".
+* Tests: nine in `openai/stream.test.ts`; six fail on the old code.
+
 ## 2026-11-08 — iteration 2
 
 Started from iteration 1's open items.

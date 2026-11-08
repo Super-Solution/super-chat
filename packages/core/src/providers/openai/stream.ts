@@ -9,6 +9,7 @@
 // the one that needs state, and getting that state wrong is why streamed
 // parallel tool calls so often come out with merged arguments.
 
+import { AgentError, type AgentErrorKind } from "../../errors.js";
 import { parseSSE, parseSSEJson } from "../../transport/sse.js";
 import { repairToolArguments } from "../../tools/repair.js";
 import type { StreamEvent } from "../types.js";
@@ -28,6 +29,7 @@ export async function* streamResponses(
   // pending calls by item_id and resolve the call_id when the item completes.
   const callsByItemId = new Map<string, { callId: string; name: string; args: string }>();
   let started = false;
+  let terminal = false;
 
   for await (const { data } of parseSSEJson<ResponsesStreamEvent>(body)) {
     if (typeof data.sequence_number === "number") opts.onCursor?.(data.sequence_number);
@@ -93,13 +95,23 @@ export async function* streamResponses(
       case "response.failed": {
         const r = data.response;
         if (!r) break;
-        // Any call that never got a `.done` event (stream cut short) still needs
-        // to be emitted, or the runtime waits forever for a result it will
-        // never be asked to produce.
-        for (const [key, pending] of callsByItemId) {
-          const { value, repaired } = repairToolArguments(pending.args);
-          yield { type: "tool-call-end", callId: pending.callId, name: pending.name, input: value, repaired };
-          callsByItemId.delete(key);
+        terminal = true;
+        // The sync path throws on a failed response; a stream must not turn the
+        // same failure into a quiet "finish" with no message for the user.
+        if (r.status === "failed" || (data.type === "response.failed" && r.error)) {
+          yield { type: "error", error: responseError(r.error ?? { message: "The response failed." }) };
+          return;
+        }
+        // A call that never got its `.done` event has incomplete arguments. On a
+        // COMPLETED response the final object lists every call in full; on an
+        // incomplete one (output cap, filter) the arguments were cut off and
+        // repairing them would run the tool on input the model never finished.
+        if (r.status === "completed") {
+          for (const [key, pending] of callsByItemId) {
+            const { value, repaired } = repairToolArguments(pending.args);
+            yield { type: "tool-call-end", callId: pending.callId, name: pending.name, input: value, repaired };
+            callsByItemId.delete(key);
+          }
         }
         const usage = usageFromResponses(r.usage);
         yield { type: "usage", usage };
@@ -116,6 +128,30 @@ export async function* streamResponses(
         break; // content_part.added/done, output_item.done, … carry nothing new for us
     }
   }
+
+  // The body ended with no completed / incomplete / failed event. Whatever was
+  // received is not a finished turn, and nothing is repaired into a tool call.
+  if (!terminal) {
+    yield {
+      type: "error",
+      error: new AgentError("network", "The response stream ended before the model finished."),
+    };
+  }
+}
+
+/** A Responses `error` object (from `response.failed`), typed so retry logic and the UI can act on it. */
+function responseError(error: { code?: string | null; message: string }): AgentError {
+  const code = error.code ?? "";
+  const kind: AgentErrorKind = /rate_limit/i.test(code)
+    ? "rate-limit"
+    : /server_error|overloaded|unavailable/i.test(code)
+      ? "overloaded"
+      : /invalid|unsupported|context_length/i.test(code)
+        ? "invalid-request"
+        : /content|safety|policy/i.test(code)
+          ? "content-filter"
+          : "unknown";
+  return new AgentError(kind, error.message, { detail: error });
 }
 
 /** Translate a Chat Completions SSE body. */
@@ -126,8 +162,9 @@ export async function* streamChat(body: ReadableStream<Uint8Array>): AsyncGenera
   let started = false;
   let finish: StreamEvent | null = null;
   let lastUsage: ReturnType<typeof usageFromChat> | null = null;
+  let sawDone = false;
 
-  for await (const { data } of parseSSEJson<ChatStreamChunk>(body)) {
+  for await (const { data } of parseSSEJson<ChatStreamChunk>(body, { onDone: () => (sawDone = true) })) {
     if (!started) {
       started = true;
       yield { type: "start", responseId: data.id, modelId: data.model };
@@ -173,18 +210,31 @@ export async function* streamChat(body: ReadableStream<Uint8Array>): AsyncGenera
     }
   }
 
+  // No finish_reason and no `[DONE]`: the body was cut. (A server that sends
+  // `[DONE]` but forgot the finish_reason is tolerated, as before.)
+  if (!finish && !sawDone) {
+    yield { type: "error", error: new AgentError("network", "The response stream ended before the model finished.") };
+    return;
+  }
+  const cutOff = finish !== null && ["length", "content-filter"].includes((finish as Extract<StreamEvent, { type: "finish" }>).finishReason);
+
   // Tool calls complete at stream end here — Chat Completions has no per-call
   // "done" event, so we can only finalize once no more fragments can arrive.
+  // When the model was cut off (output cap, filter) an argument string that
+  // needed repair was never finished: skip that call rather than run it.
+  let emitted = 0;
   for (const entry of pending.values()) {
     const { value, repaired } = repairToolArguments(entry.args);
+    if (cutOff && repaired) continue;
     if (!entry.announced) yield { type: "tool-call-start", callId: entry.callId, name: entry.name };
     yield { type: "tool-call-end", callId: entry.callId, name: entry.name, input: value, repaired };
+    emitted += 1;
   }
 
   if (lastUsage) yield { type: "usage", usage: lastUsage };
   yield finish
     ? { ...(finish as Extract<StreamEvent, { type: "finish" }>), ...(lastUsage ? { usage: lastUsage } : {}) }
-    : { type: "finish", finishReason: pending.size ? "tool-calls" : "stop", ...(lastUsage ? { usage: lastUsage } : {}) };
+    : { type: "finish", finishReason: emitted ? "tool-calls" : "stop", ...(lastUsage ? { usage: lastUsage } : {}) };
 }
 
 /**

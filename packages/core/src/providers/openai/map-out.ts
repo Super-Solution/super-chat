@@ -90,6 +90,10 @@ export function partsFromResponses(r: ResponsesResponse): ContentPart[] {
     if (item.type === "function_call") {
       const call = item as Extract<typeof item, { type: "function_call" }>;
       const { value, repaired } = repairToolArguments(call.arguments);
+      // A call whose arguments had to be repaired in a response the model did not
+      // finish (output cap, filter) was cut mid-write; running it would act on
+      // input the model never completed.
+      if (repaired && r.status === "incomplete") continue;
       parts.push({
         type: "tool-call",
         callId: call.call_id,
@@ -140,8 +144,10 @@ export function partsFromChat(r: ChatResponse): ContentPart[] {
   if (msg.reasoning_content) parts.push({ type: "reasoning", text: msg.reasoning_content });
   if (msg.content) parts.push({ type: "text", text: msg.content });
 
+  const cutOff = choice.finish_reason === "length" || choice.finish_reason === "content_filter";
   for (const call of msg.tool_calls ?? []) {
     const { value, repaired } = repairToolArguments(call.function.arguments);
+    if (repaired && cutOff) continue; // see partsFromResponses: cut off mid-arguments
     parts.push({
       type: "tool-call",
       callId: call.id,

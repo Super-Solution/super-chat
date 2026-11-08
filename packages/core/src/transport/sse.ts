@@ -151,14 +151,19 @@ export async function* parseSSE(stream: ReadableStream<Uint8Array>): AsyncGenera
 }
 
 /**
- * SSE messages whose `data` is JSON, skipping the `[DONE]` sentinel that
- * OpenAI's Chat Completions stream terminates with.
+ * SSE messages whose `data` is JSON. The `[DONE]` sentinel that OpenAI's Chat
+ * Completions stream terminates with ends the iteration (and calls `onDone`).
  */
 export async function* parseSSEJson<T = unknown>(
   stream: ReadableStream<Uint8Array>,
+  opts: { onDone?: () => void } = {},
 ): AsyncGenerator<{ event: string; data: T }> {
   for await (const msg of parseSSE(stream)) {
-    if (msg.data === "[DONE]") return;
+    if (msg.data === "[DONE]") {
+      // Lets a caller tell "the server said it was finished" from "the body just ended".
+      opts.onDone?.();
+      return;
+    }
     if (!msg.data) continue;
     try {
       yield { event: msg.event, data: JSON.parse(msg.data) as T };
