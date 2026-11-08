@@ -173,6 +173,27 @@ Each round is one commit with its own regression tests. Scores: [`scorecard.md`]
   `useThreadList` is not covered because the package has no DOM test renderer (the existing hook tests drive React's
   dispatcher by hand and only implement the hooks `useBranches` reaches). Adding one is a candidate for a later round.
 
+### Round 11 — composer accessibility (`bindings/react-ui`)
+
+* Audit: every `<button>`, `<input>`, `<textarea>`, `<select>`, `<img>`, live region and dialog in `react-ui`. Most of it
+  is already careful (all icon buttons have names, errors use `role="alert"`, the status line is `aria-live`, the document
+  dialog closes on Escape, IME composition is respected). The composer, the one control every user reaches, had four gaps:
+  1. **The message field had no accessible name** — only a placeholder, which is not a name and is empty if the host
+     sets `placeholder=""`. Now `aria-label="Message"`.
+  2. **File attach was unreachable by keyboard.** It was a `<label>` around a `display:none` file input; neither is
+     focusable. It is now a real `<button>` that opens the picker (the input stays hidden, out of the tab order and
+     the accessibility tree).
+  3. **The `/` skills and `@` tools menu was invisible to a screen reader.** Arrow keys moved a highlight that nothing
+     announced, the listbox owned `<li>` wrappers instead of options, and the options had no ids. The listbox now
+     owns only options (`<li role="presentation">`), options have ids and stay out of the tab order, and while the menu
+     is open the textarea carries `aria-controls` and `aria-activedescendant` (plus `aria-autocomplete="list"`). No
+     dangling reference when it is closed. (`role="combobox"` is not valid on a `<textarea>`, so it is not used.)
+  4. The inline "edit message" textarea had no name; now `aria-label="Edit message"`.
+* Tests: `a11y.test.tsx` (4) renders the composer and the menu to static markup and asserts names, roles, ids and the
+  absence of dangling references. All four fail on the old code.
+* Not verified: behaviour with a real screen reader and focus order in a browser. The Playwright suite (not part of
+  `pnpm verify`) selects the composer by class, so it is unaffected by these changes, but it was not run here.
+
 ## 2026-11-08 — iteration 2
 
 Started from iteration 1's open items.

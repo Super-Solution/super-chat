@@ -51,23 +51,32 @@ export function rankItems(items: SuggestItem[], query: string): SuggestItem[] {
     .slice(0, 8);
 }
 
+/** DOM id of option `index` in the menu `menuId`, so the input can point at it with aria-activedescendant. */
+export const suggestOptionId = (menuId: string, index: number) => `${menuId}-opt-${index}`;
+
 export function SuggestMenu({
   items,
   active,
   onPick,
+  id = "sc-suggest",
 }: {
   items: SuggestItem[];
   active: number;
   onPick: (item: SuggestItem) => void;
+  /** Id of the listbox; the composer's textarea references it (and its options) for screen readers. */
+  id?: string;
 }) {
   if (!items.length) return null;
   return (
-    <ul className="sc-suggest" role="listbox">
+    <ul className="sc-suggest" role="listbox" id={id} aria-label="Suggestions">
       {items.map((it, i) => (
-        <li key={it.id}>
+        // A listbox may only own options; the <li> is presentational.
+        <li key={it.id} role="presentation">
           <button
             type="button"
             role="option"
+            id={suggestOptionId(id, i)}
+            tabIndex={-1}
             aria-selected={i === active}
             className={`sc-suggest__item${i === active ? " sc-suggest__item--active" : ""}`}
             // mousedown, not click: click fires after blur, and blur closes the

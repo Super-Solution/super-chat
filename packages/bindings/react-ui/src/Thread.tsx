@@ -6,7 +6,7 @@
 // order, never inside a collapsible "steps" group. Read-only tool activity does
 // collapse — a turn that made six lookups should not push the answer off screen.
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   estimateTokens,
   isCardCarrier,
@@ -38,6 +38,7 @@ import {
   findTrigger,
   rankItems,
   SuggestMenu,
+  suggestOptionId,
   useActiveIndex,
   useSuggestItems,
   type SuggestItem,
@@ -287,6 +288,7 @@ function UserBubble({ message, text }: { message: Message; text: string }) {
         className="sc-composer__input"
         rows={2}
         value={draft}
+        aria-label="Edit message"
         onChange={(e) => setDraft(e.target.value)}
         style={{ width: "100%" }}
       />
@@ -838,6 +840,10 @@ export function Composer({
   const suggestions = trigger ? rankItems(catalogue[trigger.trigger as "/" | "@"] ?? [], trigger.query) : [];
   const [activeIdx, setActiveIdx] = useActiveIndex(suggestions.length);
 
+  const menuId = `${useId()}-suggest`;
+  const menuOpen = Boolean(trigger) && suggestions.length > 0;
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const syncTrigger = (el: HTMLTextAreaElement) => setTrigger(findTrigger(el.value, el.selectionStart ?? 0, ["/", "@"]));
 
   const pick = (item: SuggestItem) => {
@@ -931,12 +937,26 @@ export function Composer({
   // Drag-and-drop is not discoverable on its own, and does not exist at all on
   // a touch device — so the picker is always offered too.
   const attachButton = (
-    <label className="sc-btn sc-btn--ghost sc-btn--sm" title="Attach a file" aria-disabled={isRunning}>
-      <AttachIcon />
-      <span className="sc-sr-only">Attach a file</span>
+    // A button that opens the picker. The file input is hidden with display:none
+    // (not focusable), so wrapping it in a <label> left keyboard users with no
+    // way to attach a file at all.
+    <>
+      <button
+        type="button"
+        className="sc-btn sc-btn--ghost sc-btn--sm"
+        title="Attach a file"
+        disabled={isRunning}
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <AttachIcon />
+        <span className="sc-sr-only">Attach a file</span>
+      </button>
       <input
+        ref={fileInputRef}
         type="file"
         multiple
+        tabIndex={-1}
+        aria-hidden
         style={{ display: "none" }}
         disabled={isRunning}
         onChange={(e) => {
@@ -945,7 +965,7 @@ export function Composer({
           if (files?.length) void addFiles(files);
         }}
       />
-    </label>
+    </>
   );
 
   const actionButton = isRunning ? (
@@ -975,7 +995,7 @@ export function Composer({
       }}
     >
       {trigger && suggestions.length ? (
-        <SuggestMenu items={suggestions} active={activeIdx} onPick={pick} />
+        <SuggestMenu id={menuId} items={suggestions} active={activeIdx} onPick={pick} />
       ) : null}
       {quotes.length ? (
         <ul className="sc-quotes" aria-label="Quoted from a document">
@@ -1022,6 +1042,13 @@ export function Composer({
         rows={1}
         value={value}
         placeholder={placeholder}
+        // A placeholder is not a name (and is gone as soon as the user types).
+        aria-label="Message"
+        // The `/` and `@` menu: the arrow keys move a highlight the screen reader
+        // cannot see unless the textarea says which option is active.
+        aria-autocomplete="list"
+        aria-controls={menuOpen ? menuId : undefined}
+        aria-activedescendant={menuOpen ? suggestOptionId(menuId, activeIdx) : undefined}
         onPaste={(e) => {
           const files = [...e.clipboardData.files];
           if (!files.length) return;
