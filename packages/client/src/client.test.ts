@@ -443,6 +443,29 @@ describe("AgentClient + document quotes", () => {
     expect(quotesOf(user?.metadata)[0]?.drift).toEqual({ status: "moved", revision: 2, intact: false });
   });
 
+  it("drops a quoted send when the thread changed during the drift lookup", async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((r) => (release = r));
+    const documentStore = createMemoryDocumentStore();
+    const doc = await documentStore.create({ id: "doc_1", title: "Q3 plan", markdown: "# Q3\n\nThe cap is 12 months." });
+    const slow = {
+      get: async (id: string) => {
+        await gate;
+        return documentStore.get(id);
+      },
+    };
+    const client = makeClient([respondText("ok")], { documentStore: slow });
+    const sending = client.send("tighten this", {
+      quotes: [{ ...quote, revision: doc.revision, text: "The cap is 12 months." }],
+    });
+    client.newThread();
+    release();
+    await sending;
+    await flush();
+    expect(client.store.get().messages).toEqual([]);
+    expect(client.store.get().status).toBe("idle");
+  });
+
   it("leaves an unquoted message untouched", async () => {
     const client = makeClient([respondText("ok")]);
     await client.send("plain question");

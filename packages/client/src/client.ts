@@ -230,10 +230,15 @@ export class AgentClient {
   ): Promise<void> {
     if (this.isRunning) throw new Error("A run is already in progress. Call stop() first.");
     const { documentStore } = this.config;
+    const gen = this.generation;
     const quotes =
       opts.quotes?.length && documentStore ? await checkQuoteDrift(opts.quotes, documentStore) : (opts.quotes ?? []);
     // The drift lookup is an await, and a second send could have started in it.
     if (this.isRunning) throw new Error("A run is already in progress. Call stop() first.");
+    // The user opened or started another thread while the drift lookup was out: the text they
+    // typed belongs to the thread they left, and appending it to this one would be worse than
+    // dropping it.
+    if (gen !== this.generation) return;
     const staged = this.store.get().attachments;
     const quoted: string | ContentPart[] =
       quotes.length === 0

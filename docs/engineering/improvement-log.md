@@ -118,3 +118,13 @@ report no errors, 55 test files / 690 tests pass (iteration 1: 54 / 670).
   slip past); the card renders plain text for any URL it rejects. Exported from `ui-core`.
 * Tests: `safe-href.test.ts` (accepts web links, rejects eleven hostile or malformed inputs).
 * Gate: `pnpm verify` (architecture check, build, typecheck, 693 tests) passes.
+
+### Round 7 (2026-11-08) — a send cannot cross threads
+
+* Audit: `AgentClient` (send, regenerate, edit, thread switching). `send()` awaits the quote-drift lookup
+  before it appends the user message, and nothing checked that the thread was still the one the user typed
+  into: `newThread()` or `openThread()` during that await put the message, and a whole run, into the other
+  thread.
+* Fix: `send()` captures `generation` before the await and returns without appending if it moved.
+* Test: `drops a quoted send when the thread changed during the drift lookup` (fails without the fix).
+* Gate: `pnpm verify` (architecture check, build, typecheck, 694 tests) passes.
