@@ -111,6 +111,20 @@ Each round is one commit with its own regression tests. Scores: [`scorecard.md`]
   adapter can tell "the server said it finished" from "the body ended".
 * Tests: nine in `openai/stream.test.ts`; six fail on the old code.
 
+### Round 7 — `AgentClient` races on thread switches (`client/src/client.ts`)
+
+* Audit: send / regenerate / edit / stop / thread switching / job resume, looking for state that outlives the run that
+  set it.
+* **Defect — Stop stops working after a quick switch.** `run()` ended with `this.controller = null`. A run superseded by
+  `newThread()` or `openThread()` unwinds asynchronously, so a `send()` on the new thread had already stored *its*
+  controller by then; the old run's `finally` wiped it, and `stop()` became a silent no-op for the new run (it
+  could not be cancelled until it finished). Each run now clears only the controller it created.
+* **Defect — the wrong thread opens.** `openThread()` awaited `store.load()` and applied whatever came back last, so
+  clicking thread A (slow load) then thread B (fast load) ended on A. Loads now carry a ticket; a superseded load
+  returns `false` without touching state, and `newThread()` also invalidates a load still in flight.
+* Tests: two in `client.test.ts` (an abort-aware transport proves B really was aborted; an out-of-order store).
+  Both fail on the old code.
+
 ## 2026-11-08 — iteration 2
 
 Started from iteration 1's open items.

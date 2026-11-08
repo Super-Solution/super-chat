@@ -141,6 +141,8 @@ export class AgentClient {
    * thread the user just opened.
    */
   private generation = 0;
+  /** Latest `openThread()` request; a load that finishes under an older ticket is discarded. */
+  private openTicket = 0;
   /** Wall-clock start of the current turn, for the committed TurnMeta. */
   private turnStartedAt = 0;
 
@@ -306,7 +308,8 @@ export class AgentClient {
 
   private async run(messages: Message[], opts: { forceSkillIds?: string[] }): Promise<void> {
     const gen = this.generation;
-    this.controller = new AbortController();
+    const controller = new AbortController();
+    this.controller = controller;
     const mode = this.config.mode ?? "stream";
     this.turnStartedAt = Date.now();
     this.store.set((s) => ({
@@ -343,7 +346,7 @@ export class AgentClient {
       providerOptions: this.config.providerOptions,
       meter: this.config.meter,
       meteringMetadata: this.config.meteringMetadata,
-      signal: this.controller.signal,
+      signal: controller.signal,
       forceSkillIds: opts.forceSkillIds,
       onHostTool: this.config.onHostTool,
       // Suspend the run on an interactive card; `respond()` resolves it.
@@ -361,7 +364,10 @@ export class AgentClient {
     } catch (e) {
       if (gen === this.generation) this.store.set((s) => ({ ...s, status: "error", error: e }));
     } finally {
-      this.controller = null;
+      // Only release OUR controller. A run superseded by newThread()/openThread()
+      // unwinds asynchronously, so a send on the new thread may already own
+      // `this.controller` by now; nulling it would leave that run unstoppable.
+      if (this.controller === controller) this.controller = null;
       if (gen === this.generation) this.commitRun();
     }
   }
@@ -480,7 +486,12 @@ export class AgentClient {
   async openThread(id: string): Promise<boolean> {
     const store = this.config.threadStore;
     if (!store) return false;
+    // Loads can resolve out of order. Only the latest request may apply, or a
+    // slow load for a thread the user already clicked away from replaces the
+    // one they are looking at.
+    const ticket = ++this.openTicket;
     const stored = await store.load(id);
+    if (ticket !== this.openTicket) return false;
     if (!stored) return false;
     this.generation += 1; // invalidate any in-flight run before replacing state
     this.stop();
@@ -505,6 +516,7 @@ export class AgentClient {
   /** Start a fresh thread under a new id (`clear()` keeps the id; this doesn't). */
   newThread(): void {
     this.generation += 1;
+    this.openTicket += 1; // an openThread() still loading must not replace the thread just started
     this.stop();
     this.threadMeta = undefined;
     this.store.set((s) => ({

@@ -519,3 +519,73 @@ describe("AgentClient commit order", () => {
     expect(committed).toEqual(["tool-call:c_slow", "tool-call:c_fast", "tool-result:c_slow", "tool-result:c_fast"]);
   });
 });
+
+describe("superseded runs", () => {
+  /** A transport that holds each request open until it is aborted (or `ms` pass) and records which were aborted. */
+  function abortAwareTransport(ms: number) {
+    const aborted: boolean[] = [];
+    const transport: Transport = {
+      kind: "custom",
+      credentialSafe: true,
+      async fetch(req: TransportRequest): Promise<Response> {
+        const slot = aborted.push(false) - 1;
+        await new Promise<void>((resolve, reject) => {
+          const t = setTimeout(resolve, ms);
+          req.signal?.addEventListener("abort", () => {
+            aborted[slot] = true;
+            clearTimeout(t);
+            reject(Object.assign(new Error("aborted"), { name: "AbortError" }));
+          });
+        });
+        return new Response(JSON.stringify(respondText("late")), { status: 200, headers: { "content-type": "application/json" } });
+      },
+    };
+    return { transport, aborted };
+  }
+
+  it("a run replaced by newThread() cannot unhook Stop from the run that replaced it", async () => {
+    const { transport, aborted } = abortAwareTransport(500);
+    const client = new AgentClient({
+      provider: createOpenAIProvider({ transport, dialect: "responses" }),
+      model: "gpt-5.2",
+      contextBuilder: new ContextBuilder({ identity: "t", contextWindow: 32_000 }),
+      tools: new ToolRegistry(),
+      toolResolution: { presets: [] },
+      mode: "sync",
+    });
+
+    const first = client.send("a");
+    await new Promise((r) => setTimeout(r, 5));
+    client.newThread(); // aborts run A; A unwinds asynchronously
+    const second = client.send("b"); // run B takes over `controller` before A has finished unwinding
+    await first; // A's unwinding (and its `finally`) is done
+    expect(aborted).toEqual([true, false]);
+
+    client.stop();
+    await second;
+    expect(aborted).toEqual([true, true]); // B was reachable: Stop aborted it instead of letting it run 500 ms
+  });
+
+  it("openThread applies only the latest request when loads resolve out of order", async () => {
+    const inner = createMemoryThreadStore();
+    for (const id of ["t_slow", "t_fast"]) {
+      await inner.save(threadSnapshot(id, [{ id: `u_${id}`, role: "user", parts: [{ type: "text", text: id }] }]));
+    }
+    const store = {
+      ...inner,
+      load: async (id: string) => {
+        await new Promise((r) => setTimeout(r, id === "t_slow" ? 40 : 1));
+        return inner.load(id);
+      },
+    };
+    const client = makeClient([respondText("x")], { threadStore: store });
+
+    const slow = client.openThread("t_slow"); // clicked first, answers last
+    const fast = client.openThread("t_fast"); // clicked second, answers first
+    const [slowResult, fastResult] = await Promise.all([slow, fast]);
+
+    expect(fastResult).toBe(true);
+    expect(slowResult).toBe(false); // superseded: reported as not opened
+    expect(client.store.get().id).toBe("t_fast");
+  });
+});
