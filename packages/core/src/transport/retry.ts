@@ -14,8 +14,9 @@ export function backoffDelay(attempt: number, policy: RetryPolicy, retryAfterSec
 export function parseRetryAfter(headers: Headers): number | undefined {
   const raw = headers.get("retry-after");
   if (!raw) return undefined;
-  const seconds = Number(raw);
-  if (Number.isFinite(seconds)) return seconds;
+  // RFC 9110: delta-seconds is a run of digits. `Number()` alone would also
+  // accept "-5" (a negative wait), "1e3" and "0x10".
+  if (/^\s*\d+\s*$/.test(raw)) return Number(raw);
   const date = Date.parse(raw); // HTTP-date form
   if (Number.isFinite(date)) return Math.max(0, (date - Date.now()) / 1000);
   return undefined;
@@ -23,6 +24,12 @@ export function parseRetryAfter(headers: Headers): number | undefined {
 
 const sleep = (ms: number, signal?: AbortSignal) =>
   new Promise<void>((resolve, reject) => {
+    // An "abort" listener never fires for a signal that is already aborted, so
+    // without this check a cancelled call would still sleep out the whole delay.
+    if (signal?.aborted) {
+      reject(new AgentError("cancelled", "Request was cancelled."));
+      return;
+    }
     const onAbort = () => {
       clearTimeout(t);
       reject(new AgentError("cancelled", "Request was cancelled."));

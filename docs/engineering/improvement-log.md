@@ -3,6 +3,27 @@
 A short, append-only record of what was found, decided and verified, so the next review does
 not repeat finished work. Newest entry first. Claims here are things that were run, not intended.
 
+## Directive pass (rounds 1–15, branch `claude/project-thread-u93pss`)
+
+Fifteen rounds of audit → fix → local gate (`pnpm verify`) on top of the earlier iterations. Constraints held
+throughout: public API compatible, nothing published, licences and git history untouched, no new dependencies.
+Each round is one commit with its own regression tests. Scores: [`scorecard.md`](scorecard.md).
+
+### Round 1 — transport retry (`core/transport/retry.ts`)
+
+* Audit: SSE decoder, retry, direct and proxy transports. SSE and the transports hold up. `retry.ts` had **no tests at
+  all** although every provider call goes through it.
+* Fix 1: `sleep()` attached an `abort` listener, which never fires for a signal that is *already* aborted. A caller
+  that cancels from `onRetry` (or between a failed attempt and the backoff) waited out the full delay (up to
+  `maxDelayMs`) before the cancellation surfaced. It now rejects immediately.
+* Fix 2: `parseRetryAfter` accepted anything `Number()` parses (`1e3`, `0x10`, a negative). Delta-seconds is now digits
+  only, per RFC 9110; anything else falls through to the HTTP-date parse, which never yields a negative wait.
+* Tests: `transport/retry.test.ts` (16 tests: header parsing, jitter bounds, retry/give-up/non-retryable, abort while
+  sleeping, abort before sleeping, listener detach, `errorFromResponse` classification). Two fail on the old code (the
+  pre-aborted one only after sitting out the 5 s test timeout).
+* Not changed on purpose: a `Retry-After` longer than `maxDelayMs` is still capped rather than treated as "do not
+  retry"; that is a documented behaviour and changing it is a policy call.
+
 ## 2026-11-08 — iteration 2
 
 Started from iteration 1's open items.
