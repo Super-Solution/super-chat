@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "test:rwd": "playwright test",
     "typecheck": "pnpm -r typecheck",
-    "check:architecture": "node scripts/check-architecture.mjs"
+    "check:architecture": "node scripts/check-architecture.mjs",
+    "verify": "pnpm check:architecture && pnpm build && pnpm typecheck && pnpm test"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",

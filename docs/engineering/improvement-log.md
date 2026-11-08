@@ -14,7 +14,7 @@ Started from iteration 1's open items.
 | 1 | **Links were rewritten when the URL contained Markdown punctuation.** The emphasis rules ran over the whole string before links were extracted, so `[x](https://e.com/a*b*c)` rendered `href="https://e.com/a<em>b</em>c"`: the link pointed at a different URL than the text said. Same for `**`, `~~` and backticks in a URL. | Reproduced by rendering each input and reading the HTML. | Medium (silently wrong destination) |
 | 2 | **A URL with balanced parentheses was cut at the first `)`.** `[a](https://en.wikipedia.org/wiki/Foo_(bar))` gave a link to `…/Foo_(bar` and a stray `)`. Common in citations. | Same. | Medium (broken, very common link shape) |
 | 3 | NUL was stripped from prose but not from code blocks or the plain-prose shortcut, so a raw U+0000 could reach the output. NUL is also the renderer's placeholder character. | Found by the fuzz test below. | Low (browsers drop it; inconsistent) |
-| 4 | No automated guard for the layering that iteration 1 verified by hand, and no CI job ran build, typecheck or tests on a pull request. | `.github/workflows` held only publish and pages. | Medium (regressions land unnoticed) |
+| 4 | No automated guard for the layering that iteration 1 verified by hand, and nothing ran build, typecheck or tests together. | `.github/workflows` held only publish and pages. | Medium (regressions land unnoticed) |
 
 ### Security review of the HTML path (no defect found)
 
@@ -42,17 +42,19 @@ quote cannot close `href`; `<script>` and `<img onerror>` are escaped. A fuzz te
   `sideEffects`, a types-first `exports` map, `files` and a licence. A new public package must be
   given a layer on purpose. Each rule was mutation-tested (an upward dependency, a React dependency in
   `core`, a missing `sideEffects` each fail the check).
-* `.github/workflows/ci.yml`: read-only job on pull requests and pushes to `main` running
-  `check:architecture`, build, typecheck and test, with the same pinned action SHAs as the publish workflow.
+* `pnpm verify` runs the whole gate locally: `check:architecture`, build, typecheck and test. There is
+  deliberately no hosted CI workflow (the maintainers do not use hosted CI), so this is the gate to run
+  before pushing.
 
 ### Validation
 
-Every CI step was run locally from a locked install: architecture check passes, build and typecheck
+The whole gate (`pnpm verify`) was run locally from a locked install: architecture check passes, build and typecheck
 report no errors, 55 test files / 690 tests pass (iteration 1: 54 / 670).
 
 ### Not verified / remaining opportunities
 
-* The CI workflow itself has not run on GitHub; it was only exercised step by step locally.
+* Nothing enforces `pnpm verify` before a push; it relies on being run. A local pre-push hook is the
+  option if that proves unreliable.
 * The Markdown renderer is still a deliberately small subset (no reference links, no raw HTML, no
   underscore emphasis). Whether to adopt a maintained parser plus sanitizer is a product decision.
 * Accessibility of `react-ui` and its visual-token/theme architecture remain unaudited; benchmarks of
