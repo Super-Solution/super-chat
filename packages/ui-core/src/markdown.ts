@@ -67,8 +67,14 @@ const MAX_DEPTH = 4;
 // unescaped quote in a URL would close the attribute and open a new one
 // (browsers recover from the missing-whitespace parse error by reading
 // `"onmouseover="…` as a fresh attribute).
+//
+// NUL is dropped here, at the one place every leaf is escaped, rather than only in
+// `inline`: the inline placeholders below are built from it, so it must never come from
+// the source, and code blocks and the plain-prose shortcut would otherwise let a raw
+// U+0000 through into the output. (Block offsets are computed on the raw source, so
+// removing it from the output moves no anchor.)
 const escapeHtml = (s: string) =>
-  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  s.replace(/\0/g, "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 // ── Inline ───────────────────────────────────────────────────────────────────
 
@@ -80,21 +86,48 @@ const escapeHtml = (s: string) =>
  * old chain gave only to fences. NUL is stripped from the input because the
  * placeholders are built from it; without that, text could forge one.
  */
+// Only http(s) links — a javascript: URL must never survive. The destination may
+// contain one level of balanced parentheses (`…/wiki/Foo_(bar)`), as CommonMark
+// allows; the two alternatives cannot match the same character, so there is no
+// backtracking blow-up on a hostile string.
+const LINK = /\[([^\]]+)\]\((https?:\/\/(?:[^()\s]|\([^()\s]*\))+)\)/g;
+
+/** Strike-through, strong, emphasis. Runs on already-escaped text. */
+const emphasize = (s: string) =>
+  s
+    .replace(/~~([^~\n]+)~~/g, "<del>$1</del>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>");
+
 function inline(raw: string): string {
   const spans: string[] = [];
-  let s = escapeHtml(raw.replace(/\0/g, ""));
+  const spanSource: string[] = []; // what each code span looked like, for where it must stay literal
+  let s = escapeHtml(raw);
 
-  s = s.replace(/(`+)([\s\S]+?)\1(?!`)/g, (_all, _ticks, body: string) => {
+  s = s.replace(/(`+)([\s\S]+?)\1(?!`)/g, (all, _ticks, body: string) => {
     spans.push(body);
+    spanSource.push(all);
     return `\0${spans.length - 1}\0`;
   });
 
-  s = s
-    .replace(/~~([^~\n]+)~~/g, "<del>$1</del>")
-    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-    .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>")
-    // Only http(s) links — a javascript: URL must never survive.
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  // Links are lifted out the same way, BEFORE emphasis. Otherwise the emphasis rules
+  // run over the destination too, and `…/a*b*c` becomes `href="…/a<em>b</em>c"`: the
+  // link silently points somewhere else. Only the link's text is emphasised.
+  const links: { text: string; url: string }[] = [];
+  s = s.replace(LINK, (_all, text: string, url: string) => {
+    // A backtick pair inside a URL is part of the URL, not a code span.
+    const literal = url.replace(/\0(\d+)\0/g, (_m, i: string) => spanSource[Number(i)]!);
+    links.push({ text, url: literal });
+    return `\0L${links.length - 1}\0`;
+  });
+
+  s = emphasize(s).replace(
+    /\0L(\d+)\0/g,
+    (_all, i: string) => {
+      const link = links[Number(i)]!;
+      return `<a href="${link.url}" target="_blank" rel="noopener noreferrer">${emphasize(link.text)}</a>`;
+    },
+  );
 
   return s.replace(/\0(\d+)\0/g, (_all, i: string) => `<code>${spans[Number(i)]}</code>`);
 }
