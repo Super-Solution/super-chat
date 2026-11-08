@@ -17,7 +17,7 @@ import { stripCardPayload, type Card, type CardAction, type CardSpec } from "../
 import { makeCard } from "../cards/registry.js";
 import type { ContextBuilder } from "../context/builder.js";
 import { AgentError, toAgentError } from "../errors.js";
-import type { GenerateResult, NormalizedRequest, Provider, StreamEvent } from "../providers/types.js";
+import type { GenerateResult, JobHandle, NormalizedRequest, Provider, StreamEvent } from "../providers/types.js";
 import type { ToolRegistry } from "../tools/registry.js";
 import { resolvePartialCard, resolveToolLoading, type ToolDefinition, type ToolResolution } from "../tools/types.js";
 import { PartialJsonParser } from "../tools/partial-json.js";
@@ -74,8 +74,13 @@ export type RunConfig = {
   onUserDecision?: (callId: string, card: Card) => Promise<CardAction>;
   /** Execute a tool that has no `execute` (browser-side capabilities). */
   onHostTool?: (call: ToolCallRequest) => Promise<unknown>;
-  /** Persist a background job handle so a reload can resume it. */
-  onJobHandle?: (handle: NonNullable<GenerateResult["responseId"]> extends string ? unknown : never) => void;
+  /**
+   * Persist a background job handle so a reload can resume it. Called once the
+   * provider has accepted the job, before polling starts (the same handle also
+   * rides on the `job-started` event). A throw or rejection is swallowed: the job
+   * is already running and paid for, and dropping the run would lose its result.
+   */
+  onJobHandle?: (handle: JobHandle) => void | Promise<void>;
   /** Skills the user pinned in the UI. */
   forceSkillIds?: string[];
   /**
@@ -221,6 +226,11 @@ export async function* runAgent(
           const handle = await config.provider.startJob({ ...request, background: true }, { signal: config.signal });
           reportedModel = handle.model || undefined;
           responseId = handle.id;
+          try {
+            await config.onJobHandle?.(handle);
+          } catch {
+            // see RunConfig.onJobHandle
+          }
           yield { type: "job-started", handle };
 
           // Polling, not streaming: the entire value of background mode is that it

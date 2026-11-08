@@ -24,6 +24,20 @@ Each round is one commit with its own regression tests. Scores: [`scorecard.md`]
 * Not changed on purpose: a `Retry-After` longer than `maxDelayMs` is still capped rather than treated as "do not
   retry"; that is a documented behaviour and changing it is a policy call.
 
+### Round 2 — `runAgent` background mode (`core/runtime/run.ts`)
+
+* Audit: the agent loop (stream / sync / background, tool channel, stop conditions, metering on every exit path).
+  Metering and cancellation hold up. One declared-but-dead option: `RunConfig.onJobHandle` ("Persist a background job
+  handle so a reload can resume it") was never called anywhere, and its type
+  (`NonNullable<…> extends string ? unknown : never`) collapsed to `(handle: unknown) => void`. A host that set it
+  persisted nothing and was never told. (`AgentClient` persists through the `job-started` event, so the in-repo path
+  was unaffected; direct `runAgent` callers were.)
+* Fix: it is now `(handle: JobHandle) => void | Promise<void>`, called once after the provider accepts the job and
+  before polling. A throw is swallowed (the job is already running; losing the run would lose its result), and the
+  same handle still rides on `job-started`. Source-compatible for existing callers (a `(h: unknown) => void` is
+  still assignable).
+* Test: `run.test.ts` "hands the background job handle to onJobHandle before polling, and survives it throwing".
+
 ## 2026-11-08 — iteration 2
 
 Started from iteration 1's open items.

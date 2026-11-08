@@ -550,6 +550,31 @@ describe("runAgent", () => {
     expect((message.parts[0] as { text: string }).text).toBe("Background answer.");
   }, 15_000);
 
+  it("hands the background job handle to onJobHandle before polling, and survives it throwing", async () => {
+    const queued = { id: "resp_bg", object: "response", created_at: 0, model: "gpt-5.2", status: "queued", output: [] };
+    const done = { ...respondText("ok.", "resp_bg"), status: "completed" };
+    const h = harness([queued, done]);
+    const seen: { id: string; polledBefore: number }[] = [];
+
+    const events = await collect(
+      runAgent([userMessage("long task")], {
+        provider: h.provider,
+        model: "gpt-5.2",
+        contextBuilder: h.contextBuilder,
+        tools: h.registry,
+        toolResolution: { presets: ["observer"] },
+        mode: "background",
+        onJobHandle: (handle) => {
+          seen.push({ id: handle.id, polledBefore: h.transport.sent.length - 1 });
+          throw new Error("store is down");
+        },
+      }),
+    );
+
+    expect(seen).toEqual([{ id: "resp_bg", polledBefore: 0 }]); // called once, before any GET poll
+    expect(events.find((e) => e.type === "run-finish")).toMatchObject({ finishReason: "stop" });
+  }, 15_000);
+
   it("reports a cancelled run as cancelled, not as a crash", async () => {
     const h = harness([respondText("never seen")]);
     const controller = new AbortController();
