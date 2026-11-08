@@ -126,15 +126,40 @@ function compiledEntryMatches(entry: CompiledAllowEntry, method: string, path: s
   return (!entry.method || entry.method === method.toUpperCase()) && entry.regex.test(path);
 }
 
-/** Never forwarded from the client — the credential comes from the operator. */
+/**
+ * Never forwarded from the client.
+ *   • credentials: the credential comes from the operator, and a client must not be
+ *     able to pick a different one (`api-key` is Azure's, `x-goog-api-key` Google's);
+ *   • framing: `host`, `content-length`, `content-type` and the hop-by-hop headers
+ *     belong to the connection this server opens, not to the browser's;
+ *   • identity: `x-forwarded-for` and friends would let a browser tell the upstream
+ *     (rate limiter, audit log) it is somebody else.
+ */
 const STRIPPED_HEADERS: ReadonlySet<string> = new Set([
   "authorization",
   "proxy-authorization",
   "x-api-key",
+  "api-key",
+  "x-goog-api-key",
+  "x-auth-token",
+  "x-access-token",
   "cookie",
   "host",
   "content-length",
   "content-type",
+  "transfer-encoding",
+  "connection",
+  "keep-alive",
+  "proxy-connection",
+  "upgrade",
+  "te",
+  "trailer",
+  "expect",
+  "forwarded",
+  "x-forwarded-for",
+  "x-forwarded-host",
+  "x-forwarded-proto",
+  "x-real-ip",
 ]);
 
 const isSerializedMultipart = (b: unknown): b is SerializedMultipartBody =>
@@ -143,6 +168,19 @@ const isSerializedMultipart = (b: unknown): b is SerializedMultipartBody =>
   (b as { kind?: unknown }).kind === "multipart" &&
   Array.isArray((b as { files?: unknown }).files) &&
   (b as { files: { data?: unknown }[] }).files.every((f) => typeof f?.data === "string");
+
+/**
+ * Run an observer hook. It is awaited (a serverless host needs its write flushed before the
+ * function is frozen) but it can never fail or change the request it observes.
+ */
+async function observe(hook: ProxyHandlerConfig["onRequest"], envelope: ProxyEnvelope, meta: { ok: boolean; status: number; ms: number }) {
+  try {
+    await hook?.(envelope, meta);
+  } catch {
+    // A broken audit log must not turn a successful call into a 500, nor leave
+    // the upstream response unread.
+  }
+}
 
 const json = (body: unknown, status: number) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
@@ -187,7 +225,14 @@ export function createProxyHandler(config: ProxyHandlerConfig) {
     }
 
     if (config.authorize) {
-      const verdict = await config.authorize(request, envelope);
+      let verdict: boolean | Response;
+      try {
+        verdict = await config.authorize(request, envelope);
+      } catch {
+        // Fail closed, and say nothing about why: the hook's exception (a session
+        // store outage, a bad token library) is not for the browser to read.
+        return json({ error: { message: "Authorization could not be completed." } }, 500);
+      }
       if (verdict instanceof Response) return verdict;
       if (verdict === false) return json({ error: { message: "Not authorized." } }, 401);
     }
@@ -257,11 +302,11 @@ export function createProxyHandler(config: ProxyHandlerConfig) {
         signal: request.signal,
       });
     } catch (e) {
-      await config.onRequest?.(envelope, { ok: false, status: 502, ms: Date.now() - startedAt });
+      await observe(config.onRequest, envelope, { ok: false, status: 502, ms: Date.now() - startedAt });
       return json({ error: { message: e instanceof Error ? e.message : "Upstream fetch failed." } }, 502);
     }
 
-    await config.onRequest?.(envelope, { ok: upstream.ok, status: upstream.status, ms: Date.now() - startedAt });
+    await observe(config.onRequest, envelope, { ok: upstream.ok, status: upstream.status, ms: Date.now() - startedAt });
 
     // Stream straight through — buffering an SSE body here would defeat the
     // point of streaming and stall the first token behind the last one.

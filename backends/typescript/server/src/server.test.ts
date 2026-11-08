@@ -279,3 +279,66 @@ describe("createProxyHandler request bodies", () => {
   });
 });
 
+
+describe("createProxyHandler hooks and header hygiene", () => {
+  const cfg = (extra: Record<string, unknown> = {}, fetchImpl: unknown = okUpstream()) => ({
+    providers: { openai: { baseUrl: "https://api.openai.com/v1", apiKey: "sk-test", allowPaths: ["/responses"] } },
+    fetchImpl: fetchImpl as typeof fetch,
+    ...extra,
+  });
+
+  it("a throwing onRequest cannot fail the call it observes", async () => {
+    const onRequest = vi.fn(async () => {
+      throw new Error("audit db is down");
+    });
+    const res = await createProxyHandler(cfg({ onRequest }))(envelope());
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ id: "resp_1" });
+    expect(onRequest).toHaveBeenCalledOnce();
+  });
+
+  it("a throwing onRequest cannot turn an upstream failure into a thrown error either", async () => {
+    const down = vi.fn(async () => {
+      throw new TypeError("fetch failed");
+    });
+    const res = await createProxyHandler(cfg({ onRequest: () => Promise.reject(new Error("x")) }, down))(envelope());
+    expect(res.status).toBe(502);
+  });
+
+  it("answers 500 without the exception text when authorize throws, and forwards nothing", async () => {
+    const upstream = okUpstream();
+    const res = await createProxyHandler(
+      cfg({ authorize: () => Promise.reject(new Error("redis://10.0.0.7:6379 refused")) }, upstream),
+    )(envelope());
+    expect(res.status).toBe(500);
+    const text = await res.text();
+    expect(text).not.toContain("redis");
+    expect(upstream).not.toHaveBeenCalled();
+  });
+
+  it("never forwards credential, hop-by-hop or client-identity headers from the envelope", async () => {
+    const upstream = okUpstream();
+    await createProxyHandler(cfg({}, upstream))(
+      envelope({
+        headers: {
+          "api-key": "attacker-key",
+          "X-Goog-Api-Key": "attacker-key",
+          "x-forwarded-for": "203.0.113.9",
+          "X-Real-IP": "203.0.113.9",
+          forwarded: "for=203.0.113.9",
+          "transfer-encoding": "chunked",
+          connection: "upgrade",
+          "OpenAI-Organization": "org_123",
+          "x-trace": "keep-me",
+        },
+      }),
+    );
+    const sent = (upstream.mock.calls[0] as unknown as [string, RequestInit])[1].headers as Record<string, string>;
+    for (const name of ["api-key", "x-goog-api-key", "x-forwarded-for", "x-real-ip", "forwarded", "transfer-encoding", "connection"]) {
+      expect(sent[name]).toBeUndefined();
+    }
+    expect(sent["openai-organization"]).toBe("org_123"); // ordinary upstream headers still pass
+    expect(sent["x-trace"]).toBe("keep-me");
+    expect(sent["authorization"]).toBe("Bearer sk-test");
+  });
+});

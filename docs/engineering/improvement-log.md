@@ -137,6 +137,24 @@ Each round is one commit with its own regression tests. Scores: [`scorecard.md`]
   `threadMeta` is only trusted for its own thread id. Fire-and-forget posture unchanged: a failed save is swallowed.
 * Tests: `persistence ordering` (2). The first fails on the old code; the second guards the switch-after-save case.
 
+### Round 9 — proxy hooks and forwarded headers (`backends/typescript/server`)
+
+* Audit: the rest of `createProxyHandler` (round 9 of the earlier pass covered the request body and envelope).
+* **Defect:** `onRequest` ("observe every forwarded call: metering, audit log") was awaited bare. A hook that threw
+  (a down audit DB) failed the whole call after the upstream had already answered, and for a stream left the upstream
+  body unread. It is still awaited (serverless hosts need the write flushed) but can no longer fail the request.
+* **Defect:** an `authorize` that threw escaped the handler, so the framework answered with its own error page, which
+  can carry the exception text (a connection string, a stack). It now fails closed with a fixed 500 message.
+* **Gap:** the envelope's client-chosen headers were filtered only against `authorization`, `x-api-key`, `cookie`, `host`
+  and the body framing headers. A browser could still send `api-key` / `x-goog-api-key` (pick its own credential for a
+  provider that accepts them), hop-by-hop headers (`transfer-encoding`, `connection`, `upgrade`, `te`, `expect`) and
+  `x-forwarded-for` / `x-real-ip` / `forwarded` (tell the upstream's rate limiter or audit log it is someone else).
+  All stripped now; ordinary upstream headers (org ids, beta flags, MCP session) still pass.
+* Tests: four in `server.test.ts`, all failing on the old code.
+* Not changed: a bare allowlist entry still matches every method (documented), and a failed upstream fetch still
+  returns the fetch error's text in the 502 body, which helps debugging but can name an internal host; a host that
+  cares can wrap the handler. Worth deciding whether that message should be generic by default.
+
 ## 2026-11-08 — iteration 2
 
 Started from iteration 1's open items.
