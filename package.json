@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:rwd": "playwright test",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "check:architecture": "node scripts/check-architecture.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
