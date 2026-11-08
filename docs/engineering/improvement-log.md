@@ -3,6 +3,62 @@
 A short, append-only record of what was found, decided and verified, so the next review does
 not repeat finished work. Newest entry first. Claims here are things that were run, not intended.
 
+## 2026-11-08 — iteration 2
+
+Started from iteration 1's open items.
+
+### Findings
+
+| # | Finding | Evidence | Severity |
+| --- | --- | --- | --- |
+| 1 | **Links were rewritten when the URL contained Markdown punctuation.** The emphasis rules ran over the whole string before links were extracted, so `[x](https://e.com/a*b*c)` rendered `href="https://e.com/a<em>b</em>c"`: the link pointed at a different URL than the text said. Same for `**`, `~~` and backticks in a URL. | Reproduced by rendering each input and reading the HTML. | Medium (silently wrong destination) |
+| 2 | **A URL with balanced parentheses was cut at the first `)`.** `[a](https://en.wikipedia.org/wiki/Foo_(bar))` gave a link to `…/Foo_(bar` and a stray `)`. Common in citations. | Same. | Medium (broken, very common link shape) |
+| 3 | NUL was stripped from prose but not from code blocks or the plain-prose shortcut, so a raw U+0000 could reach the output. NUL is also the renderer's placeholder character. | Found by the fuzz test below. | Low (browsers drop it; inconsistent) |
+| 4 | No automated guard for the layering that iteration 1 verified by hand, and no CI job ran build, typecheck or tests on a pull request. | `.github/workflows` held only publish and pages. | Medium (regressions land unnoticed) |
+
+### Security review of the HTML path (no defect found)
+
+Five `dangerouslySetInnerHTML` / `innerHTML` sinks in `react-ui` are fed by `renderMarkdown`,
+`renderMarkdownStream` and `renderMarkdownWithAnchors`. Reading the renderer and then probing it with
+hostile input: `javascript:`, `data:`, `vbscript:` and protocol-relative links never become links; a
+quote cannot close `href`; `<script>` and `<img onerror>` are escaped. A fuzz test now asserts this for
+6,000 generated documents (see below). The pill in `AgentInput` escapes its only interpolated value.
+
+### Changes
+
+* `ui-core` Markdown: links are lifted out before emphasis (so the destination is never rewritten, and
+  a code span inside a URL stays literal), the destination may hold one level of balanced
+  parentheses, and `escapeHtml` drops NUL for every path. Output for ordinary documents is unchanged:
+  all 59 pre-existing Markdown tests pass untouched, including streaming-equals-batch.
+* `ui-core/src/markdown-safety.test.ts`: named regression tests for both link bugs and for the hostile
+  cases, plus a seeded fuzz test. The fuzz test tokenizes the HTML and asserts: only allow-listed tags
+  and attributes, double-quoted values with no markup in them, every `href` is `http(s)://`, no raw
+  `>` `"` or NUL in text. It asserts it reaches links, tables, code, lists, quotes and headings (>60
+  documents each), because a fuzz test that never reaches a construct proves nothing about it (the
+  first version reached links in only 29 of 6,000 and tables in none; the generator was fixed). A
+  self-test checks the checker rejects each kind of violation. Without the fix, 7 of these tests fail.
+* `scripts/check-architecture.mjs` (`pnpm check:architecture`): strict layering table, no cycles,
+  framework-free packages cannot depend on a UI framework, and public packages must declare
+  `sideEffects`, a types-first `exports` map, `files` and a licence. A new public package must be
+  given a layer on purpose. Each rule was mutation-tested (an upward dependency, a React dependency in
+  `core`, a missing `sideEffects` each fail the check).
+* `.github/workflows/ci.yml`: read-only job on pull requests and pushes to `main` running
+  `check:architecture`, build, typecheck and test, with the same pinned action SHAs as the publish workflow.
+
+### Validation
+
+Every CI step was run locally from a locked install: architecture check passes, build and typecheck
+report no errors, 55 test files / 690 tests pass (iteration 1: 54 / 670).
+
+### Not verified / remaining opportunities
+
+* The CI workflow itself has not run on GitHub; it was only exercised step by step locally.
+* The Markdown renderer is still a deliberately small subset (no reference links, no raw HTML, no
+  underscore emphasis). Whether to adopt a maintained parser plus sanitizer is a product decision.
+* Accessibility of `react-ui` and its visual-token/theme architecture remain unaudited; benchmarks of
+  the streaming render path remain unmeasured.
+* The Go and Python backends added on `main` were still not reviewed.
+
 ## 2026-11-07 — iteration 1
 
 ### Findings
