@@ -589,3 +589,46 @@ describe("superseded runs", () => {
     expect(client.store.get().id).toBe("t_fast");
   });
 });
+
+describe("persistence ordering", () => {
+  it("an older snapshot can never overwrite a newer one, however slowly its load resolves", async () => {
+    const inner = createMemoryThreadStore();
+    const saved: number[] = [];
+    let loads = 0;
+    const store = {
+      ...inner,
+      // The FIRST load is slow; every later one is instant. The user-turn save
+      // therefore reaches `save()` after the assistant-turn save was ready.
+      load: async (id: string) => {
+        loads += 1;
+        if (loads === 1) await new Promise((r) => setTimeout(r, 40));
+        return inner.load(id);
+      },
+      save: async (snapshot: Parameters<typeof inner.save>[0]) => {
+        saved.push(snapshot.messages.length);
+        await inner.save(snapshot);
+      },
+    };
+    const client = makeClient([respondText("the answer")], { threadStore: store });
+
+    await client.send("question");
+    await new Promise((r) => setTimeout(r, 120)); // let the queue drain
+
+    expect(saved.at(-1)).toBe(2); // user + assistant, never the stale user-only snapshot last
+    expect(saved).toEqual([...saved].sort((a, b) => a - b)); // and never going backwards
+    expect((await inner.load(client.store.get().id))?.messages).toHaveLength(2);
+  });
+
+  it("saves the thread being left when a switch follows immediately", async () => {
+    const store = createMemoryThreadStore();
+    const client = makeClient([respondText("a")], { threadStore: store });
+    await client.send("first");
+    const leftId = client.store.get().id;
+    client.clear(); // persist() then another thread's state: must still save `leftId`'s emptied state, not mix ids
+    client.newThread();
+    await new Promise((r) => setTimeout(r, 30));
+    const stored = await store.load(leftId);
+    expect(stored?.messages ?? []).toHaveLength(0);
+    expect(client.store.get().id).not.toBe(leftId);
+  });
+});

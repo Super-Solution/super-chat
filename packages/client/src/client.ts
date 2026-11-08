@@ -141,6 +141,9 @@ export class AgentClient {
    * thread the user just opened.
    */
   private generation = 0;
+  /** Thread snapshots waiting to be written, keyed by thread id (see `persist`). */
+  private saveQueue = new Map<string, { tree: Message[]; headId: string | null }>();
+  private saving: Promise<void> | null = null;
   /** Latest `openThread()` request; a load that finishes under an older ticket is discarded. */
   private openTicket = 0;
   /** Wall-clock start of the current turn, for the committed TurnMeta. */
@@ -460,23 +463,39 @@ export class AgentClient {
    * Fire-and-forget save, the same posture as the job store put: persistence
    * must not stall the run, and a failed save degrades to "not saved", never
    * to a broken thread.
+   *
+   * Saves are serialised, latest state wins. The user turn and the assistant
+   * turn are saved a moment apart, and each save first awaits a `load()`; with
+   * independent async saves the older snapshot can finish last and overwrite the
+   * newer one, so a reload would lose the answer. The thread's state is captured
+   * here, synchronously (a thread switch right after must still save the thread
+   * being left), and one writer drains the queue in order.
    */
   private persist(): void {
     const store = this.config.threadStore;
     if (!store) return;
     const s = this.store.get();
-    if (this.threadMeta && this.threadMeta.id !== s.id) this.threadMeta = undefined;
-    void (async () => {
-      // A client hydrated via config (threadId/initialMessages) has no meta in
-      // hand; read the stored one so createdAt and title survive the reload.
-      const prior = this.threadMeta ?? (await store.load(s.id))?.meta;
-      // The TREE persists — abandoned branches included — plus the active head.
-      const snapshot = threadSnapshot(s.id, s.tree, prior, s.headId);
-      this.threadMeta = snapshot.meta;
-      await store.save(snapshot);
-    })().catch(() => {
-      // Fire-and-forget: a failed save degrades to "not saved", never a crash.
-    });
+    this.saveQueue.delete(s.id); // a newer snapshot of the same thread replaces a waiting one
+    this.saveQueue.set(s.id, { tree: s.tree, headId: s.headId });
+    if (!this.saving) this.saving = this.drainSaves(store).finally(() => (this.saving = null));
+  }
+
+  private async drainSaves(store: ThreadStore): Promise<void> {
+    while (this.saveQueue.size) {
+      const [id, { tree, headId }] = this.saveQueue.entries().next().value as [string, { tree: Message[]; headId: string | null }];
+      this.saveQueue.delete(id);
+      try {
+        // A client hydrated via config (threadId/initialMessages) has no meta in
+        // hand; read the stored one so createdAt and title survive the reload.
+        const prior = this.threadMeta?.id === id ? this.threadMeta : (await store.load(id))?.meta;
+        // The TREE persists — abandoned branches included — plus the active head.
+        const snapshot = threadSnapshot(id, tree, prior, headId);
+        if (this.store.get().id === id) this.threadMeta = snapshot.meta;
+        await store.save(snapshot);
+      } catch {
+        // Fire-and-forget: a failed save degrades to "not saved", never a crash.
+      }
+    }
   }
 
   /**

@@ -125,6 +125,18 @@ Each round is one commit with its own regression tests. Scores: [`scorecard.md`]
 * Tests: two in `client.test.ts` (an abort-aware transport proves B really was aborted; an out-of-order store).
   Both fail on the old code.
 
+### Round 8 — thread saves can no longer land out of order (`client/src/client.ts`)
+
+* Audit: `persist()`. Every call started its own async save: `load()` (to recover `createdAt` and the title), then
+  `save()`. The user turn and the assistant turn are saved a few milliseconds apart, and the first call of a new thread
+  has no cached meta, so its `load()` is the slow one. Whenever the first load outlived the second call, the user-only
+  snapshot was written *after* the one with the answer, and the next reload showed a thread without it. (Reproduced
+  with a store whose first `load` takes 40 ms: the last write was the 1-message snapshot.)
+* Fix: saves go through a single writer. The state is captured synchronously at the `persist()` call (a thread switch
+  right after still saves the thread being left), a newer snapshot of the same thread replaces one still waiting, and
+  `threadMeta` is only trusted for its own thread id. Fire-and-forget posture unchanged: a failed save is swallowed.
+* Tests: `persistence ordering` (2). The first fails on the old code; the second guards the switch-after-save case.
+
 ## 2026-11-08 — iteration 2
 
 Started from iteration 1's open items.
