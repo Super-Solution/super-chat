@@ -81,6 +81,9 @@ export class McpRpcError extends Error {
   }
 }
 
+/** More pages than any real server has; past this, pagination is treated as a loop. */
+const MAX_TOOL_PAGES = 1000;
+
 export class McpClient {
   private readonly transport: Transport;
   private readonly provider: string;
@@ -140,14 +143,23 @@ export class McpClient {
   async listTools(opts: { signal?: AbortSignal } = {}): Promise<McpTool[]> {
     await this.ensureConnected();
     const tools: McpTool[] = [];
+    // A server that keeps handing back the same cursor (or never stops paginating) would otherwise
+    // loop here for ever, growing `tools` without bound.
+    const seen = new Set<string>();
     let cursor: string | undefined;
     do {
       const page = (await this.rpc("tools/list", cursor ? { cursor } : {}, opts)) as {
         tools?: McpTool[];
         nextCursor?: string;
       };
-      tools.push(...(page.tools ?? []));
-      cursor = page.nextCursor;
+      if (Array.isArray(page.tools)) tools.push(...page.tools);
+      cursor = typeof page.nextCursor === "string" && page.nextCursor !== "" ? page.nextCursor : undefined;
+      if (cursor !== undefined) {
+        if (seen.has(cursor) || seen.size >= MAX_TOOL_PAGES) {
+          throw new McpRpcError(-32603, "tools/list pagination does not terminate (repeated cursor or too many pages)");
+        }
+        seen.add(cursor);
+      }
     } while (cursor);
     return tools;
   }

@@ -140,3 +140,16 @@ report no errors, 55 test files / 690 tests pass (iteration 1: 54 / 670).
 * Tests: three, in `server.test.ts` (bad shapes, size limit before `authorize`, a body with no declared
   length that never ends).
 * Gate: `pnpm verify` passes.
+
+### Round 14 (2026-11-08) — MCP tool listing cannot loop
+
+* Audit: the MCP client (`tools/list` pagination, SSE framing, session handling) and the tool registry.
+  Prototype-named keys are already handled where they matter (`partial-json`, the card registry). One real
+  loop: `listTools()` followed `nextCursor` until it was empty, so a server that kept returning the same
+  cursor made the client loop and grow its tool list without end. A `tools` value that was not an array also
+  threw a `TypeError` from the spread.
+* Fix: a repeated cursor, or more than 1000 pages, ends the call with an `McpRpcError`; a non-array `tools`
+  counts as an empty page.
+* Tests: two in `mcp/client.test.ts` (the first would not terminate against the old code, so it was not run
+  against it).
+* Gate: `pnpm verify` passes.

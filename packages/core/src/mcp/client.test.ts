@@ -97,6 +97,28 @@ describe("McpClient", () => {
     expect(tools.map((t) => t.name)).toEqual(["a", "b"]);
   });
 
+  it("stops when a server keeps returning the same cursor, instead of looping for ever", async () => {
+    let calls = 0;
+    const { transport } = mcpTransport({
+      initialize: initHandler,
+      "tools/list": () => {
+        calls += 1;
+        return { result: { tools: [{ name: `t${calls}`, inputSchema: { type: "object" } }], nextCursor: "same" } };
+      },
+    });
+    const client = new McpClient({ transport });
+    await expect(client.listTools()).rejects.toThrow(/does not terminate/);
+    expect(calls).toBeLessThanOrEqual(3);
+  });
+
+  it("tolerates a page whose tools is not an array", async () => {
+    const { transport } = mcpTransport({
+      initialize: initHandler,
+      "tools/list": () => ({ result: { tools: "oops" } }),
+    });
+    expect(await new McpClient({ transport }).listTools()).toEqual([]);
+  });
+
   it("parses an SSE-framed response, ignoring notifications and other ids", async () => {
     const { transport } = mcpTransport({
       initialize: initHandler,
