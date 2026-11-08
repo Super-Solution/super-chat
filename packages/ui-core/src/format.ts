@@ -83,3 +83,20 @@ export const toneClass = (tone?: string): string => (tone && tone !== "neutral" 
 /** Positive is not always good — but for a delta with no stated tone it is the useful default. */
 export const deltaTone = (delta: number): "positive" | "negative" | "neutral" =>
   delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral";
+
+/**
+ * A URL that came from a model or a tool, made safe to put in an `href`: only http(s) links
+ * pass, anything else (`javascript:`, `data:`, `vbscript:`, a relative path that could be read
+ * as a scheme after whitespace tricks) comes back as `undefined` and the caller renders plain
+ * text. React 19 refuses `javascript:` hrefs itself, but this package supports React 18, which
+ * only warns and then navigates.
+ */
+export function safeHref(url: string | undefined | null): string | undefined {
+  if (typeof url !== "string") return undefined;
+  const trimmed = url.trim();
+  // Browsers strip tab and newline characters inside a URL before parsing it, so
+  // `java\tscript:` is a javascript: URL; reject anything with control characters outright.
+  // eslint-disable-next-line no-control-regex
+  if (/[\u0000-\u001f\u007f]/.test(trimmed)) return undefined;
+  return /^https?:\/\/[^\s]+$/i.test(trimmed) ? trimmed : undefined;
+}

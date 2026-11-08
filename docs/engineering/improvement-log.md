@@ -105,3 +105,16 @@ report no errors, 55 test files / 690 tests pass (iteration 1: 54 / 670).
 * `engines` is unset on every package; whether to pin one for the Node-only server is undecided.
 * The `.github/workflows` build has no test job (only publish and pages); adding a PR check is the
   highest-leverage CI change.
+
+## Rounds of 15 (audit, fix, local gate, push)
+
+### Round 3 (2026-11-08) — citation links
+
+* Audit: every `dangerouslySetInnerHTML`, `href` and `src` sink in the React bindings. Markdown
+  links were already http(s)-only; image and audio `src` cannot run script. The citations card
+  (`cards/General.tsx`) put the model-supplied `item.url` straight into `<a href>`. React 19 refuses
+  a `javascript:` href, but the peer range includes React 18, which only warns and then navigates.
+* Fix: `safeHref()` in `ui-core` (http(s) only, control characters rejected so `java\tscript:` cannot
+  slip past); the card renders plain text for any URL it rejects. Exported from `ui-core`.
+* Tests: `safe-href.test.ts` (accepts web links, rejects eleven hostile or malformed inputs).
+* Gate: `pnpm verify` (architecture check, build, typecheck, 693 tests) passes.

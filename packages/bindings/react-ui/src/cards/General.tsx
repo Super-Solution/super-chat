@@ -20,7 +20,7 @@ import type {
   TreeNode,
 } from "@supersolutions/super-chat-core";
 import type { CardRendererProps } from "../renderer-registry.js";
-import { formatValue } from "@supersolutions/super-chat-ui-core";
+import { formatValue, safeHref } from "@supersolutions/super-chat-ui-core";
 import { StatusMark, ToneIcon, type StatusMarkKind } from "./icons.js";
 
 export function ComparisonCardView({ spec }: CardRendererProps<ComparisonCard>) {
@@ -156,10 +156,11 @@ export function CitationsCardView({ spec }: CardRendererProps<CitationsCard>) {
             </span>
             <div className="sc-cite__body">
               <div className="sc-cite__head">
-                {item.url ? (
-                  // Model-supplied URLs: never trust the referrer, never let the
+                {safeHref(item.url) ? (
+                  // Model-supplied URLs: http(s) only (React 18 would follow a
+                  // javascript: href), never trust the referrer, never let the
                   // opened page reach back via window.opener.
-                  <a href={item.url} target="_blank" rel="noopener noreferrer nofollow">
+                  <a href={safeHref(item.url)} target="_blank" rel="noopener noreferrer nofollow">
                     {item.title}
                   </a>
                 ) : (
