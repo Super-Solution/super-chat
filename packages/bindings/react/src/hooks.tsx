@@ -62,6 +62,19 @@ export function useAgentState<T>(selector: (state: ThreadState) => T, isEqual: (
   return useSyncExternalStore(client.store.subscribe, getSnapshot, getSnapshot);
 }
 
+/**
+ * Orders async results: only the result of the most recent `begin()` may be applied.
+ * A list refresh is triggered by a thread switch and by a status change, so two can be in
+ * flight, and the older one answering last would otherwise put the stale list back.
+ */
+export function createLatestGate() {
+  let latest = 0;
+  return {
+    begin: () => ++latest,
+    isCurrent: (ticket: number) => ticket === latest,
+  };
+}
+
 const sameIds = (a: readonly { id: string }[], b: readonly { id: string }[]) =>
   a.length === b.length && a.every((x, i) => x.id === b[i]?.id);
 
@@ -400,9 +413,14 @@ export function useThreadList(): {
   const status = useAgentState((s) => s.status);
   const [threads, setThreads] = useState<ThreadMeta[]>([]);
 
+  const gate = useRef<ReturnType<typeof createLatestGate> | null>(null);
+  gate.current ??= createLatestGate();
+
   const refresh = useCallback(async () => {
     const store = client.getConfig().threadStore;
-    setThreads(store ? await store.list() : []);
+    const ticket = gate.current!.begin();
+    const list = store ? await store.list() : [];
+    if (gate.current!.isCurrent(ticket)) setThreads(list);
   }, [client]);
 
   useEffect(() => {

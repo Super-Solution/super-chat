@@ -155,6 +155,24 @@ Each round is one commit with its own regression tests. Scores: [`scorecard.md`]
   returns the fetch error's text in the 502 body, which helps debugging but can name an internal host; a host that
   cares can wrap the handler. Worth deciding whether that message should be generic by default.
 
+### Round 10 — React bindings and job resume (`bindings/react`, `client`)
+
+* Audit: every hook in `bindings/react/src/hooks.tsx` for subscription granularity, stale closures, effect
+  dependencies and SSR. The store-selector design holds up (`useAgentState` with an equality function, per-tree branch
+  index, rAF-coalesced `useStreamingText`, a ref-backed `useAppState`); `subscribe` only runs on the client, so no
+  `window` access leaks into server rendering. Two real problems:
+* **Defect — duplicate answers.** `useJobs()` calls `resumeBackgroundJobs()` once per hook instance. Mounted in more
+  than one place (a badge and a panel), each call listed the same stored jobs, polled them, and appended each finished
+  answer to the thread, so it showed up once per mount. `resumeBackgroundJobs()` is now single-flight: concurrent
+  callers share one run, and the guard is released when it settles. (Two browser tabs can still both resume a job;
+  that needs a cross-tab lock the stores do not offer.)
+* **Defect — stale thread list.** `useThreadList` refreshes on a thread switch and on a status change, so two
+  `store.list()` calls can be in flight; the older one answering last overwrote the newer list (a freshly created
+  thread missing from the picker). A small `createLatestGate` orders them: only the latest request applies.
+* Tests: the concurrent-resume test fails on the old code. The gate has a unit test only; the wiring inside
+  `useThreadList` is not covered because the package has no DOM test renderer (the existing hook tests drive React's
+  dispatcher by hand and only implement the hooks `useBranches` reaches). Adding one is a candidate for a later round.
+
 ## 2026-11-08 — iteration 2
 
 Started from iteration 1's open items.

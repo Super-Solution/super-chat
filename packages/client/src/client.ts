@@ -141,6 +141,7 @@ export class AgentClient {
    * thread the user just opened.
    */
   private generation = 0;
+  private resuming: Promise<void> | null = null;
   /** Thread snapshots waiting to be written, keyed by thread id (see `persist`). */
   private saveQueue = new Map<string, { tree: Message[]; headId: string | null }>();
   private saving: Promise<void> | null = null;
@@ -613,7 +614,15 @@ export class AgentClient {
    * stored snapshot (when a ThreadStore is configured), so an answer to
    * thread A never gets pasted into thread B.
    */
-  async resumeBackgroundJobs(): Promise<void> {
+  resumeBackgroundJobs(): Promise<void> {
+    // Single flight. `useJobs()` resumes on mount and a UI can mount it in several
+    // places; every concurrent caller would list the same stored jobs, poll them,
+    // and append each finished answer to the thread again.
+    this.resuming ??= this.resumeJobsOnce().finally(() => (this.resuming = null));
+    return this.resuming;
+  }
+
+  private async resumeJobsOnce(): Promise<void> {
     const store = this.config.jobStore;
     if (!store) return;
     const results = await resumeJobs(store, { [this.config.provider.id]: this.config.provider });

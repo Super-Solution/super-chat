@@ -16,7 +16,7 @@ import {
   type Transport,
 } from "@supersolutions/super-chat-core";
 import { AgentClient } from "@supersolutions/super-chat-client";
-import { branchPosition, useBranches } from "./hooks.js";
+import { branchPosition, createLatestGate, useBranches } from "./hooks.js";
 
 // ── Pre-fix reference (origin/main 6a965ed), used only by this test ─────────
 // core/src/content/branching.ts `indexByParent` + `siblingsOf`, and the selector
@@ -428,5 +428,18 @@ describe("useBranches", () => {
       expect({ index: hook.current.index, count: hook.current.count }).toEqual(prefixPosition(after, id));
       hook.unmount();
     }
+  });
+});
+
+describe("createLatestGate", () => {
+  it("lets only the most recent begin() apply, however the results arrive", () => {
+    const gate = createLatestGate();
+    const first = gate.begin();
+    const second = gate.begin();
+    expect(gate.isCurrent(first)).toBe(false); // an older request answering late is dropped
+    expect(gate.isCurrent(second)).toBe(true);
+    const third = gate.begin();
+    expect(gate.isCurrent(second)).toBe(false);
+    expect(gate.isCurrent(third)).toBe(true);
   });
 });

@@ -250,6 +250,25 @@ describe("background job resume routing", () => {
     expect(away?.messages.map((m) => m.role)).toEqual(["user", "assistant"]);
     expect(JSON.stringify(away?.messages[1]?.parts)).toContain("job answer");
   });
+
+  it("concurrent resumes (several useJobs() mounts) append a finished job once", async () => {
+    const jobStore = createMemoryJobStore();
+    await jobStore.put({
+      handle: { provider: "openai", id: "resp_bg", model: "gpt-5.2", createdAt: Date.now() },
+      status: "in_progress",
+      threadId: "t_here",
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+    const client = makeClient([completedJob("resp_bg")], { jobStore, threadId: "t_here" }, { delayMs: 10 });
+
+    await Promise.all([client.resumeBackgroundJobs(), client.resumeBackgroundJobs(), client.resumeBackgroundJobs()]);
+
+    expect(client.store.get().messages.map((m) => m.role)).toEqual(["assistant"]);
+    // And the guard is released afterwards: a later resume runs again (nothing left to find).
+    await client.resumeBackgroundJobs();
+    expect(client.store.get().messages).toHaveLength(1);
+  });
 });
 
 describe("branching", () => {
