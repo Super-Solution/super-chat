@@ -239,3 +239,43 @@ describe("createProxyHandler", () => {
     expect(url).toBe("https://api.openai.com/v1/responses/resp_9/cancel");
   });
 });
+
+describe("createProxyHandler request bodies", () => {
+  const cfg = (extra: Record<string, unknown> = {}) => ({
+    providers: { openai: { baseUrl: "https://api.openai.com/v1", apiKey: "sk-test", allowPaths: ["/responses"] } },
+    fetchImpl: okUpstream() as never,
+    ...extra,
+  });
+  const raw = (body: string) => new Request("http://app.local/api/agent", { method: "POST", body });
+
+  it("answers 400, not an unhandled error, for JSON that is not an envelope", async () => {
+    const handle = createProxyHandler(cfg());
+    for (const body of ["null", "42", "[]", '"x"', "{}", '{"provider":"openai"}', '{"provider":"openai","path":"/responses"}']) {
+      const res = await handle(raw(body));
+      expect(res.status, body).toBe(400);
+    }
+  });
+
+  it("cuts a body off at maxBodyBytes, before authorize runs", async () => {
+    const authorize = vi.fn(() => true);
+    const handle = createProxyHandler(cfg({ maxBodyBytes: 1024, authorize }));
+    const res = await handle(raw(JSON.stringify({ provider: "openai", path: "/responses", method: "POST", body: { pad: "x".repeat(4096) } })));
+    expect(res.status).toBe(413);
+    expect(authorize).not.toHaveBeenCalled();
+  });
+
+  it("stops reading a body that never declares its length", async () => {
+    let pulled = 0;
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulled += 1;
+        controller.enqueue(new Uint8Array(64 * 1024));
+      },
+    });
+    const handle = createProxyHandler(cfg({ maxBodyBytes: 256 * 1024 }));
+    const res = await handle(new Request("http://app.local/api/agent", { method: "POST", body: stream, duplex: "half" } as RequestInit));
+    expect(res.status).toBe(413);
+    expect(pulled).toBeLessThan(20);
+  });
+});
+

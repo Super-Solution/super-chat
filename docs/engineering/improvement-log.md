@@ -128,3 +128,15 @@ report no errors, 55 test files / 690 tests pass (iteration 1: 54 / 670).
 * Fix: `send()` captures `generation` before the await and returns without appending if it moved.
 * Test: `drops a quoted send when the thread changed during the drift lookup` (fails without the fix).
 * Gate: `pnpm verify` (architecture check, build, typecheck, 694 tests) passes.
+
+### Round 9 (2026-11-08) — the proxy envelope is bounded and validated
+
+* Audit: `createProxyHandler`. Path allowlisting and credential handling hold up. Two gaps before any
+  check: `request.json()` buffered a body of any size, and `authorize` runs only after parsing, so an
+  unauthenticated caller could make the server buffer it; and a JSON body that parsed but was not an
+  envelope (`null`, a number, a missing provider, path or method) threw further down instead of a 400.
+* Fix: the body is read as a stream and cut off (stream cancelled) at `maxBodyBytes` (default 64 MiB, room
+  for base64 file parts; 413); the envelope shape is checked up front (400).
+* Tests: three, in `server.test.ts` (bad shapes, size limit before `authorize`, a body with no declared
+  length that never ends).
+* Gate: `pnpm verify` passes.

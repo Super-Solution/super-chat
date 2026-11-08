@@ -45,7 +45,50 @@ export type ProxyHandlerConfig = {
   /** Observe every forwarded call (metering, audit log). */
   onRequest?: (envelope: ProxyEnvelope, meta: { ok: boolean; status: number; ms: number }) => void | Promise<void>;
   fetchImpl?: typeof fetch;
+  /**
+   * Largest accepted request body in bytes (default 64 MiB: room for base64 file parts). The envelope is
+   * parsed before `authorize` runs, so without a bound anyone who can reach the route can make the server
+   * buffer an arbitrarily large body.
+   */
+  maxBodyBytes?: number;
 };
+
+const DEFAULT_MAX_BODY_BYTES = 64 * 1024 * 1024;
+
+class BodyTooLarge extends Error {}
+
+/** Read the body as text, stopping (and cancelling the stream) as soon as it passes `limit` bytes. */
+async function readBounded(request: Request, limit: number): Promise<string> {
+  const declared = request.headers.get("content-length");
+  if (declared !== null && /^[0-9]+$/.test(declared) && Number(declared) > limit) throw new BodyTooLarge();
+  if (request.body === null) return "";
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > limit) {
+        await reader.cancel().catch(() => undefined);
+        throw new BodyTooLarge();
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const all = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    all.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(all);
+}
+
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 
 /** Build the anchored regex a wildcard path pattern compiles to. */
 function compilePathPattern(pattern: string): RegExp {
@@ -106,6 +149,7 @@ const json = (body: unknown, status: number) =>
 
 export function createProxyHandler(config: ProxyHandlerConfig) {
   const doFetch = config.fetchImpl ?? globalThis.fetch;
+  const maxBodyBytes = config.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES;
   // Precompiled once per provider, at construction time — not per allowPaths
   // entry per incoming request, which is how many requests a proxy handler is
   // built to serve.
@@ -117,8 +161,15 @@ export function createProxyHandler(config: ProxyHandlerConfig) {
     const startedAt = Date.now();
     let envelope: ProxyEnvelope;
     try {
-      envelope = (await request.json()) as ProxyEnvelope;
-    } catch {
+      const parsed: unknown = JSON.parse(await readBounded(request, maxBodyBytes));
+      // A bare `null`, a number or an envelope without a string provider, path or method used to throw
+      // further down and surface as an unhandled error instead of a 400.
+      if (!isRecord(parsed) || typeof parsed.provider !== "string" || typeof parsed.path !== "string" || typeof parsed.method !== "string") {
+        throw new Error("not an envelope");
+      }
+      envelope = parsed as unknown as ProxyEnvelope;
+    } catch (e) {
+      if (e instanceof BodyTooLarge) return json({ error: { message: `Request body exceeds ${maxBodyBytes} bytes.` } }, 413);
       return json({ error: { message: "Body must be a JSON proxy envelope." } }, 400);
     }
 
