@@ -93,9 +93,13 @@ export async function executeToolCall(call: ToolCallRequest, opts: ExecuteToolOp
   // decided, anything it surfaces would land AFTER its own tool-result — a
   // progress card for a finished call, or a dialog nobody is waiting on.
   let settled = false;
+  // The tool's own signal: the run's, plus the call's timeout. Without this a
+  // timed-out tool is abandoned but never told, and keeps spending (a fetch, a
+  // query, a child process) until it finishes by itself.
+  const limit = new CallLimit(opts.signal, opts.timeoutMs, call.name);
   const ctx: ToolExecutionContext = {
     vars: opts.vars,
-    signal: opts.signal,
+    signal: limit.signal,
     callId: call.callId,
     emitCard: (spec) => {
       if (settled) return;
@@ -115,9 +119,9 @@ export async function executeToolCall(call: ToolCallRequest, opts: ExecuteToolOp
 
   try {
     const raw = tool.execute
-      ? await withTimeout(Promise.resolve(tool.execute(call.input, ctx)), opts.timeoutMs, call.name)
+      ? await limit.race(() => tool.execute!(call.input, ctx))
       : opts.onHostTool
-        ? await withTimeout(opts.onHostTool(call), opts.timeoutMs, call.name)
+        ? await limit.race(() => opts.onHostTool!(call))
         : (() => {
             throw new AgentError("not-supported", `Tool "${call.name}" has no executor and no host handler.`);
           })();
@@ -165,6 +169,7 @@ export async function executeToolCall(call: ToolCallRequest, opts: ExecuteToolOp
     };
   } finally {
     settled = true;
+    limit.dispose();
   }
 }
 
@@ -214,12 +219,56 @@ function asRecord(value: unknown): Record<string, unknown> {
   return { result: value };
 }
 
-function withTimeout<T>(promise: Promise<T>, ms: number | undefined, name: string): Promise<T> {
-  if (!ms) return promise;
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new AgentError("timeout", `Tool "${name}" timed out after ${ms}ms.`)), ms),
-    ),
-  ]);
+/**
+ * Bounds one tool call by the run's signal and an optional timeout.
+ *
+ * `race()` settles as soon as either fires, even when the tool ignores its signal:
+ * a Stop press must not wait for a tool that never looks at `ctx.signal`, and a
+ * confirm card the user walked away from must not hold the run open forever. The
+ * tool still gets `signal` (aborted on either cause) so a cooperative one can
+ * stop work. The timer is cleared on every exit so a finished call does not keep
+ * a process alive for `timeoutMs`.
+ */
+class CallLimit {
+  private readonly controller = new AbortController();
+  private timer: ReturnType<typeof setTimeout> | undefined;
+  private rejectLimit!: (reason: AgentError) => void;
+  private readonly limit: Promise<never>;
+  private readonly onRunAbort = () => this.fail(new AgentError("cancelled", `Tool "${this.name}" was cancelled.`));
+
+  constructor(
+    private readonly runSignal: AbortSignal | undefined,
+    timeoutMs: number | undefined,
+    private readonly name: string,
+  ) {
+    this.limit = new Promise<never>((_, reject) => (this.rejectLimit = reject));
+    this.limit.catch(() => undefined); // a limit nobody raced (the call finished first) is not an unhandled rejection
+    if (timeoutMs) {
+      this.timer = setTimeout(
+        () => this.fail(new AgentError("timeout", `Tool "${name}" timed out after ${timeoutMs}ms.`)),
+        timeoutMs,
+      );
+    }
+    if (runSignal?.aborted) this.onRunAbort();
+    else runSignal?.addEventListener("abort", this.onRunAbort, { once: true });
+  }
+
+  get signal(): AbortSignal {
+    return this.controller.signal;
+  }
+
+  private fail(error: AgentError): void {
+    this.controller.abort(error);
+    this.rejectLimit(error);
+  }
+
+  race<T>(start: () => T | Promise<T>): Promise<T> {
+    if (this.controller.signal.aborted) return this.limit;
+    return Promise.race([Promise.resolve().then(start), this.limit]);
+  }
+
+  dispose(): void {
+    if (this.timer) clearTimeout(this.timer);
+    this.runSignal?.removeEventListener("abort", this.onRunAbort);
+  }
 }

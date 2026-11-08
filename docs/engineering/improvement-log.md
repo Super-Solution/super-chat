@@ -51,6 +51,22 @@ Each round is one commit with its own regression tests. Scores: [`scorecard.md`]
 * Tests: `runtime/stop.test.ts` (8): every built-in predicate, streak reset, per-run isolation, interleaved runs, the
   shared default set reused across runs, no unbounded growth. Four fail on the old code.
 
+### Round 4 — tool calls honour cancellation and timeouts (`core/runtime/execute-tools.ts`)
+
+* Audit: `executeToolCall`. Three defects around the same seam:
+  1. **Stop did not stop.** The run's `AbortSignal` was only handed to the tool. A tool that never looks at it (a plain
+     `await fetch(url)`) kept the whole run, and so the UI's Stop, waiting until it finished by itself. Worse, a
+     `requestCard` the host never answers (user closed the tab on a confirm dialog) held the run open forever.
+  2. **A timed-out tool was abandoned but not told.** `withTimeout` raced a timer and walked away; the tool's signal
+     stayed un-aborted, so a cooperative tool kept spending after the run had already reported a timeout.
+  3. The timeout timer was never cleared, so every finished call kept a live timer for `toolTimeoutMs`.
+* Fix: each call gets a private `AbortSignal` (aborted by the run's signal *or* by the call's timeout) and a race
+  against both. A cancelled run now ends the call immediately with the existing `denied` outcome, a timeout reports
+  `execution-error` as before and also aborts the tool's signal, and the timer and the listener on the run's signal
+  are released on every exit. A call for a run that is already cancelled is not started. `ToolExecutionContext.signal`
+  is now always defined (it was optional); callers that read it keep working.
+* Tests: six new in `execute-tools.test.ts`; all six fail on the old code.
+
 ## 2026-11-08 — iteration 2
 
 Started from iteration 1's open items.
