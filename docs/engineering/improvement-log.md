@@ -38,6 +38,19 @@ Each round is one commit with its own regression tests. Scores: [`scorecard.md`]
   still assignable).
 * Test: `run.test.ts` "hands the background job handle to onJobHandle before polling, and survives it throwing".
 
+### Round 3 — stop conditions leak state across runs (`core/runtime/stop.ts`)
+
+* Audit: tool execution and the stop predicates. `consecutiveFailures(n)` kept its streak in a closure variable, but a
+  condition is built once and reused: by `AgentClient` (`stopWhen` config, every turn), by the exported
+  `DEFAULT_STOP_CONDITIONS`, and by concurrent runs. Two failing steps at the end of one turn made the *first* failing
+  step of the next turn stop the run (`runAgent` ended with `finishReason: "stop"` before the model could try
+  anything else); two interleaved runs summed their failures. `stop.ts` had no tests.
+* Fix: the streak is kept per run. `StopContext` gains an optional `runId` (additive), which `runAgent` supplies.
+  Without one (a caller evaluating conditions by hand) a step number that does not advance marks a new run. Entries are
+  deleted on reset and on stop, and bounded (256) for runs that end mid-streak.
+* Tests: `runtime/stop.test.ts` (8): every built-in predicate, streak reset, per-run isolation, interleaved runs, the
+  shared default set reused across runs, no unbounded growth. Four fail on the old code.
+
 ## 2026-11-08 — iteration 2
 
 Started from iteration 1's open items.

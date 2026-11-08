@@ -448,7 +448,7 @@ export async function* runAgent(
       step += 1;
       finishReason = stepFinish;
 
-      const stop = shouldStop(config.stopWhen, { step, finishReason: stepFinish, outcomes, usage: totalUsage });
+      const stop = shouldStop(config.stopWhen, { runId, step, finishReason: stepFinish, outcomes, usage: totalUsage });
       if (stop) {
         finishReason = "stop";
         break;

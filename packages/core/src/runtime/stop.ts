@@ -9,6 +9,8 @@ import type { FinishReason, Usage } from "../content/types.js";
 import type { ToolCallOutcome } from "./execute-tools.js";
 
 export type StopContext = {
+  /** The run being evaluated. Lets a stateful condition keep one tally per run. */
+  runId?: string;
   step: number;
   finishReason: FinishReason;
   outcomes: readonly ToolCallOutcome[];
@@ -37,10 +39,26 @@ export const tokenBudgetExceeded = (maxTotal: number): StopCondition => (ctx) =>
  * step cap, producing nothing but latency and spend.
  */
 export const consecutiveFailures = (n: number): StopCondition => {
-  let streak = 0;
+  // One streak PER RUN. A condition is built once (a client's `stopWhen`, or the
+  // shared DEFAULT_STOP_CONDITIONS) and then reused by every run, so a single
+  // closure counter would carry failures from one turn into the next and, with
+  // concurrent runs, mix them. Keyed by run id; without one (a caller evaluating
+  // conditions by hand) a step number that does not advance marks a new run.
+  const streaks = new Map<string, number>();
+  let lastStep = Infinity;
+  const MAX_TRACKED = 256; // a run that ends mid-streak leaves an entry; bound them
   return (ctx) => {
     const allFailed = ctx.outcomes.length > 0 && ctx.outcomes.every((o) => o.failure);
-    streak = allFailed ? streak + 1 : 0;
+    const key = ctx.runId ?? "";
+    let prior = streaks.get(key) ?? 0;
+    if (ctx.runId === undefined && ctx.step <= lastStep) prior = 0;
+    lastStep = ctx.step;
+    const streak = allFailed ? prior + 1 : 0;
+    if (streak === 0 || streak >= n) streaks.delete(key);
+    else {
+      streaks.set(key, streak);
+      if (streaks.size > MAX_TRACKED) streaks.delete(streaks.keys().next().value as string);
+    }
     return streak >= n;
   };
 };
