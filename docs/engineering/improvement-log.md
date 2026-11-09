@@ -253,6 +253,19 @@ Each round is one commit with its own regression tests. Scores: [`scorecard.md`]
 * Tests in `router.test.ts`: the failed-request test now asserts the error and its code; new tests for a cut stream, a
   cancelled failure, and the signal reaching `infer` (provider `generate` and the HTTP gateway's `fetch`).
 
+### Round 15 — the Python SSE parser was quadratic (`backends/python`)
+
+* Measurement: `SSEParser` recounted the UTF-16 length of the whole pending buffer and rescanned it for a blank line on
+  every chunk, and sliced the buffer once per frame. A 1.9 MB frame arriving in 1 KB chunks took **15.6 s**; 50,000 frames in
+  one chunk took 2.6 s. (The Go port already tracks the length incrementally and keeps a scan offset; the TypeScript
+  reference rescans, but V8 makes that cheap.)
+* Fix: the length is kept as text is added and removed, the search resumes at the last three characters (the only place an
+  unfinished frame end can start), and consumed frames are cut off the buffer once per drain. Same results: 20,000 random
+  inputs with random chunking and random limits gave identical frames and errors against the old parser. Now 0.19 s and 0.10 s.
+* Tests: `tests/test_sse_scaling.py` (a long frame in small chunks, many frames in one chunk — both fail on the old code —
+  and chunking never changes the frames). The timing budget is 3 s, generous on purpose; a very slow machine could still flake.
+* Not done: the Go and Python suites are not part of `pnpm verify` (use `pnpm test:backends`).
+
 ## 2026-11-08 — iteration 2
 
 Started from iteration 1's open items.

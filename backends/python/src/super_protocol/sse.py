@@ -56,26 +56,39 @@ class SSEParser:
         # frame's field name then fails to match.
         self._decoder = codecs.getincrementaldecoder("utf-8-sig")(errors="replace")
         self._buffer = ""
+        self._units = 0  # UTF-16 length of the buffer, kept as text comes and goes so a long frame is not recounted per chunk
+        self._scan_from = 0  # nothing before this offset can start a frame end
 
     def feed(self, chunk: bytes) -> list[Frame]:
         """Add bytes; return the frames they completed. Raises StreamFrameTooLarge."""
-        self._buffer += self._decoder.decode(chunk, final=False)
+        self._append(self._decoder.decode(chunk, final=False))
         return self._drain()
 
     def finish(self) -> list[Frame]:
         """Flush the decoder at end of stream. A frame without its blank line is dropped."""
-        self._buffer += self._decoder.decode(b"", final=True)
+        self._append(self._decoder.decode(b"", final=True))
         return self._drain()
 
+    def _append(self, text: str) -> None:
+        self._buffer += text
+        self._units += _utf16_length(text)
+
     def _drain(self) -> list[Frame]:
-        if _utf16_length(self._buffer) > self._max:
+        if self._units > self._max:
             raise StreamFrameTooLarge()
         frames: list[Frame] = []
         buffer = self._buffer
-        while (found := _BLANK_LINE.search(buffer)) is not None:
-            frame = _parse_frame(buffer[: found.start()])
-            buffer = buffer[found.end() :]
+        offset = 0
+        while (found := _BLANK_LINE.search(buffer, offset + self._scan_from)) is not None:
+            frame = _parse_frame(buffer[offset : found.start()])
+            offset = found.end()
+            self._scan_from = 0
             if frame is not None:
                 frames.append(frame)
+        if offset:
+            self._units -= _utf16_length(buffer[:offset])
+            buffer = buffer[offset:]
         self._buffer = buffer
+        # A frame end that is still incomplete can only start in the last three characters.
+        self._scan_from = max(len(buffer) - 3, 0)
         return frames
