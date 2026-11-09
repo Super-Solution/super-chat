@@ -217,6 +217,26 @@ Each round is one commit with its own regression tests. Scores: [`scorecard.md`]
   it from the start on every `feed()`, so one very long frame is quadratic; Go already avoids the re-scan. Worth a
   benchmark before changing, since the default limit (2 MB) bounds it.
 
+### Round 13 — MCP time budgets, and a measurement (`core/mcp/client.ts`, `ui-core`)
+
+* Measurement first (the streaming render path was listed as unmeasured). `renderMarkdownStream` fed 40 characters per
+  frame, per frame: 60 KB of ordinary paragraphs 1.7 ms worst, a 40 KB single paragraph 0.2 ms, a 40 KB open code fence
+  1.2 ms, a 3,000-row list 9.8 ms (5.6 s over all frames), a 1,500-row table 6.4 ms (2.2 s). The settled-block cache works;
+  only a single enormous list or table is quadratic, and its worst frame stays under one 60 fps frame while the UI
+  already throttles to one render per frame. No change made.
+* Audit: the MCP client. Every JSON-RPC call, `tools/call` included, was bound to a fixed 30 s `AbortSignal.timeout`
+  that also covers reading the response stream. Two consequences: **no MCP tool could run longer than 30 s**, and **a
+  person taking longer than 30 s to answer an elicitation form** (the server asked mid-call, the client waits for the
+  user) aborted the call, so the form they were filling in was thrown away.
+* Fix: `initialize` / `tools/list` keep the 30 s budget (`timeoutMs`, now configurable). `tools/call` gets its own
+  (`callTimeoutMs`, default 120 s; the run-level `toolTimeoutMs` still applies on top). The call's deadline is
+  pausable: the clock stops while the client waits for the user's elicitation answer and resumes with what was left. A
+  timeout is an `AgentError("timeout")` (it used to be a bare `TimeoutError` DOMException).
+* Tests: four in `mcp/client.test.ts` using fake timers (budgets, hung call, elicitation pause). Two fail on the old
+  code (the hung-call and listing-budget tests); the other two guard the new behaviour but cannot distinguish it
+  from the old one, because `AbortSignal.timeout` is not driven by fake timers. The old 30 s ceiling is evident in the
+  code, and was not reproduced against a real 30 s wait.
+
 ## 2026-11-08 — iteration 2
 
 Started from iteration 1's open items.

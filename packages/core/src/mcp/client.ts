@@ -40,12 +40,69 @@ export type McpClientConfig = {
    * eliciting server gets the same form-card UX as a local `confirm` tool.
    */
   onElicit?: McpElicitHandler;
+  /**
+   * Budget for `initialize` and `tools/list`, in ms. Default 30 000. A hung server must not block
+   * forever, and these calls are quick on any healthy one.
+   */
+  timeoutMs?: number;
+  /**
+   * Budget for one `tools/call`, in ms. Default 120 000. A tool may legitimately run for longer
+   * than a listing, so it gets its own, larger, bound (the run-level `toolTimeoutMs` still applies
+   * on top). Time spent waiting for the USER to answer an elicitation is not counted against it.
+   */
+  callTimeoutMs?: number;
 };
 
 const DEFAULT_PROTOCOL = "2025-06-18";
 
 /** Bounds every request when the caller supplies no signal of its own — a hung MCP server must not block forever. */
 const DEFAULT_RPC_TIMEOUT_MS = 30_000;
+const DEFAULT_CALL_TIMEOUT_MS = 120_000;
+
+/**
+ * A deadline that can be paused. The whole of one JSON-RPC call is bounded, response stream included,
+ * but a person typing into an elicitation form is not the server being slow: the clock stops while
+ * we wait on them and resumes with what was left.
+ */
+class Deadline {
+  private readonly controller = new AbortController();
+  private timer: ReturnType<typeof setTimeout> | undefined;
+  private left: number;
+  private startedAt = 0;
+
+  constructor(
+    ms: number,
+    private readonly describe: string,
+  ) {
+    this.left = ms;
+    this.resume();
+  }
+
+  get signal(): AbortSignal {
+    return this.controller.signal;
+  }
+
+  pause(): void {
+    if (this.timer === undefined) return;
+    clearTimeout(this.timer);
+    this.timer = undefined;
+    this.left = Math.max(0, this.left - (Date.now() - this.startedAt));
+  }
+
+  resume(): void {
+    if (this.timer !== undefined || this.controller.signal.aborted) return;
+    this.startedAt = Date.now();
+    this.timer = setTimeout(() => {
+      this.timer = undefined;
+      this.controller.abort(new AgentError("timeout", `MCP ${this.describe} timed out.`));
+    }, this.left);
+  }
+
+  dispose(): void {
+    if (this.timer !== undefined) clearTimeout(this.timer);
+    this.timer = undefined;
+  }
+}
 
 /**
  * Combine signals so any one of them can abort the request. Prefers the
@@ -91,6 +148,8 @@ export class McpClient {
   private readonly protocolVersion: string;
   private readonly clientInfo: { name: string; version: string };
   private readonly onElicit: McpElicitHandler | undefined;
+  private readonly timeoutMs: number;
+  private readonly callTimeoutMs: number;
   private rpcId = 0;
   private sessionId: string | undefined;
   private handshake: { serverInfo: McpServerInfo; protocolVersion: string } | undefined;
@@ -104,6 +163,8 @@ export class McpClient {
     this.protocolVersion = config.protocolVersion ?? DEFAULT_PROTOCOL;
     this.clientInfo = config.clientInfo ?? { name: "superchat", version: "0.1.0" };
     this.onElicit = config.onElicit;
+    this.timeoutMs = config.timeoutMs ?? DEFAULT_RPC_TIMEOUT_MS;
+    this.callTimeoutMs = config.callTimeoutMs ?? DEFAULT_CALL_TIMEOUT_MS;
   }
 
   /**
@@ -216,11 +277,11 @@ export class McpClient {
     };
   }
 
-  private async post(body: JsonRpcRequest, signal?: AbortSignal): Promise<Response> {
-    // Every call gets bounded by DEFAULT_RPC_TIMEOUT_MS, even when the caller
-    // supplies its own signal — a caller's signal is typically for run-level
-    // cancellation, not a guarantee the server will ever respond.
-    const combined = combineSignals([signal, AbortSignal.timeout(DEFAULT_RPC_TIMEOUT_MS)]);
+  private async post(body: JsonRpcRequest, signal?: AbortSignal, bounded = true): Promise<Response> {
+    // Every call gets bounded, even when the caller supplies its own signal — a
+    // caller's signal is typically for run-level cancellation, not a guarantee the
+    // server will ever respond. `rpc()` brings its own (pausable) deadline.
+    const combined = combineSignals([signal, bounded ? AbortSignal.timeout(this.timeoutMs) : undefined]);
     const res = await this.transport.fetch({ ...this.request("POST", body), signal: combined });
     const sid = res.headers.get("mcp-session-id");
     if (sid) this.sessionId = sid;
@@ -235,7 +296,23 @@ export class McpClient {
   ): Promise<unknown> {
     this.rpcId += 1;
     const id = this.rpcId;
-    const res = await this.post({ jsonrpc: "2.0", id, method, params }, opts.signal);
+    const deadline = new Deadline(method === "tools/call" ? this.callTimeoutMs : this.timeoutMs, `"${method}"`);
+    try {
+      return await this.exchange(id, method, params, opts, deadline);
+    } finally {
+      deadline.dispose();
+    }
+  }
+
+  private async exchange(
+    id: number,
+    method: string,
+    params: unknown,
+    opts: { signal?: AbortSignal; onElicit?: McpElicitHandler },
+    deadline: Deadline,
+  ): Promise<unknown> {
+    const signal = combineSignals([opts.signal, deadline.signal]);
+    const res = await this.post({ jsonrpc: "2.0", id, method, params }, signal, false);
 
     const contentType = res.headers.get("content-type") ?? "";
     if (contentType.includes("text/event-stream")) {
@@ -248,7 +325,12 @@ export class McpClient {
         const msg = frame.data;
         if (!msg) continue;
         if (typeof msg.method === "string" && msg.id != null) {
-          await this.answerServerRequest(msg as JsonRpcRequest & { id: number | string }, opts.onElicit, opts.signal);
+          deadline.pause(); // waiting on the user is not the server being slow
+          try {
+            await this.answerServerRequest(msg as JsonRpcRequest & { id: number | string }, opts.onElicit, signal);
+          } finally {
+            deadline.resume();
+          }
           continue;
         }
         if (msg.id === id) return this.settle(msg as JsonRpcResponse);

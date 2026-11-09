@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Transport, TransportRequest } from "../transport/types.js";
 import { McpClient } from "./client.js";
 import type { JsonRpcRequest } from "./types.js";
@@ -252,5 +252,86 @@ describe("McpClient", () => {
     expect(seenSignal?.aborted).toBe(false);
     controller.abort();
     expect(seenSignal?.aborted).toBe(true);
+  });
+});
+
+describe("McpClient time budgets", () => {
+  afterEach(() => vi.useRealTimers());
+
+  /** initialize answers at once; `tools/call` is whatever `call` returns, with the request's signal in hand. */
+  function slowServer(call: (rpc: JsonRpcRequest, req: TransportRequest) => Promise<Response>): Transport {
+    return {
+      kind: "custom",
+      credentialSafe: true,
+      async fetch(req: TransportRequest): Promise<Response> {
+        const rpc = req.body as JsonRpcRequest;
+        if (rpc.method === "initialize") {
+          return new Response(JSON.stringify({ jsonrpc: "2.0", id: rpc.id, result: { serverInfo: { name: "s" } } }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        }
+        if (rpc.method === "tools/call" || rpc.method === "tools/list") return call(rpc, req);
+        return new Response(null, { status: 202 });
+      },
+    };
+  }
+
+  /** Resolve after `ms` of (fake) time, or reject the way fetch does when the request's signal aborts. */
+  const after = (ms: number, req: TransportRequest, make: () => Response) =>
+    new Promise<Response>((resolve, reject) => {
+      const t = setTimeout(() => resolve(make()), ms);
+      req.signal?.addEventListener("abort", () => {
+        clearTimeout(t);
+        reject(req.signal!.reason);
+      });
+    });
+  const ok = (rpc: JsonRpcRequest) => () =>
+    new Response(JSON.stringify({ jsonrpc: "2.0", id: rpc.id, result: { content: [{ type: "text", text: "done" }], tools: [] } }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+
+  it("lets a tool call run past the 30 s that bounds listing calls", async () => {
+    vi.useFakeTimers();
+    const client = new McpClient({ transport: slowServer((rpc, req) => after(45_000, req, ok(rpc))) });
+    const call = client.callTool("slow", {});
+    await vi.advanceTimersByTimeAsync(45_000);
+    expect((await call).content).toEqual([{ type: "text", text: "done" }]);
+  });
+
+  it("still bounds a tool call, by callTimeoutMs", async () => {
+    vi.useFakeTimers();
+    const client = new McpClient({ transport: slowServer((rpc, req) => after(60_000, req, ok(rpc))), callTimeoutMs: 5_000 });
+    const call = client.callTool("hung", {});
+    const settled = expect(call).rejects.toMatchObject({ kind: "timeout" });
+    await vi.advanceTimersByTimeAsync(5_000);
+    await settled;
+  });
+
+  it("keeps the shorter budget for listing", async () => {
+    vi.useFakeTimers();
+    const client = new McpClient({ transport: slowServer((rpc, req) => after(60_000, req, ok(rpc))), timeoutMs: 2_000 });
+    const list = client.listTools();
+    const settled = expect(list).rejects.toMatchObject({ kind: "timeout" });
+    await vi.advanceTimersByTimeAsync(2_000);
+    await settled;
+  });
+
+  it("does not charge the time a person takes to answer an elicitation to the tool", async () => {
+    vi.useFakeTimers();
+    const elicit = `data: ${JSON.stringify({ jsonrpc: "2.0", id: "srv_1", method: "elicitation/create", params: { message: "Region?" } })}\n\n`;
+    const client = new McpClient({
+      transport: slowServer(async (rpc) => {
+        const result = `data: ${JSON.stringify({ jsonrpc: "2.0", id: rpc.id, result: { content: [{ type: "text", text: "deployed" }] } })}\n\n`;
+        return new Response(elicit + result, { status: 200, headers: { "content-type": "text/event-stream" } });
+      }),
+      callTimeoutMs: 1_000,
+      // A person reading a form for a minute: far over the 1 s budget.
+      onElicit: () => new Promise((resolve) => setTimeout(() => resolve({ action: "accept", content: {} }), 60_000)),
+    });
+    const call = client.callTool("deploy", {});
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect((await call).content).toEqual([{ type: "text", text: "deployed" }]);
   });
 });
