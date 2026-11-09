@@ -194,6 +194,29 @@ Each round is one commit with its own regression tests. Scores: [`scorecard.md`]
 * Not verified: behaviour with a real screen reader and focus order in a browser. The Playwright suite (not part of
   `pnpm verify`) selects the composer by class, so it is unaffected by these changes, but it was not run here.
 
+### Round 12 — Go and Python ports vs the reference (`backends/go`, `backends/python`, `conformance`)
+
+* Audit method: a **differential fuzz** against the TypeScript reference, since the committed conformance data can only
+  catch what its author thought of. 12,000 random SSE streams (random chunking, LF/CRLF/CR mixes, multi-byte text,
+  odd field names, tiny frame limits) and 27,000 mutated plugin-manifest / editor-card / chart-card values (types
+  swapped, keys deleted, arrays spliced, 40 awkward values: `1e21`, `-0`, NUL, lookalike URLs, 300-char strings…) were run
+  through the reference, Go and Python and compared. The harness was throwaway (not committed).
+* **Defect (both ports):** a UTF-8 byte order mark at the start of a stream. The reference's `TextDecoder` drops it
+  (SSE does too); Go and Python kept `U+FEFF`, so the first line read `﻿data: …`, did not match `data:`, and **the
+  first frame was silently lost** (a BOM also counted toward the frame-size limit). Found by the fuzz in 3 of 4,000 cases
+  per seed. Fixed in both (Python: the `utf-8-sig` incremental decoder; Go: strip a leading mark from the first decoded
+  text, which also covers a mark split across chunks). A `U+FEFF` anywhere else is still ordinary text, as in the reference.
+* The conformance data now pins it: `export-conformance.mjs` appends 28 BOM cases (every split position, a second BOM,
+  a mid-stream BOM, BOM-only, BOM against the frame limit). They are added after the existing generators, so the
+  committed file only grows; 12 Python tests and the Go SSE test fail without the fix.
+* Result: after the fix, 0 differences in 36,000 SSE cases (3 further seeds) and 0 in the 27,000 validator cases, so the
+  validators were left alone.
+* DX: `pnpm test:backends` runs both ports (skipping, loudly, a missing toolchain; `--require` makes a skip fail). It is
+  not part of `pnpm verify`, which keeps needing only Node.
+* Not changed (performance, noted): the Python parser re-measures the whole pending buffer in UTF-16 units and re-scans
+  it from the start on every `feed()`, so one very long frame is quadratic; Go already avoids the re-scan. Worth a
+  benchmark before changing, since the default limit (2 MB) bounds it.
+
 ## 2026-11-08 — iteration 2
 
 Started from iteration 1's open items.

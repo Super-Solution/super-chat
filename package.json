@@ -14,6 +14,7 @@
     "test:rwd": "playwright test",
     "typecheck": "pnpm -r typecheck",
     "check:architecture": "node scripts/check-architecture.mjs",
+    "test:backends": "node scripts/test-backends.mjs",
     "verify": "pnpm check:architecture && pnpm build && pnpm typecheck && pnpm test"
   },
   "devDependencies": {

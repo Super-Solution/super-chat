@@ -32,6 +32,7 @@ type Parser struct {
 	buffer   string
 	units    int // UTF-16 length of buffer
 	scanFrom int // nothing before this offset can start a frame end
+	started  bool // some text has been decoded; a byte order mark is only dropped before this
 }
 
 // NewParser returns a parser limited to maxFrameBytes pending UTF-16 code units; zero or less
@@ -78,6 +79,13 @@ func (p *Parser) Finish() ([]Frame, error) {
 
 func (p *Parser) append(text string) {
 	text = strings.ToValidUTF8(text, "�")
+	// A byte order mark opens the stream and is not content (the reference's TextDecoder drops it);
+	// a later U+FEFF is ordinary text. Nothing is "started" until some text exists, so a mark whose
+	// bytes were split across chunks is still recognised.
+	if !p.started && text != "" {
+		p.started = true
+		text = strings.TrimPrefix(text, "\ufeff")
+	}
 	p.buffer += text
 	for _, r := range text {
 		if r >= 0x10000 {

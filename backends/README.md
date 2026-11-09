@@ -11,3 +11,5 @@ One folder per language. Each implements the same contract and is tested against
 
 The proofs of concept cover the protocol's validators and the stream parser only. They have no HTTP
 proxy yet.
+
+`pnpm test:backends` runs the Go and Python suites (each skipped, loudly, if its toolchain is missing).

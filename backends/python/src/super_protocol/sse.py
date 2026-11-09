@@ -51,7 +51,10 @@ def _parse_frame(frame: str) -> Frame | None:
 class SSEParser:
     def __init__(self, max_frame_bytes: int = DEFAULT_MAX_FRAME_BYTES) -> None:
         self._max = max_frame_bytes
-        self._decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
+        # "utf-8-sig" drops a byte order mark at the very start of the stream and nowhere else, which is
+        # what the reference's TextDecoder does; a plain "utf-8" decoder keeps U+FEFF and the first
+        # frame's field name then fails to match.
+        self._decoder = codecs.getincrementaldecoder("utf-8-sig")(errors="replace")
         self._buffer = ""
 
     def feed(self, chunk: bytes) -> list[Frame]:
