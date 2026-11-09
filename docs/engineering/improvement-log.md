@@ -237,6 +237,22 @@ Each round is one commit with its own regression tests. Scores: [`scorecard.md`]
   from the old one, because `AbortSignal.timeout` is not driven by fake timers. The old 30 s ceiling is evident in the
   code, and was not reproduced against a real 30 s wait.
 
+### Round 14 — the Super Router provider ends a bad stream silently (`integrations/router`, `protocol/router.ts`)
+
+* Audit first: `repairJson` / `partial-json` (the tool-argument repair path). No defect found; recorded as verified.
+* Audit: the Super Router provider. Three defects, all in `provider.ts`:
+  1. A `request.failed` event was turned into `finish: "error"` with **no message**, so a failed router request
+     (quota, upstream error) ended as an empty assistant turn.
+  2. A stream that ended without any terminal event (`request.completed` / `failed` / `replayed`) ended quietly as if
+     finished. A cut connection looked like a short answer, and a half-written tool call could be treated as complete.
+  3. `generate()` could not be cancelled: the abort signal never reached `gateway.infer`.
+* Fix: a failure with `execution_status: "cancelled"` finishes as `cancelled`; any other failure yields an `error`
+  event carrying the router's error code and request id; a stream without a terminal event throws a retryable
+  `AgentError("network")`. `InferenceGateway.infer` takes an optional `signal` (compatible: existing gateways ignore it),
+  and the default gateway passes it to `fetch`.
+* Tests in `router.test.ts`: the failed-request test now asserts the error and its code; new tests for a cut stream, a
+  cancelled failure, and the signal reaching `infer` (provider `generate` and the HTTP gateway's `fetch`).
+
 ## 2026-11-08 — iteration 2
 
 Started from iteration 1's open items.

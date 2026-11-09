@@ -133,7 +133,9 @@ describe("createSuperRouterProvider", () => {
     const failed: RouterEvent[] = [{ type: "request.failed", request_id: "r", sequence: 1, execution_status: "failed", error: { code: "upstream_failed" } }];
     const out: StreamEvent[] = [];
     for await (const e of createSuperRouterProvider({ gateway: fakeGateway(failed), customerId: "c" }).stream(req())) out.push(e);
-    expect(out.at(-1)).toMatchObject({ type: "finish", finishReason: "error" });
+    // A failure reaches the run as an error carrying the router's code and request id, not as a bare finish.
+    expect(out.at(-1)).toMatchObject({ type: "error", error: { message: "upstream_failed (request r)" } });
+    expect(out.some((e) => e.type === "finish")).toBe(false);
 
     const make = (status: number, code = "x"): InferenceGateway => ({ infer: async () => { throw new GatewayError(code, status); }, stream: async function* () { throw new GatewayError(code, status); } });
     const kind = async (status: number) => createSuperRouterProvider({ gateway: make(status), customerId: "c" }).generate(req()).catch((e: AgentError) => e.kind);
@@ -151,5 +153,50 @@ describe("createSuperRouterProvider", () => {
     const out: StreamEvent[] = [];
     for await (const e of createSuperRouterProvider({ gateway: fakeGateway(replay), customerId: "c" }).stream(req())) out.push(e);
     expect(out.at(-1)).toMatchObject({ type: "error" });
+  });
+
+  it("reports a stream that ends with no terminal event as an interruption", async () => {
+    const cut: RouterEvent[] = [
+      { type: "request.started", request_id: "r", sequence: 1, service_version: 1 },
+      { type: "output.delta", request_id: "r", sequence: 2, text: "Half an ans" },
+    ];
+    const out: StreamEvent[] = [];
+    for await (const e of createSuperRouterProvider({ gateway: fakeGateway(cut), customerId: "c" }).stream(req())) out.push(e);
+    expect(out.map((e) => e.type)).toEqual(["start", "text-delta", "error"]);
+    expect(out.at(-1)).toMatchObject({ error: { kind: "network", retryable: true } });
+  });
+
+  it("maps a cancelled failure to a cancelled finish, not an error", async () => {
+    const cancelled: RouterEvent[] = [{ type: "request.failed", request_id: "r", sequence: 1, execution_status: "cancelled" }];
+    const out: StreamEvent[] = [];
+    for await (const e of createSuperRouterProvider({ gateway: fakeGateway(cancelled), customerId: "c" }).stream(req())) out.push(e);
+    expect(out.at(-1)).toMatchObject({ type: "finish", finishReason: "cancelled" });
+  });
+
+  it("passes the call's abort signal through to the gateway, for generate and for the stored-request read", async () => {
+    const ctl = new AbortController();
+    let seen: AbortSignal | undefined;
+    const gateway: InferenceGateway = {
+      infer: async (_r, _k, signal) => {
+        seen = signal;
+        return { id: "r", execution_status: "succeeded", billing_status: "settled", output: { role: "assistant", content: "ok" }, usage: { status: "confirmed" } };
+      },
+      stream: async function* () {},
+    };
+    await createSuperRouterProvider({ gateway, customerId: "c" }).generate(req(), { signal: ctl.signal });
+    expect(seen).toBe(ctl.signal);
+
+    const signals: (AbortSignal | null | undefined)[] = [];
+    const http = createSuperRouterGateway({
+      baseUrl: "https://r.test",
+      apiKey: "k",
+      fetch: (async (url: string, init: RequestInit) => {
+        signals.push(init.signal);
+        if (url.endsWith("/v1/inferences")) return new Response(null, { status: 303, headers: { Location: "/v1/requests/req_9" } });
+        return Response.json({ id: "req_9", execution_status: "succeeded", billing_status: "settled", output: { role: "assistant", content: "stored" }, usage: { status: "confirmed" } });
+      }) as typeof fetch,
+    });
+    await http.infer({ service: "s", customer_id: "c", messages: [] }, "k", ctl.signal);
+    expect(signals).toEqual([ctl.signal, ctl.signal]);
   });
 });

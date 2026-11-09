@@ -69,12 +69,13 @@ export function createSuperRouterGateway(config: SuperRouterGatewayConfig): Infe
   const requestIdFrom = (response: Response) => (response.headers.get("location") ?? "").split("/").pop() ?? "";
 
   return {
-    async infer(request, idempotencyKey) {
-      const response = await send("/v1/inferences", { method: "POST", body: body(request, false) }, idempotencyKey);
+    async infer(request, idempotencyKey, signal) {
+      const abort = signal ? { signal } : {};
+      const response = await send("/v1/inferences", { method: "POST", body: body(request, false), ...abort }, idempotencyKey);
       if (response.status >= 300 && response.status < 400) {
         const id = requestIdFrom(response);
         if (!id) throw new GatewayError("bad_redirect", response.status);
-        return (await (await send("/v1/requests/" + encodeURIComponent(id), { method: "GET" })).json()) as InferenceResult;
+        return (await (await send("/v1/requests/" + encodeURIComponent(id), { method: "GET", ...abort })).json()) as InferenceResult;
       }
       return (await response.json()) as InferenceResult;
     },

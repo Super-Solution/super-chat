@@ -117,10 +117,10 @@ export function createSuperRouterProvider(config: SuperRouterProviderConfig): Pr
     },
     transport: noTransport,
 
-    async generate(req: NormalizedRequest, _opts?: CallOptions): Promise<GenerateResult> {
+    async generate(req: NormalizedRequest, opts?: CallOptions): Promise<GenerateResult> {
       const { request, warnings } = build(req);
       try {
-        const result = await config.gateway.infer(request, newKey());
+        const result = await config.gateway.infer(request, newKey(), opts?.signal);
         const failed = result.execution_status !== "succeeded";
         if (!result.output) {
           // A repeated idempotency key reads the stored request back, and completions are never stored.
@@ -142,6 +142,7 @@ export function createSuperRouterProvider(config: SuperRouterProviderConfig): Pr
     async *stream(req: NormalizedRequest, opts?: CallOptions): AsyncIterable<StreamEvent> {
       const { request } = build(req);
       let started = false;
+      let terminal = false;
       try {
         for await (const event of config.gateway.stream(request, newKey(), opts?.signal)) {
           if (!started) {
@@ -149,14 +150,32 @@ export function createSuperRouterProvider(config: SuperRouterProviderConfig): Pr
             yield { type: "start", responseId: event.request_id, modelId: req.model };
           }
           if (event.type === "output.delta") yield { type: "text-delta", delta: event.text };
-          else if (event.type === "request.completed" || event.type === "request.failed") {
-            const ok = event.type === "request.completed" && event.execution_status === "succeeded";
+          else if (event.type === "request.failed") {
+            terminal = true;
+            // A finish of "error" alone leaves the user with an empty turn and no reason; the failure
+            // has to reach the run as an error, like every other provider's.
+            if (event.execution_status === "cancelled") {
+              yield { type: "finish", finishReason: "cancelled", responseId: event.request_id };
+            } else {
+              const code = event.error?.code ?? "request_failed";
+              yield {
+                type: "error",
+                error: new AgentError("unknown", `${code} (request ${event.request_id})`, { provider: id, detail: event }),
+              };
+            }
+          } else if (event.type === "request.completed") {
+            terminal = true;
+            const ok = event.execution_status === "succeeded";
             const finishReason: FinishReason = ok ? "stop" : event.execution_status === "cancelled" ? "cancelled" : "error";
             yield { type: "finish", finishReason, responseId: event.request_id };
           } else if (event.type === "request.replayed") {
             // The original call already ran; its result is read with the request id, never re-billed.
             throw new AgentError("invalid-request", `This idempotency key was already used (request ${event.request_id}).`, { provider: id });
           }
+        }
+        // The stream ended with no completed / failed event: the answer so far is not a finished turn.
+        if (!terminal) {
+          throw new AgentError("network", "The Super Router stream ended before the request finished.", { provider: id });
         }
       } catch (error) {
         yield { type: "error", error: (() => { try { throw toError(error, id); } catch (e) { return e; } })() };

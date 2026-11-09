@@ -50,7 +50,7 @@ export interface InferenceResult {
 
 export interface InferenceGateway {
   /** `idempotencyKey` makes a retry safe: the same key never bills twice. */
-  infer(request: InferenceRequest, idempotencyKey: string): Promise<InferenceResult>;
+  infer(request: InferenceRequest, idempotencyKey: string, signal?: AbortSignal): Promise<InferenceResult>;
   stream(request: InferenceRequest, idempotencyKey: string, signal?: AbortSignal): AsyncIterable<StreamEvent>;
 }
 
