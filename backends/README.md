@@ -1,13 +1,11 @@
 # Backends
 
-One folder per language. Each implements the same contract and is tested against the shared data in
-[`../conformance`](../conformance/README.md).
+One folder per language. Each implements the same contract as
+[`@supersolutions/super-protocol`](https://github.com/Super-Solution/super-protocol), and is tested
+against the shared data in that repository's `conformance/`.
 
 | Folder | Status |
 | --- | --- |
-| `typescript/` | Reference implementation: `@supersolutions/super-chat-server` (`createProxyHandler`); the protocol reference lives in `packages/protocol` |
-| `go/` | Proof of concept: `protocol` (plugin manifest, editor and chart card validators, SSE parser) |
-| `python/` | Proof of concept: `super_protocol`, the same surface |
+| `typescript/` | Reference implementation: `@supersolutions/super-chat-server` (`createProxyHandler`) |
 
-The proofs of concept cover the protocol's validators and the stream parser only. They have no HTTP
-proxy yet.
+The Go and Python protocol ports now live in the super-protocol repository.

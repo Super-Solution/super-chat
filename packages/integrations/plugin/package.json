@@ -50,7 +50,7 @@
   "dependencies": {
     "@supersolutions/super-chat-core": "workspace:*",
     "@supersolutions/super-chat-ui": "workspace:*",
-    "@supersolutions/super-protocol": "workspace:*"
+    "@supersolutions/super-protocol": "0.1.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.2",

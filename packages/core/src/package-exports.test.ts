@@ -9,7 +9,7 @@ type Conditions = { types: string; import: string; default?: string };
 type Manifest = { name: string; exports: Record<string, Conditions | string> };
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const packageDirs: Record<string, string> = {
-  protocol: "packages/protocol", core: "packages/core", client: "packages/client", "ui-core": "packages/ui-core",
+  core: "packages/core", client: "packages/client", "ui-core": "packages/ui-core",
   react: "packages/bindings/react", ui: "packages/bindings/react-ui",
   plugin: "packages/integrations/plugin", router: "packages/integrations/router",
   server: "backends/typescript/server",
@@ -39,7 +39,7 @@ afterEach(() => {
 });
 
 describe("published package export resolution", () => {
-  for (const name of ["protocol", "core", "client", "server", "ui-core", "router", "react", "ui", "plugin"]) {
+  for (const name of ["core", "client", "server", "ui-core", "router", "react", "ui", "plugin"]) {
     const manifest: Manifest = JSON.parse(readFileSync(join(repoRoot, packageDirs[name]!, "package.json"), "utf8"));
     for (const [subpath, entry] of Object.entries(manifest.exports)) {
       const specifier = manifest.name + (subpath === "." ? "" : subpath.slice(1));

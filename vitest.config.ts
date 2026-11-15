@@ -7,7 +7,6 @@ export default defineConfig({
   resolve: {
     // Point at source, not dist, so tests never run against a stale build.
     alias: {
-      "@supersolutions/super-protocol": r("./packages/protocol/src/index.ts"),
       "@supersolutions/super-chat-core": r("./packages/core/src/index.ts"),
       "@supersolutions/super-chat-ui-core": r("./packages/ui-core/src/index.ts"),
       "@supersolutions/super-chat-server": r("./backends/typescript/server/src/index.ts"),
