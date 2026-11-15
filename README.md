@@ -28,7 +28,7 @@ or `core` + `client` for a non-React front end). See [docs/PACKAGES.md](docs/PAC
 | [`@supersolutions/super-chat-ui-core`](packages/ui-core/README.md) | headless UI logic — markdown, formatting, export — no React or DOM |
 | [`@supersolutions/super-chat-router`](packages/integrations/router/README.md) | routes calls through Super Router or any `InferenceGateway`, with idempotency and typed errors |
 | [`@supersolutions/super-chat-plugin`](packages/integrations/plugin/README.md) | installs a `ChatPlugin` (editor, chart, ...) into the card registry and renders its cards |
-| [`@supersolutions/super-protocol`](packages/protocol/README.md) | Apache contract layer shared with the other Super libs: plugin manifest, gateway, editor and chart cards |
+| [`@supersolutions/super-protocol`](https://github.com/Super-Solution/super-protocol) | Apache contract layer shared with the other Super libs: plugin manifest, gateway, editor and chart cards |
 | [`@supersolutions/super-chat-react`](packages/bindings/react/README.md) | React bindings over `client`: hooks, thread state, card actions |
 | [`@supersolutions/super-chat-ui`](packages/bindings/react-ui/README.md) | card renderers, chat primitives, context inspector, portable Mobile Agent assets |
 | [`apps/playground`](apps/playground/README.md) | Three product-shaped agent experiences plus inspectable dev panels, **no API key needed** |

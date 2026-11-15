@@ -22,7 +22,7 @@ const manifestFiles = [...manifestPaths(join(repoRoot, "packages"), 2), ...manif
 const copyleft = /^@(supersolutions|super-solution)\/super-(editor|chart)(-|$)|^super-(editor|chart)$/;
 
 describe("license boundary", () => {
-  it("finds every package", () => expect(manifestFiles.length).toBeGreaterThanOrEqual(9));
+  it("finds every package", () => expect(manifestFiles.length).toBeGreaterThanOrEqual(8));
   for (const file of manifestFiles) {
     const manifest = JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown> & { name: string; license?: string };
     it(`${manifest.name} is Apache-2.0 and depends on no copyleft Super package`, () => {

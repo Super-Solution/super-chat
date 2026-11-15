@@ -55,10 +55,10 @@ jobs:
           NODE
       - name: Require the super-protocol version these packages pack against on npm
         # super-protocol is released from Super-Solution/super-protocol, not from this workflow.
-        # pnpm pack turns "workspace:*" into the version of packages/protocol, so that exact
-        # version must already be on the registry or the published packages cannot be installed.
+        # The plugin and router packages pin it exactly, so that version must already be on the
+        # registry or the published packages cannot be installed.
         run: |
-          protocol_version="$(node -p "require('./packages/protocol/package.json').version")"
+          protocol_version="$(node -p "require('./packages/integrations/plugin/package.json').dependencies['@supersolutions/super-protocol']")"
           npm view "@supersolutions/super-protocol@${protocol_version}" version --registry=https://registry.npmjs.org/
       - name: Install locked dependencies
         run: |

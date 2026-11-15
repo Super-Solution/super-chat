@@ -18,7 +18,6 @@ const root = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 
 /** Lower layers know nothing of higher ones. Edit this table when the architecture changes. */
 const LAYERS = {
-  "@supersolutions/super-protocol": 0,
   "@supersolutions/super-chat-core": 0,
   "@supersolutions/super-chat-client": 1,
   "@supersolutions/super-chat-ui-core": 1,
