@@ -4,7 +4,6 @@ Configure each package's npm Trusted Publisher with GitHub organization
 `Super-Solution`, repository `super-chat`, workflow filename `npm-publish.yml`,
 an empty environment, and permission for direct `npm publish`:
 
-- `@supersolutions/super-protocol`
 - `@supersolutions/super-chat-core`
 - `@supersolutions/super-chat-client`
 - `@supersolutions/super-chat-server`
@@ -14,23 +13,30 @@ an empty environment, and permission for direct `npm publish`:
 - `@supersolutions/super-chat-ui`
 - `@supersolutions/super-chat-plugin`
 
-An npm maintainer completes this setup with account 2FA. Existing versions do not
+`@supersolutions/super-protocol` is not released from this repository: it comes from
+`Super-Solution/super-protocol` (its own `npm-publish.yml`) and must be on npm first, because the
+packed packages depend on it. The workflow fails early if the version it packs against is missing.
+`packages/protocol` here is still a development copy; keep it identical to the reference until it is
+replaced by the npm dependency.
+
+An npm maintainer completes this setup with account 2FA. npm only lets you configure a package that
+already exists, so a package that has never been published needs a placeholder version first. Existing versions do not
 need to be republished. Configure near the next intended release: a new trust
 configuration expires if unused for two days.
 
-For a release, commit the same reviewed version in all nine package manifests,
+For a release, commit the same reviewed version in all eight package manifests,
 then manually run **Publish npm packages** on `main` with that exact version.
 Use `latest` for stable versions, or `next` for `X.Y.Z-next.N` versions. The workflow
 does not bump versions. It first checks that every manifest has the requested
 version, the expected name, and is not `private`. It then installs locked
 dependencies, builds once, packs using pnpm to replace `workspace:*` references, and
-publishes in dependency order (protocol, core, client, server, ui-core, router, react,
-ui, plugin) using npm OIDC. It uses GitHub-hosted runners and needs no npm secret or
+publishes in dependency order (core, client, server, ui-core, router, react, ui, plugin)
+using npm OIDC. It uses GitHub-hosted runners and needs no npm secret or
 Actions artifact upload. There are no push/PR publication triggers or new tests.
 
 Already published versions cannot be overwritten. A partial release requires
 inspection before another dispatch; this workflow does not unpublish, move tags,
-or silently skip existing versions. After publication, check all nine registry
+or silently skip existing versions. After publication, check all eight registry
 versions and dist-tags. Keep existing tokens until any other consumers have been
 accounted for and the first OIDC release has succeeded. No paid usage or secret
 changes are authorized by this workflow setup.
