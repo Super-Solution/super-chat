@@ -39,28 +39,44 @@
  * is answerable by reading one place. */
 
 :root {
-  --sc-bg: #ffffff;
-  --sc-surface: #f7f8fa;
-  --sc-surface-2: #eef0f4;
-  --sc-border: #e2e5ea;
-  --sc-text: #14161a;
-  --sc-text-muted: #646b76;
-  --sc-accent: #3a6df0;
+  --sc-bg: #fafafa;
+  --sc-surface: #ffffff;
+  --sc-surface-2: #f2f2f4;
+  --sc-border: #e4e4e7;
+  --sc-text: #111113;
+  --sc-text-muted: #5f5f68;
+  --sc-accent: #6c4af2;
   --sc-accent-contrast: #ffffff;
   --sc-negative-contrast: #ffffff;
-  --sc-positive: #17864b;
-  --sc-negative: #c8341f;
+  --sc-positive: #12805c;
+  --sc-negative: #c2362b;
   --sc-warning: #9a6400;
   --sc-info: #2b6cb0;
   --sc-radius: 12px;
   --sc-radius-sm: 8px;
   --sc-radius-xs: 4px;
-  --sc-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-  --sc-series-1: #3a6df0;
-  --sc-series-2: #17864b;
-  --sc-series-3: #b8860b;
-  --sc-series-4: #8b3fc4;
-  --sc-series-5: #c8341f;
+  --sc-radius-pill: 999px;
+  --sc-line-strong: #8a8a94;
+  --sc-turn: #f5b301;
+  --sc-turn-strong: #7a4f00;
+  --sc-turn-tint: #fff3d1;
+  --sc-turn-line: #b57a00;
+  --sc-on-turn: #111113;
+  --sc-scrim: rgb(17 17 19 / 0.45);
+  --sc-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Inputs to the accent companions resolved below the theme triggers. Tuned so
+     the default accent lands on the published violet-strong and violet-tint. */
+  --sc-strong-shift-r: -18;
+  --sc-strong-shift-g: -18;
+  --sc-strong-shift-b: -18;
+  --sc-tint-share: 11.6%;
+  --sc-tint-base: #ffffff;
+  --sc-series-1: #6c4af2;
+  --sc-series-2: #008f7c;
+  --sc-series-3: #c8590c;
+  --sc-series-4: #2a78d6;
+  --sc-series-5: #b02a7f;
 
   /* Dark palette — private, declared once here and only ever referenced (never
      redeclared) by the two triggers below: the OS-preference media query and
@@ -70,25 +86,32 @@
      preference disagrees) and plain CSS has no mixin to share a value block
      across two unrelated selectors. This is the only place a dark hex literal
      appears in the file. */
-  --sc-dark-bg: #0f1115;
-  --sc-dark-surface: #161920;
-  --sc-dark-surface-2: #1e222b;
-  --sc-dark-border: #2a2f3a;
-  --sc-dark-text: #e7e9ee;
-  --sc-dark-text-muted: #949cab;
-  --sc-dark-accent: #6b9bff;
-  --sc-dark-accent-contrast: #0f1115;
-  --sc-dark-negative-contrast: #0f1115;
-  --sc-dark-positive: #46c07f;
-  --sc-dark-negative: #ff6b57;
+  --sc-dark-bg: #0e0e10;
+  --sc-dark-surface: #17171a;
+  --sc-dark-surface-2: #1d1d21;
+  --sc-dark-border: #2a2a30;
+  --sc-dark-text: #f4f4f5;
+  --sc-dark-text-muted: #a1a1aa;
+  --sc-dark-accent: #a28cff;
+  --sc-dark-accent-contrast: #111113;
+  --sc-dark-negative-contrast: #111113;
+  --sc-dark-positive: #4fd1a1;
+  --sc-dark-negative: #ff7b72;
   --sc-dark-warning: #e0a53a;
   --sc-dark-info: #6b9bff;
-  --sc-dark-series-1: #6b9bff;
-  --sc-dark-series-2: #46c07f;
-  --sc-dark-series-3: #e0a53a;
-  --sc-dark-series-4: #c084fc;
-  --sc-dark-series-5: #ff6b57;
+  --sc-dark-series-1: #9379ff;
+  --sc-dark-series-2: #0f9f8b;
+  --sc-dark-series-3: #e0702c;
+  --sc-dark-series-4: #4f92e6;
+  --sc-dark-series-5: #d65fa5;
   --sc-dark-shadow-overlay: 0 8px 24px rgb(0 0 0 / 0.5);
+  --sc-dark-line-strong: #6b6b75;
+  --sc-dark-turn: #ffc94d;
+  --sc-dark-turn-strong: #ffd57a;
+  --sc-dark-turn-tint: #3a2a05;
+  --sc-dark-turn-line: #ffc94d;
+  --sc-dark-scrim: rgb(0 0 0 / 0.6);
+  --sc-dark-tint-base: #0c0624;
 
   /* spacing scale — theme-independent, declared once here only */
   --sc-sp-2: 2px;
@@ -180,6 +203,18 @@
     --sc-series-4: var(--sc-dark-series-4);
     --sc-series-5: var(--sc-dark-series-5);
     --sc-shadow-overlay: var(--sc-dark-shadow-overlay);
+    color-scheme: dark;
+    --sc-line-strong: var(--sc-dark-line-strong);
+    --sc-turn: var(--sc-dark-turn);
+    --sc-turn-strong: var(--sc-dark-turn-strong);
+    --sc-turn-tint: var(--sc-dark-turn-tint);
+    --sc-turn-line: var(--sc-dark-turn-line);
+    --sc-scrim: var(--sc-dark-scrim);
+    --sc-strong-shift-r: 23;
+    --sc-strong-shift-g: 28;
+    --sc-strong-shift-b: 0;
+    --sc-tint-share: 20%;
+    --sc-tint-base: var(--sc-dark-tint-base);
   }
 }
 
@@ -210,6 +245,18 @@
   --sc-series-4: var(--sc-dark-series-4);
   --sc-series-5: var(--sc-dark-series-5);
   --sc-shadow-overlay: var(--sc-dark-shadow-overlay);
+  color-scheme: dark;
+  --sc-line-strong: var(--sc-dark-line-strong);
+  --sc-turn: var(--sc-dark-turn);
+  --sc-turn-strong: var(--sc-dark-turn-strong);
+  --sc-turn-tint: var(--sc-dark-turn-tint);
+  --sc-turn-line: var(--sc-dark-turn-line);
+  --sc-scrim: var(--sc-dark-scrim);
+  --sc-strong-shift-r: 23;
+  --sc-strong-shift-g: 28;
+  --sc-strong-shift-b: 0;
+  --sc-tint-share: 20%;
+  --sc-tint-base: var(--sc-dark-tint-base);
 }
 
 /* ── primitives ───────────────────────────────────────────────────────────── */
@@ -288,13 +335,19 @@
   align-items: center;
   gap: var(--sc-sp-4);
   padding: var(--sc-sp-2) var(--sc-sp-8);
-  border-radius: 999px;
+  border-radius: var(--sc-radius-pill);
   background: var(--sc-surface-2);
   border: 1px solid var(--sc-border);
   font-size: var(--sc-fs-micro);
   line-height: var(--sc-lh-ui);
   white-space: nowrap;
 }
+/* Tone pills sit on the surface: the status greens and ambers fall under 4.5:1 on
+   the sunken grey. */
+.sc-pill--positive,
+.sc-pill--negative,
+.sc-pill--warning,
+.sc-pill--info { background: var(--sc-surface); }
 .sc-pill--positive { color: var(--sc-positive); border-color: color-mix(in srgb, var(--sc-positive) 35%, transparent); }
 .sc-pill--negative { color: var(--sc-negative); border-color: color-mix(in srgb, var(--sc-negative) 35%, transparent); }
 .sc-pill--warning { color: var(--sc-warning); border-color: color-mix(in srgb, var(--sc-warning) 35%, transparent); }
@@ -314,13 +367,14 @@
   font-size: var(--sc-fs-ui);
   font-weight: 500;
   cursor: pointer;
-  transition: background var(--sc-dur-1) ease, border-color var(--sc-dur-1) ease;
+  transition: background-color var(--sc-dur-1) var(--sc-ease-out), border-color var(--sc-dur-1) var(--sc-ease-out), transform var(--sc-dur-1) var(--sc-ease-out);
 }
 .sc-btn:hover:not(:disabled) { background: var(--sc-surface-2); }
-.sc-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.sc-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .sc-btn--primary { background: var(--sc-accent); border-color: var(--sc-accent); color: var(--sc-accent-contrast); }
-.sc-btn--primary:hover:not(:disabled) { filter: brightness(1.08); background: var(--sc-accent); }
+.sc-btn--primary:hover:not(:disabled) { background: color-mix(in srgb, var(--sc-accent) 88%, var(--sc-text)); filter: none; }
 .sc-btn--danger { background: var(--sc-negative); border-color: var(--sc-negative); color: var(--sc-negative-contrast); }
+.sc-btn--danger:hover:not(:disabled) { background: color-mix(in srgb, var(--sc-negative) 88%, var(--sc-text)); }
 .sc-btn--ghost { background: transparent; }
 .sc-btn--sm { padding: var(--sc-sp-4) var(--sc-sp-8); font-size: var(--sc-fs-meta); }
 
@@ -328,13 +382,14 @@
   width: 100%;
   padding: var(--sc-sp-8) var(--sc-sp-10);
   border-radius: var(--sc-radius-sm);
-  border: 1px solid var(--sc-border);
-  background: var(--sc-bg);
+  border: 1px solid var(--sc-line-strong);
+  background: var(--sc-surface);
   color: var(--sc-text);
+  caret-color: var(--sc-live-accent-strong);
   font: inherit;
   font-size: var(--sc-fs-ui);
 }
-.sc-input:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: -1px; }
+
 .sc-input-group { display: flex; align-items: center; gap: var(--sc-sp-6); }
 .sc-input-group__suffix { color: var(--sc-text-muted); font-size: var(--sc-fs-meta); }
 
@@ -355,8 +410,9 @@
 
 .sc-spinner {
   display: inline-block;
-  width: 11px;
-  height: 11px;
+  box-sizing: border-box;
+  width: 12px;
+  height: 12px;
   margin-right: var(--sc-sp-6);
   border: 2px solid var(--sc-border);
   border-top-color: var(--sc-accent);
@@ -368,7 +424,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .sc-spinner { animation-duration: 2s; }
-  .sc-btn { transition: none; }
   /* A skeleton still has to read as "not real content yet", so it keeps its
      contrast but stops moving. */
   .sc-skeleton__bar,
@@ -401,8 +456,35 @@
      put the host's near-white text on a white card on any dark page. */
   color: var(--sc-text);
   font-family: var(--sc-sans);
+  accent-color: var(--sc-accent);
 }
-.sc-card--interactive { border-color: color-mix(in srgb, var(--sc-accent) 45%, var(--sc-border)); }
+
+/* Whose turn is it. An open question carries the chip and the turn border until
+   it is answered; the chip goes at once and the border drops to line-strong. The
+   chip appears and then holds still: a pulsing chip would read as the agent
+   working, which is the opposite of what it says. */
+.sc-card--interactive { border-color: var(--sc-line-strong); }
+.sc-card--interactive[data-waiting] { border-color: var(--sc-turn-line); }
+.sc-card--interactive.sc-card--danger[data-waiting] { border-color: var(--sc-negative); }
+.sc-turnchip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sc-sp-4);
+  width: fit-content;
+  margin-bottom: var(--sc-sp-8);
+  padding: var(--sc-sp-2) var(--sc-sp-8);
+  border-radius: var(--sc-radius-pill);
+  background: var(--sc-turn);
+  color: var(--sc-on-turn);
+  font-size: var(--sc-fs-micro);
+  font-weight: 600;
+  line-height: 16px;
+}
+.sc-turnchip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+@media (prefers-reduced-motion: no-preference) {
+  .sc-turnchip { animation: sc-rise var(--sc-dur-2) var(--sc-ease-out); }
+  .sc-btn:active:not(:disabled) { transform: translateY(1px); }
+}
 .sc-card--danger { border-color: color-mix(in srgb, var(--sc-negative) 45%, var(--sc-border)); }
 .sc-card--muted { background: transparent; border-style: dashed; }
 .sc-card--error { border-color: color-mix(in srgb, var(--sc-negative) 45%, var(--sc-border)); color: var(--sc-negative); }
@@ -417,7 +499,7 @@
    wait until the card is hovered or focused; on touch they stay visible, since
    there is no hover to reveal them. Space is kept, so nothing shifts. */
 @media (hover: hover) and (pointer: fine) {
-  .sc-card__actions--aux { opacity: 0; transition: opacity var(--sc-dur-1) ease; }
+  .sc-card__actions--aux { opacity: 0; transition: opacity var(--sc-dur-1) var(--sc-ease-out); }
   .sc-card:hover .sc-card__actions--aux, .sc-card:focus-within .sc-card__actions--aux { opacity: 1; }
 }
 .sc-th-btn .sc-mark { display: inline-block; margin-left: var(--sc-sp-4); vertical-align: middle; }
@@ -429,7 +511,7 @@
 .sc-divider { border: none; border-top: 1px solid var(--sc-border); margin: var(--sc-sp-12) 0; }
 
 /* table */
-.sc-table-wrap { overflow-x: auto; }
+.sc-table-wrap { overflow-x: auto; scrollbar-color: var(--sc-line-strong) transparent; }
 .sc-table { width: 100%; border-collapse: collapse; font-size: var(--sc-fs-ui); }
 .sc-table th, .sc-table td { padding: var(--sc-sp-8) var(--sc-sp-10); border-bottom: 1px solid var(--sc-border); }
 .sc-table th { font-weight: 600; font-size: var(--sc-fs-meta); color: var(--sc-text-muted); }
@@ -479,7 +561,7 @@
 .sc-timeline__detail { font-size: var(--sc-fs-meta); margin-top: var(--sc-sp-2); }
 
 /* progress */
-.sc-progress { height: 5px; border-radius: 999px; background: var(--sc-surface-2); overflow: hidden; margin-bottom: var(--sc-sp-12); }
+.sc-progress { height: 5px; border-radius: var(--sc-radius-pill); background: var(--sc-surface-2); overflow: hidden; margin-bottom: var(--sc-sp-12); }
 .sc-progress__bar { height: 100%; background: var(--sc-accent); transition: width var(--sc-dur-2) var(--sc-ease-in-out); }
 .sc-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sc-sp-6); font-size: var(--sc-fs-ui); }
 .sc-step { display: flex; align-items: baseline; gap: var(--sc-sp-8); }
@@ -515,7 +597,7 @@
   display: block;
   object-fit: contain;
   opacity: 0;
-  transition: opacity 160ms cubic-bezier(.16, 1, .3, 1);
+  transition: opacity var(--sc-dur-2) var(--sc-ease-out);
 }
 .sc-media__viewport video { background: var(--sc-text); }
 .sc-media__viewport audio {
@@ -525,7 +607,7 @@
   height: 54px;
   display: block;
   opacity: 0;
-  transition: opacity 160ms cubic-bezier(.16, 1, .3, 1);
+  transition: opacity var(--sc-dur-2) var(--sc-ease-out);
 }
 .sc-media__item--ready :is(img, video, audio) { opacity: 1; }
 .sc-media__decode { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: inherit; }
@@ -607,14 +689,14 @@
 }
 .sc-cite__body { min-width: 0; }
 .sc-cite__head { display: flex; align-items: center; gap: var(--sc-sp-8); flex-wrap: wrap; }
-.sc-cite__head a { color: var(--sc-accent); text-decoration: none; }
+.sc-cite__head a { color: var(--sc-live-accent-strong); text-decoration: none; }
 .sc-cite__head a:hover { text-decoration: underline; }
 .sc-cite__title { font-weight: 500; }
 .sc-cite__meta { font-size: var(--sc-fs-micro); margin-top: var(--sc-sp-2); }
 .sc-cite__snippet {
   margin: var(--sc-sp-6) 0 0;
   padding: var(--sc-sp-6) var(--sc-sp-10);
-  border-left: 2px solid var(--sc-border);
+  border-left: 1px solid var(--sc-border);
   font-size: var(--sc-fs-meta);
   line-height: 1.55;
   color: var(--sc-text-muted);
@@ -667,7 +749,7 @@
 .sc-gauge { display: flex; align-items: baseline; gap: var(--sc-sp-10); margin-bottom: var(--sc-sp-10); }
 .sc-gauge__value { font-size: var(--sc-fs-hero); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; letter-spacing: -0.01em; }
 .sc-gauge__label { font-size: var(--sc-fs-ui); color: var(--sc-text-muted); }
-.sc-gauge__track { position: relative; height: 8px; border-radius: 999px; background: var(--sc-surface-2); overflow: hidden; }
+.sc-gauge__track { position: relative; height: 8px; border-radius: var(--sc-radius-pill); background: var(--sc-surface-2); overflow: hidden; }
 /* Bands stay faint; only the one holding the reading gets full presence. */
 .sc-gauge__band { position: absolute; top: 0; bottom: 0; background: currentColor; opacity: 0.16; }
 .sc-gauge__band--on { opacity: 0.5; }
@@ -702,15 +784,19 @@
   padding: var(--sc-sp-10) var(--sc-sp-12);
   border-radius: var(--sc-radius-sm);
   border: 1px solid var(--sc-border);
-  background: var(--sc-bg);
+  background: var(--sc-surface);
   color: var(--sc-text);
   text-align: left;
   cursor: pointer;
   font: inherit;
+  transition: background-color var(--sc-dur-1) var(--sc-ease-out), border-color var(--sc-dur-1) var(--sc-ease-out);
 }
-.sc-choice:hover:not(:disabled) { border-color: var(--sc-accent); }
-.sc-choice:disabled { opacity: 0.55; cursor: not-allowed; }
-.sc-choice--selected { border-color: var(--sc-accent); background: color-mix(in srgb, var(--sc-accent) 9%, var(--sc-bg)); }
+.sc-choice:hover:not(:disabled) { border-color: var(--sc-line-strong); background: var(--sc-surface-2); }
+.sc-choice:disabled { opacity: 0.45; cursor: not-allowed; }
+.sc-choice--selected { border-color: var(--sc-accent); background: var(--sc-live-accent-tint); }
+.sc-choice--selected:hover:not(:disabled) { border-color: var(--sc-accent); background: var(--sc-live-accent-tint); }
+/* The answer as chosen stays fully legible after the card locks. */
+.sc-choice--selected:disabled { opacity: 1; cursor: default; }
 .sc-choice__img { width: 26px; height: 26px; border-radius: 50%; flex: none; object-fit: cover; }
 .sc-choice__body { display: flex; flex-direction: column; gap: var(--sc-sp-2); flex: 1; min-width: 0; }
 .sc-choice__label { font-size: var(--sc-fs-ui); font-weight: 500; }
@@ -725,7 +811,10 @@
 
 /* ── thread ───────────────────────────────────────────────────────────────── */
 
-.sc-thread { container-type: inline-size; flex: 1; overflow-y: auto; padding: var(--sc-sp-20); scroll-behavior: smooth; font-family: var(--sc-sans); }
+.sc-thread { container-type: inline-size; flex: 1; overflow-y: auto; padding: var(--sc-sp-20); font-family: var(--sc-sans); scrollbar-color: var(--sc-line-strong) transparent; }
+@media (prefers-reduced-motion: no-preference) {
+  .sc-thread { scroll-behavior: smooth; }
+}
 /* Reading size, not UI size: the empty state is the first screen a user meets,
    and it is prose to be read rather than chrome to be scanned. */
 .sc-empty { color: var(--sc-text-muted); text-align: center; padding: var(--sc-sp-48) var(--sc-sp-20); font-size: var(--sc-fs-body); }
@@ -745,7 +834,7 @@
   align-items: center;
   gap: var(--sc-sp-6);
   padding: var(--sc-sp-6) var(--sc-sp-12);
-  border-radius: 999px;
+  border-radius: var(--sc-radius-sm);
   border: 1px solid var(--sc-border);
   background: var(--sc-surface);
   color: var(--sc-text);
@@ -823,9 +912,9 @@
   max-width: min(76%, 620px);
   padding: var(--sc-sp-8) var(--sc-sp-12);
   border-radius: var(--sc-radius) var(--sc-radius) var(--sc-radius-xs) var(--sc-radius);
-  background: var(--sc-surface-2);
-  color: var(--sc-text);
-  border: 1px solid var(--sc-border);
+  background: var(--sc-text);
+  color: var(--sc-bg);
+  border: 1px solid var(--sc-text);
   font-size: var(--sc-fs-body);
   white-space: pre-wrap;
   word-break: break-word;
@@ -856,7 +945,7 @@
   line-height: 1.5;
 }
 .sc-prose pre code { background: none; padding: 0; border-radius: 0; font-size: 1em; }
-.sc-prose a { color: var(--sc-accent); }
+.sc-prose a { color: var(--sc-live-accent-strong); }
 
 /* Document constructs. These arrived with the document previewer: a report is
    the first thing anyone writes that has a table in it, and until the renderer
@@ -866,7 +955,7 @@
   padding: var(--sc-sp-2) 0 var(--sc-sp-2) var(--sc-sp-12);
   /* border-first, like every other level in the kit — a tinted background here
      would compete with cards for the same "this is a surface" signal. */
-  border-left: 2px solid var(--sc-border);
+  border-left: 2px solid var(--sc-line-strong);
   color: var(--sc-text-muted);
 }
 .sc-prose blockquote > :last-child { margin-bottom: 0; }
@@ -934,7 +1023,7 @@
 .sc-tools__icon { font-size: var(--sc-fs-glyph); }
 .sc-tools__summary { font-variant-numeric: tabular-nums; }
 .sc-tools__list { list-style: none; margin: var(--sc-sp-8) 0 0; padding: 0; display: grid; gap: var(--sc-sp-10); }
-.sc-tools__item { padding-left: var(--sc-sp-10); border-left: 2px solid var(--sc-border); }
+.sc-tools__item { padding-left: var(--sc-sp-10); border-left: 1px solid var(--sc-border); }
 .sc-tools__row { display: flex; align-items: center; gap: var(--sc-sp-8); font-size: var(--sc-fs-meta); }
 /* Fixed width so the glyph column stays aligned whether a row shows a glyph or
    a spinner — a list that shifts as calls resolve is hard to read. */
@@ -977,15 +1066,15 @@
   min-height: 40px;
   max-height: 180px;
   padding: var(--sc-sp-10) var(--sc-sp-12);
-  border-radius: var(--sc-radius-sm);
-  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-live-radius-lg);
+  border: 1px solid var(--sc-line-strong);
   background: var(--sc-surface);
   color: var(--sc-text);
+  caret-color: var(--sc-live-accent-strong);
   font: inherit;
   font-size: var(--sc-fs-body);
   resize: none; /* height is driven by the auto-grow handler, not a drag handle */
 }
-.sc-composer__input:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: -1px; }
 
 /* Quoted document spans, staged in the composer. Accent-bordered because a
    quote is the one thing in the composer that came from somewhere else — the
@@ -1000,10 +1089,10 @@
   /* The whole chip is tinted, not one edge: a colored left rule is the
      generated-UI tell, and the source label already says where it came from. */
   border: 1px solid color-mix(in srgb, var(--sc-accent) 35%, var(--sc-border));
-  background: color-mix(in srgb, var(--sc-accent) 5%, var(--sc-surface));
+  background: var(--sc-live-accent-tint);
   font-size: var(--sc-fs-meta);
 }
-.sc-quote__doc { flex: none; color: var(--sc-accent); font-weight: 500; }
+.sc-quote__doc { flex: none; color: var(--sc-live-accent-strong); font-weight: 500; }
 /* One line, clipped: a long quote must never grow the composer, which is the
    same rule the thinking bar's peek follows. */
 .sc-quote__text {
@@ -1074,7 +1163,7 @@
 
 .sc-bar { margin-bottom: var(--sc-sp-10); }
 .sc-bar__head { display: flex; justify-content: space-between; font-size: var(--sc-fs-meta); margin-bottom: var(--sc-sp-4); }
-.sc-bar__track { height: 5px; border-radius: 999px; background: var(--sc-surface-2); overflow: hidden; }
+.sc-bar__track { height: 5px; border-radius: var(--sc-radius-pill); background: var(--sc-surface-2); overflow: hidden; }
 .sc-bar__fill { height: 100%; background: var(--sc-accent); }
 
 
@@ -1136,7 +1225,7 @@
   flex-direction: column;
   max-width: 100%;
   margin-bottom: var(--sc-sp-10);
-  animation: sc-fade-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: sc-fade-in var(--sc-dur-3) var(--sc-ease-out) both;
 }
 @keyframes sc-fade-in { from { opacity: 0; } to { opacity: 1; } }
 
@@ -1166,7 +1255,7 @@
 
 .sc-think__chevron {
   color: var(--sc-text-muted);
-  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform var(--sc-dur-3) var(--sc-ease-out);
   /* the path is an up caret; the collapsed summary points down */
   transform: rotate(180deg);
 }
@@ -1176,7 +1265,7 @@
   display: grid;
   grid-template-rows: 1fr;
   opacity: 1;
-  transition: grid-template-rows 320ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease;
+  transition: grid-template-rows var(--sc-dur-3) var(--sc-ease-out), opacity var(--sc-dur-2) var(--sc-ease-out);
 }
 .sc-think__collapsible--closed { grid-template-rows: 0fr; opacity: 0; pointer-events: none; }
 .sc-think__inner { min-height: 0; overflow: hidden; }
@@ -1187,7 +1276,7 @@
 .sc-think__viewport {
   margin-top: var(--sc-sp-6);
   overflow: hidden;
-  transition: height 360ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: height var(--sc-dur-3) var(--sc-ease-out);
 }
 .sc-think__viewport--scroll { overflow-y: auto; scrollbar-width: none; }
 .sc-think__viewport--scroll::-webkit-scrollbar { display: none; }
@@ -1196,7 +1285,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--sc-sp-4);
-  transition: transform 560ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform var(--sc-dur-3) var(--sc-ease-out);
   will-change: transform;
 }
 
@@ -1213,17 +1302,17 @@
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  animation: sc-fade-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: sc-fade-in var(--sc-dur-3) var(--sc-ease-out) both;
 }
 
 /* ── streaming caret ──────────────────────────────────────────────────── */
 
 .sc-caret {
   display: inline-block;
-  width: 8px;
-  height: 1.05em;
+  width: 2px;
+  height: 1em;
   margin-left: var(--sc-sp-2);
-  background: var(--sc-text);
+  background: var(--sc-accent);
   vertical-align: text-bottom;
   animation: sc-caret-blink 1s step-end infinite;
 }
@@ -1247,7 +1336,7 @@
   gap: 7px;
   height: 30px;
   padding: 0 11px 0 5px;
-  border-radius: 999px;
+  border-radius: var(--sc-radius-pill);
   background: var(--sc-bg);
   border: 1px solid var(--sc-border);
 }
@@ -1529,7 +1618,7 @@
   border-radius: 50%;
   background: currentColor;
   transform: translate(var(--sc-m1)); /* resting shape, see .sc-orb__helixdot */
-  animation: sc-orb-morph 4.8s cubic-bezier(0.4, 0, 0.2, 1) infinite both;
+  animation: sc-orb-morph 4.8s var(--sc-ease-in-out) infinite both;
 }
 @keyframes sc-orb-morph {
   0%, 5% { transform: translate(var(--sc-m1)); }
@@ -1540,7 +1629,7 @@
 }
 .sc-orb__morph[data-variant="M2"],
 .sc-orb__morph[data-variant="M4"] { animation: sc-orb-morph-twist 9.6s linear infinite; }
-.sc-orb__morph[data-variant="M5"] .sc-orb__morphdot { animation: sc-orb-morph-scatter 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite both; }
+.sc-orb__morph[data-variant="M5"] .sc-orb__morphdot { animation: sc-orb-morph-scatter 2.8s var(--sc-ease-in-out) infinite both; }
 @keyframes sc-orb-morph-scatter {
   0%, 12% { transform: translate(var(--sc-m1)); opacity: 1; }
   38%, 62% { transform: translate(var(--sc-m2)); opacity: calc(1 - 0.6 * var(--sc-m-depth, 0)); }
@@ -1558,11 +1647,12 @@
 .sc-code {
   margin: var(--sc-sp-10) 0;
   border-radius: var(--sc-radius);
-  background: var(--sc-bg);
+  background: var(--sc-surface);
   border: 1px solid var(--sc-border);
   overflow: hidden;
 }
 .sc-code__head {
+  background: var(--sc-surface-2);
   display: flex;
   align-items: center;
   gap: var(--sc-sp-8);
@@ -1595,7 +1685,7 @@
   border-radius: var(--sc-radius-sm);
   cursor: pointer;
 }
-.sc-code__copy:hover { color: var(--sc-text); background: var(--sc-surface-2); }
+.sc-code__copy:hover { color: var(--sc-text); background: var(--sc-border); }
 /* only the first action gets pushed right; the rest sit beside it */
 .sc-code__copy + .sc-code__copy { margin-left: 0; }
 
@@ -1606,6 +1696,7 @@
   font-size: var(--sc-fs-meta);
   line-height: 20px;
   overflow-x: auto;
+  scrollbar-color: var(--sc-line-strong) transparent;
 }
 /* the gutter rule, drawn once rather than per row */
 .sc-code__body::before {
@@ -1646,7 +1737,7 @@
   padding: var(--sc-sp-4) var(--sc-sp-8);
   border-radius: var(--sc-radius-sm);
   border: 1px solid var(--sc-border);
-  background: var(--sc-bg);
+  background: var(--sc-surface);
   color: var(--sc-text-muted);
   font: inherit;
   font-size: var(--sc-fs-meta);
@@ -1656,9 +1747,9 @@
 
 /* Inline, the document is a preview: capped so one artifact cannot push the
    rest of the conversation off screen. Opening it removes the cap. */
-.sc-doc__body { max-height: 320px; overflow-y: auto; font-size: var(--sc-fs-body); }
+.sc-doc__body { max-height: 320px; overflow-y: auto; font-size: var(--sc-fs-body); scrollbar-color: var(--sc-line-strong) transparent; }
 .sc-doc--open .sc-doc__body { max-height: none; }
-.sc-doc__body ::selection { background: color-mix(in srgb, var(--sc-accent) 26%, transparent); }
+.sc-doc__body ::selection { background: var(--sc-live-accent-tint); color: var(--sc-text); }
 
 /* Left behind in the flow while the surface is open, so the transcript does
    not jump by the card's height and lose the user's scroll position. */
@@ -1699,7 +1790,7 @@
   position: fixed;
   inset: 0;
   z-index: var(--sc-z-modal);
-  background: color-mix(in srgb, var(--sc-text) 38%, transparent);
+  background: var(--sc-scrim);
 }
 .sc-doc__surface {
   position: fixed;
@@ -1710,8 +1801,9 @@
   transform: translateX(-50%);
   width: min(760px, calc(100% - var(--sc-sp-48)));
   overflow-y: auto;
-  border-radius: var(--sc-radius);
-  background: var(--sc-bg);
+  border-radius: var(--sc-live-radius-lg);
+  border: 1px solid var(--sc-border);
+  background: var(--sc-surface);
   box-shadow: var(--sc-shadow-overlay);
 }
 .sc-doc__surface .sc-doc { margin: 0; border: 0; }
@@ -1742,11 +1834,11 @@
   min-height: 22px;
 }
 .sc-todo__headicon { position: relative; width: 16px; height: 16px; flex: none; color: var(--sc-text-muted); }
-.sc-todo__headlist, .sc-todo__chevron, .sc-todo__headcheck { position: absolute; inset: 0; margin: auto; transition: opacity 140ms ease; }
+.sc-todo__headlist, .sc-todo__chevron, .sc-todo__headcheck { position: absolute; inset: 0; margin: auto; transition: opacity var(--sc-dur-1) var(--sc-ease-out); }
 .sc-todo__headlist, .sc-todo__chevron { width: 13px; height: 13px; }
 /* the solid check reads smaller than an outlined glyph, so render it full size */
 .sc-todo__headcheck { width: 16px; height: 16px; color: var(--sc-positive); }
-.sc-todo__chevron { opacity: 0; transition: opacity 140ms ease, transform 220ms ease; }
+.sc-todo__chevron { opacity: 0; transition: opacity var(--sc-dur-1) var(--sc-ease-out), transform var(--sc-dur-2) var(--sc-ease-out); }
 .sc-todo__head[aria-expanded="false"] .sc-todo__chevron { transform: rotate(-90deg); }
 /* hovering the header swaps whichever status glyph is showing for the chevron */
 .sc-todo__head:hover .sc-todo__headlist,
@@ -1758,7 +1850,7 @@
 
 .sc-roll { display: inline-flex; align-items: baseline; }
 .sc-roll__digit { display: inline-block; overflow: hidden; height: 1em; line-height: 1em; }
-.sc-roll__inner { display: flex; flex-direction: column; transition: transform 350ms cubic-bezier(0.4, 0, 0.2, 1); }
+.sc-roll__inner { display: flex; flex-direction: column; transition: transform var(--sc-dur-3) var(--sc-ease-in-out); }
 .sc-roll__inner span { height: 1em; line-height: 1em; }
 .sc-roll__inner--up { transform: translateY(-1em); }
 
@@ -1766,7 +1858,7 @@
   display: grid;
   grid-template-rows: 1fr;
   opacity: 1;
-  transition: grid-template-rows 280ms ease, opacity 200ms ease;
+  transition: grid-template-rows var(--sc-dur-3) var(--sc-ease-out), opacity var(--sc-dur-2) var(--sc-ease-out);
 }
 .sc-todo__collapsible--closed { grid-template-rows: 0fr; opacity: 0; pointer-events: none; }
 .sc-todo__inner { min-height: 0; overflow: hidden; }
@@ -1777,7 +1869,7 @@
   gap: 9px;
   line-height: 18px;
   color: var(--sc-text-muted);
-  animation: sc-todo-in 360ms ease backwards;
+  animation: sc-todo-in var(--sc-dur-3) var(--sc-ease-out) backwards;
   animation-delay: calc(var(--sc-i, 0) * 50ms);
 }
 @keyframes sc-todo-in {
@@ -1792,7 +1884,7 @@
   height: 16px;
   color: var(--sc-text-muted);
   opacity: 0;
-  transition: opacity 320ms ease;
+  transition: opacity var(--sc-dur-3) var(--sc-ease-out);
 }
 .sc-todo__icon--on { opacity: 1; }
 .sc-todo__icon--strong { color: var(--sc-text); }
@@ -1825,7 +1917,7 @@
   color: transparent;
   -webkit-text-fill-color: transparent;
   opacity: 0;
-  transition: opacity 360ms ease;
+  transition: opacity var(--sc-dur-3) var(--sc-ease-out);
   pointer-events: none;
 }
 .sc-todo__item--active .sc-todo__label::before {
@@ -1849,7 +1941,7 @@
   height: 13px;
   border-radius: 50%;
   color: var(--sc-text);
-  transition: opacity 140ms ease, --sc-todo-pie 400ms ease;
+  transition: opacity var(--sc-dur-1) var(--sc-ease-out), --sc-todo-pie var(--sc-dur-3) var(--sc-ease-out);
 }
 /* dotted outline, matching the pending items' circles */
 .sc-todo__piering { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; color: var(--sc-text-muted); }
@@ -1941,7 +2033,7 @@
   position: relative;
   flex: 1;
   height: 3px;
-  border-radius: 999px;
+  border-radius: var(--sc-radius-pill);
   background: var(--sc-surface-2);
   overflow: hidden;
 }
@@ -1981,7 +2073,7 @@
   display: grid;
   grid-template-rows: 1fr;
   opacity: 1;
-  transition: grid-template-rows var(--sc-dur-3) var(--sc-ease-in-out), opacity 200ms ease;
+  transition: grid-template-rows var(--sc-dur-3) var(--sc-ease-in-out), opacity var(--sc-dur-2) var(--sc-ease-out);
 }
 .sc-plan__collapsible--closed { grid-template-rows: 0fr; opacity: 0; pointer-events: none; }
 .sc-plan__inner { min-height: 0; overflow: hidden; }
@@ -2008,10 +2100,10 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  border: 1.5px solid var(--sc-border);
-  background: var(--sc-bg);
+  border: 1.5px solid var(--sc-line-strong);
+  background: var(--sc-surface);
   color: var(--sc-accent-contrast);
-  transition: background-color 260ms ease, border-color 260ms ease;
+  transition: background-color var(--sc-dur-3) var(--sc-ease-out), border-color var(--sc-dur-3) var(--sc-ease-out);
 }
 .sc-plan__step[data-status="active"] .sc-plan__node { border-color: var(--sc-accent); }
 .sc-plan__step[data-status="done"] .sc-plan__node { background: var(--sc-accent); border-color: var(--sc-accent); }
@@ -2068,7 +2160,7 @@
   width: 2px;
   min-height: var(--sc-sp-12);
   margin: var(--sc-sp-4) 0;
-  border-radius: 999px;
+  border-radius: var(--sc-radius-pill);
   background: var(--sc-border);
   overflow: hidden;
 }
@@ -2095,7 +2187,7 @@
   right: 0;
   top: -40%;
   height: 40%;
-  border-radius: 999px;
+  border-radius: var(--sc-radius-pill);
   background: linear-gradient(to bottom, transparent, var(--sc-accent), transparent);
   opacity: 0;
 }
@@ -2126,7 +2218,7 @@
   font-size: var(--sc-fs-ui);
   line-height: var(--sc-lh-ui);
   color: var(--sc-text-muted);
-  transition: color 320ms ease;
+  transition: color var(--sc-dur-3) var(--sc-ease-out);
 }
 .sc-plan__step[data-status="active"] .sc-plan__label { color: var(--sc-text); font-weight: 500; }
 .sc-plan__step[data-status="failed"] .sc-plan__label { color: var(--sc-negative); }
@@ -2160,11 +2252,11 @@
 
 /* ── data table (bordered grid variant) ───────────────────────────────── */
 
-.sc-table--grid { border-collapse: separate; border-spacing: 0; border: 1px solid var(--sc-border); border-radius: var(--sc-radius); overflow: hidden; background: var(--sc-bg); }
+.sc-table--grid { border-collapse: separate; border-spacing: 0; border: 1px solid var(--sc-border); border-radius: var(--sc-radius); overflow: hidden; background: var(--sc-surface); }
 .sc-table--grid th, .sc-table--grid td { border-bottom: 1px solid var(--sc-border); border-right: 1px solid var(--sc-border); padding: 9px 12px; }
 .sc-table--grid th:last-child, .sc-table--grid td:last-child { border-right: none; }
 .sc-table--grid tbody tr:last-child td { border-bottom: none; }
-.sc-table--grid thead th { background: var(--sc-surface); }
+.sc-table--grid thead th { background: var(--sc-surface-2); }
 
 /* ── agent input ──────────────────────────────────────────────────────── */
 
@@ -2185,11 +2277,11 @@
   gap: var(--sc-sp-6);
   max-width: 220px;
   padding: 4px 6px 4px 9px;
-  border-radius: 999px;
+  border-radius: var(--sc-radius-sm);
   background: var(--sc-surface-2);
   border: 1px solid var(--sc-border);
   font-size: var(--sc-fs-meta);
-  animation: sc-fade-in 200ms ease both;
+  animation: sc-fade-in var(--sc-dur-2) var(--sc-ease-out) both;
 }
 .sc-ai__chip-icon { display: inline-flex; color: var(--sc-text-muted); flex: none; }
 .sc-ai__chip-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2197,7 +2289,7 @@
   display: inline-flex;
   padding: var(--sc-sp-2);
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--sc-radius-xs);
   background: none;
   color: var(--sc-text-muted);
   cursor: pointer;
@@ -2207,10 +2299,10 @@
 
 .sc-ai__frame {
   position: relative;
-  border: 1px solid var(--sc-border);
-  border-radius: var(--sc-radius);
+  border: 1px solid var(--sc-line-strong);
+  border-radius: var(--sc-live-radius-lg);
   background: var(--sc-surface);
-  transition: border-color 140ms ease;
+  transition: border-color var(--sc-dur-1) var(--sc-ease-out);
 }
 .sc-ai__frame:focus-within { border-color: color-mix(in srgb, var(--sc-accent) 55%, var(--sc-border)); }
 
@@ -2222,9 +2314,11 @@
   font-size: var(--sc-fs-body);
   line-height: 1.5;
   color: var(--sc-text);
+  caret-color: var(--sc-live-accent-strong);
   outline: none;
   white-space: pre-wrap;
   word-break: break-word;
+  scrollbar-color: var(--sc-line-strong) transparent;
 }
 .sc-ai__editor[data-empty]::before {
   content: attr(data-placeholder);
@@ -2239,10 +2333,10 @@
   gap: var(--sc-sp-2);
   margin: 0 2px 0 1px;
   padding: 1px 3px 1px 7px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--sc-accent) 14%, transparent);
+  border-radius: var(--sc-radius-xs);
+  background: var(--sc-live-accent-tint);
   border: 1px solid color-mix(in srgb, var(--sc-accent) 38%, transparent);
-  color: var(--sc-accent);
+  color: var(--sc-live-accent-strong);
   font-size: var(--sc-fs-meta);
   vertical-align: baseline;
   user-select: none;
@@ -2253,7 +2347,7 @@
   display: inline-flex;
   padding: 1px;
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--sc-radius-xs);
   background: none;
   color: inherit;
   opacity: 0.65;
@@ -2269,11 +2363,13 @@
   z-index: 20;
   max-height: 240px;
   overflow-y: auto;
-  padding: var(--sc-sp-4);
-  border-radius: var(--sc-radius);
+  padding: var(--sc-sp-8);
+  border-radius: var(--sc-live-radius-lg);
   border: 1px solid var(--sc-border);
-  background: var(--sc-bg);
+  background: var(--sc-surface);
   box-shadow: var(--sc-shadow-overlay);
+  scrollbar-color: var(--sc-line-strong) transparent;
+  transform-origin: bottom left;
 }
 .sc-ai__paletteitem {
   display: flex;
@@ -2293,7 +2389,7 @@
 .sc-ai__palettename { font-size: var(--sc-fs-ui); font-weight: 500; }
 .sc-ai__palettedesc { font-size: var(--sc-fs-micro); color: var(--sc-text-muted); }
 
-.sc-ai__bar { display: flex; align-items: center; gap: var(--sc-sp-8); padding: var(--sc-sp-6) var(--sc-sp-8) var(--sc-sp-8) var(--sc-sp-10); }
+.sc-ai__bar { display: flex; align-items: center; gap: var(--sc-sp-8); padding: var(--sc-sp-6) var(--sc-sp-8) var(--sc-sp-8); }
 .sc-ai__left, .sc-ai__right { display: flex; align-items: center; gap: var(--sc-sp-6); }
 .sc-ai__right { margin-left: auto; }
 
@@ -2304,13 +2400,14 @@
   width: 28px;
   height: 28px;
   border: 1px solid var(--sc-border);
-  border-radius: 50%;
-  background: var(--sc-bg);
+  border-radius: var(--sc-radius-sm);
+  background: transparent;
   color: var(--sc-text-muted);
   cursor: pointer;
+  transition: background-color var(--sc-dur-1) var(--sc-ease-out), color var(--sc-dur-1) var(--sc-ease-out);
 }
 .sc-ai__icon:hover:not(:disabled) { color: var(--sc-text); background: var(--sc-surface-2); }
-.sc-ai__icon:disabled { opacity: 0.5; cursor: not-allowed; }
+.sc-ai__icon:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .sc-ai__menuwrap { position: relative; }
 .sc-ai__menu {
@@ -2319,12 +2416,18 @@
   bottom: calc(100% + 6px);
   z-index: 20;
   min-width: 190px;
-  padding: var(--sc-sp-4);
-  border-radius: var(--sc-radius);
+  padding: var(--sc-sp-8);
+  border-radius: var(--sc-live-radius-lg);
   border: 1px solid var(--sc-border);
-  background: var(--sc-bg);
+  background: var(--sc-surface);
   box-shadow: var(--sc-shadow-overlay);
-  animation: sc-fade-in 120ms ease both;
+  transform-origin: bottom left;
+}
+@keyframes sc-menu-in { from { opacity: 0; transform: scale(0.98); } }
+@media (prefers-reduced-motion: no-preference) {
+  .sc-ai__menu,
+  .sc-ai__palette,
+  .sc-suggest { animation: sc-menu-in var(--sc-dur-2) var(--sc-ease-out); }
 }
 .sc-ai__menu--wide { min-width: 280px; }
 .sc-ai__menuitem {
@@ -2350,10 +2453,10 @@
   left: calc(100% + 4px);
   bottom: 0;
   min-width: 170px;
-  padding: var(--sc-sp-4);
-  border-radius: var(--sc-radius);
+  padding: var(--sc-sp-8);
+  border-radius: var(--sc-live-radius-lg);
   border: 1px solid var(--sc-border);
-  background: var(--sc-bg);
+  background: var(--sc-surface);
   box-shadow: var(--sc-shadow-overlay);
 }
 
@@ -2363,8 +2466,8 @@
   gap: var(--sc-sp-6);
   padding: 5px 10px;
   border: 1px solid var(--sc-border);
-  border-radius: 999px;
-  background: var(--sc-bg);
+  border-radius: var(--sc-radius-sm);
+  background: transparent;
   color: var(--sc-text-muted);
   font: inherit;
   font-size: var(--sc-fs-meta);
@@ -2388,7 +2491,7 @@
 .sc-ai__modelitem:hover { background: var(--sc-surface-2); }
 .sc-ai__modelhead { display: flex; align-items: center; gap: var(--sc-sp-6); }
 .sc-ai__modelname { font-size: var(--sc-fs-ui); font-weight: 500; }
-.sc-ai__modelcheck { margin-left: auto; color: var(--sc-accent); display: inline-flex; }
+.sc-ai__modelcheck { margin-left: auto; color: var(--sc-live-accent-strong); display: inline-flex; }
 .sc-ai__modeldesc { font-size: var(--sc-fs-micro); color: var(--sc-text-muted); line-height: 1.4; }
 .sc-ai__modelctx { font-size: var(--sc-fs-micro); color: var(--sc-text-muted); font-variant-numeric: tabular-nums; }
 
@@ -2398,16 +2501,16 @@
   gap: 5px;
   padding: 5px 10px;
   border: 1px solid var(--sc-border);
-  border-radius: 999px;
-  background: var(--sc-bg);
+  border-radius: var(--sc-radius-sm);
+  background: transparent;
   color: var(--sc-text-muted);
   font: inherit;
   font-size: var(--sc-fs-meta);
   cursor: pointer;
-  animation: sc-fade-in 160ms ease both;
+  animation: sc-fade-in var(--sc-dur-2) var(--sc-ease-out) both;
 }
 .sc-ai__enhance:hover { color: var(--sc-text); background: var(--sc-surface-2); }
-.sc-ai__enhance--on { color: var(--sc-accent); border-color: color-mix(in srgb, var(--sc-accent) 45%, var(--sc-border)); }
+.sc-ai__enhance--on { color: var(--sc-live-accent-strong); border-color: color-mix(in srgb, var(--sc-accent) 45%, var(--sc-border)); background: var(--sc-live-accent-tint); }
 
 .sc-ai__send {
   display: inline-flex;
@@ -2416,15 +2519,16 @@
   width: 30px;
   height: 30px;
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--sc-radius-sm);
   background: var(--sc-accent);
   color: var(--sc-accent-contrast);
   cursor: pointer;
-  transition: opacity 120ms ease, filter 120ms ease;
+  transition: opacity var(--sc-dur-1) var(--sc-ease-out), background-color var(--sc-dur-1) var(--sc-ease-out);
 }
-.sc-ai__send:hover:not(:disabled) { filter: brightness(1.08); }
-.sc-ai__send:disabled { opacity: 0.35; cursor: not-allowed; }
-.sc-ai__send--stop { background: var(--sc-text); color: var(--sc-bg); }
+.sc-ai__send:hover:not(:disabled) { background: color-mix(in srgb, var(--sc-accent) 88%, var(--sc-text)); }
+.sc-ai__send:disabled { opacity: 0.45; cursor: not-allowed; }
+.sc-ai__send--stop,
+.sc-ai__send--stop:hover:not(:disabled) { background: var(--sc-text); color: var(--sc-bg); }
 
 /* ── reduced motion ───────────────────────────────────────────────────────
    Every animation above is decorative: it conveys "in progress", which the
@@ -2501,7 +2605,7 @@
 .sc-chips { display: flex; flex-wrap: wrap; gap: var(--sc-sp-4); }
 .sc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sc-sp-4); font-size: var(--sc-fs-meta); }
 .sc-note { padding: var(--sc-sp-8) var(--sc-sp-12); border-radius: var(--sc-radius-sm); font-size: var(--sc-fs-meta); margin-bottom: var(--sc-sp-6); }
-.sc-note--warning { background: color-mix(in srgb, var(--sc-warning) 14%, transparent); color: var(--sc-warning); }
+.sc-note--warning { background: color-mix(in srgb, var(--sc-warning) 12%, var(--sc-surface)); border: 1px solid color-mix(in srgb, var(--sc-warning) 35%, var(--sc-border)); color: var(--sc-text); }
 
 /* ── composer accessories ─────────────────────────────────────────────────── */
 
@@ -2517,7 +2621,7 @@
 .sc-composer__model {
   padding: var(--sc-sp-4) var(--sc-sp-8);
   border-radius: var(--sc-radius-sm);
-  border: 1px solid var(--sc-border);
+  border: 1px solid var(--sc-line-strong);
   background: transparent;
   color: var(--sc-text-muted);
   font-family: inherit;
@@ -2529,7 +2633,7 @@
    carry it visually, so the toggle does not depend on colour alone. */
 .sc-toggle {
   padding: var(--sc-sp-4) var(--sc-sp-10);
-  border-radius: 999px;
+  border-radius: var(--sc-radius-sm);
   border: 1px solid var(--sc-border);
   background: transparent;
   color: var(--sc-text-muted);
@@ -2539,7 +2643,8 @@
 }
 .sc-toggle--on {
   border-color: var(--sc-accent);
-  color: var(--sc-accent);
+  background: var(--sc-live-accent-tint);
+  color: var(--sc-live-accent-strong);
   font-weight: 500;
 }
 
@@ -2581,11 +2686,13 @@
   overflow-y: auto;
   list-style: none;
   margin: 0;
-  padding: var(--sc-sp-4);
-  border-radius: var(--sc-radius);
+  padding: var(--sc-sp-8);
+  border-radius: var(--sc-live-radius-lg);
   border: 1px solid var(--sc-border);
-  background: var(--sc-bg);
+  background: var(--sc-surface);
   box-shadow: var(--sc-shadow-overlay);
+  scrollbar-color: var(--sc-line-strong) transparent;
+  transform-origin: bottom left;
   z-index: var(--sc-z-menu);
 }
 .sc-suggest__item {
@@ -2616,6 +2723,7 @@
   padding: var(--sc-sp-2) var(--sc-sp-8);
   border-radius: var(--sc-radius-sm);
   background: var(--sc-bg);
+  color: var(--sc-text);
   border: 1px solid var(--sc-border);
   font-size: var(--sc-fs-micro);
 }
@@ -2639,7 +2747,7 @@
 }
 .sc-toast {
   padding: var(--sc-sp-8) var(--sc-sp-16);
-  border-radius: var(--sc-radius);
+  border-radius: var(--sc-live-radius-lg);
   border: 1px solid var(--sc-border);
   background: var(--sc-surface);
   color: var(--sc-text);
@@ -2657,7 +2765,7 @@
 .sc-connbanner {
   padding: var(--sc-sp-8) var(--sc-sp-16);
   background: color-mix(in srgb, var(--sc-warning) 14%, var(--sc-bg));
-  color: var(--sc-warning);
+  color: var(--sc-text);
   border-bottom: 1px solid color-mix(in srgb, var(--sc-warning) 35%, var(--sc-border));
   font-size: var(--sc-fs-meta);
   text-align: center;
@@ -2682,20 +2790,25 @@
 .sc-surface {
   container-type: inline-size;
   margin: var(--sc-sp-12) 0;
-  border-radius: var(--sc-radius);
+  border-radius: var(--sc-live-radius-lg);
   border: 1px solid var(--sc-border);
   background: var(--sc-surface);
   color: var(--sc-text);
   font-family: var(--sc-sans);
   font-size: var(--sc-fs-ui);
+  accent-color: var(--sc-accent);
 }
 .sc-surface:focus { outline: none; }
-.sc-surface:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; }
 .sc-surface__body { display: grid; gap: var(--sc-sp-12); padding: var(--sc-sp-16); min-width: 0; }
 .sc-surface__title { font-size: var(--sc-fs-body); font-weight: 600; line-height: var(--sc-lh-tight); }
 .sc-surface__status { min-height: 1lh; font-size: var(--sc-fs-meta); color: var(--sc-text-muted); }
 .sc-surface__status:empty { display: none; }
-.sc-surface .sc-card { margin: 0; background: var(--sc-bg); }
+/* No card inside a card: a display card here is a well. A question keeps its
+   surface and its border, because the border is what says it is waiting. */
+.sc-surface .sc-card { margin: 0; background: var(--sc-surface-2); border-color: transparent; }
+.sc-surface .sc-card--interactive { background: var(--sc-surface); border-color: var(--sc-line-strong); }
+.sc-surface .sc-card--interactive[data-waiting] { border-color: var(--sc-turn-line); }
+.sc-surface .sc-card--interactive.sc-card--danger[data-waiting] { border-color: var(--sc-negative); }
 
 .sc-surface-stack { display: flex; flex-direction: column; min-width: 0; }
 .sc-surface-stack--row { flex-direction: row; align-items: flex-end; }
@@ -2731,7 +2844,7 @@
 .sc-surface-text--caption { font-size: var(--sc-fs-meta); color: var(--sc-text-muted); }
 .sc-surface-text--label { font-size: var(--sc-fs-micro); font-weight: 500; color: var(--sc-text-muted); }
 .sc-surface-text--code { font-family: var(--sc-mono); font-size: var(--sc-fs-meta); }
-.sc-surface-link { color: var(--sc-accent); overflow-wrap: anywhere; }
+.sc-surface-link { color: var(--sc-live-accent-strong); overflow-wrap: anywhere; }
 .sc-surface-divider { width: 100%; margin: 0; border: 0; border-top: 1px solid var(--sc-border); }
 .sc-surface-figure { margin: 0; display: grid; gap: var(--sc-sp-6); }
 .sc-surface-figure img { display: block; max-width: 100%; height: auto; border-radius: var(--sc-radius-sm); }
@@ -2755,32 +2868,39 @@
 .sc-surface-slider__head { display: flex; justify-content: space-between; gap: var(--sc-sp-8); }
 .sc-surface-slider__value { font-size: var(--sc-fs-meta); font-variant-numeric: tabular-nums; }
 .sc-surface-slider { width: 100%; margin: 0; accent-color: var(--sc-accent); }
-.sc-surface-slider:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; }
 .sc-surface-toggle { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: var(--sc-sp-8); }
 .sc-surface-toggle__input { width: 16px; height: 16px; margin: 0; accent-color: var(--sc-accent); }
-.sc-surface-toggle__input:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; }
 .sc-surface-toggle__help { grid-column: 2; }
 .sc-surface-button { justify-content: center; }
-.sc-surface-button:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; }
 
 .sc-surface-tabs { display: grid; gap: var(--sc-sp-12); min-width: 0; }
-.sc-surface-tabs__list { display: flex; gap: var(--sc-sp-4); overflow-x: auto; border-bottom: 1px solid var(--sc-border); }
+/* A segmented well. The 4px of padding is also the room the focus ring needs
+   inside a scrolling list, and it nests the 8px tabs in the 12px well. */
+.sc-surface-tabs__list {
+  display: flex;
+  gap: var(--sc-sp-4);
+  width: fit-content;
+  max-width: 100%;
+  padding: var(--sc-sp-4);
+  overflow-x: auto;
+  border-radius: var(--sc-radius);
+  background: var(--sc-surface-2);
+  scrollbar-color: var(--sc-line-strong) transparent;
+}
 .sc-surface-tabs__tab {
   flex: none;
-  margin-bottom: -1px;
-  padding: var(--sc-sp-8) var(--sc-sp-12);
-  border: 0;
-  border-bottom: 2px solid transparent;
+  padding: var(--sc-sp-6) var(--sc-sp-12);
+  border: 1px solid transparent;
+  border-radius: var(--sc-radius-sm);
   background: none;
   color: var(--sc-text-muted);
   font: inherit;
   cursor: pointer;
-  transition: color var(--sc-dur-1) ease, border-color var(--sc-dur-1) ease;
+  transition: color var(--sc-dur-1) var(--sc-ease-out), background-color var(--sc-dur-1) var(--sc-ease-out), border-color var(--sc-dur-1) var(--sc-ease-out);
 }
-.sc-surface-tabs__tab--on { border-bottom-color: var(--sc-accent); color: var(--sc-text); font-weight: 500; }
-.sc-surface-tabs__tab:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: -2px; }
+.sc-surface-tabs__tab:hover { color: var(--sc-text); }
+.sc-surface-tabs__tab--on { border-color: var(--sc-border); background: var(--sc-surface); color: var(--sc-text); font-weight: 500; }
 .sc-surface-tabs__panel { min-width: 0; }
-.sc-surface-tabs__panel:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; }
 
 .sc-surface-fallback {
   display: grid;
@@ -2791,8 +2911,11 @@
   font-size: var(--sc-fs-meta);
 }
 .sc-surface-fallback__title { color: var(--sc-warning); font-weight: 500; }
-.sc-surface-pending { height: 32px; border-radius: var(--sc-radius-sm); background: var(--sc-surface-2); animation: sc-surface-pulse 1.2s ease-in-out infinite; }
+.sc-surface-pending { height: 32px; border-radius: var(--sc-radius-sm); background: var(--sc-surface-2); }
 @keyframes sc-surface-pulse { 50% { opacity: 0.5; } }
+@media (prefers-reduced-motion: no-preference) {
+  .sc-surface-pending { animation: sc-surface-pulse 1.2s ease-in-out infinite; }
+}
 
 .sc-surface-reference {
   display: inline-flex;
@@ -2813,10 +2936,110 @@
 }
 .sc-surface-event__label { font-weight: 500; }
 
+/* Movement that started life outside the opt-in blocks. Colour and opacity keep
+   their transitions under reduced motion; only travel stops. */
 @media (prefers-reduced-motion: reduce) {
-  .sc-surface-pending { animation: none; }
-  .sc-surface-tabs__tab { transition: none; }
+  .sc-msg__text--paused::after,
+  .sc-toast { animation: none; }
+  .sc-think__chevron,
+  .sc-todo__chevron { transition: none; }
+  /* Matched to the selectors that start these loops, which would otherwise outrank
+     the plan's own reduced-motion rules. */
+  .sc-plan__step[data-status="active"] .sc-plan__halo,
+  .sc-plan__step[data-status="active"] .sc-plan__node::after,
+  .sc-plan__step[data-status="active"] .sc-plan__spine::after { animation: none; }
 }
+
+/* ── browser surfaces ─────────────────────────────────────────────────────
+   The parts the browser would otherwise draw for us: focus, selection and the
+   accent companions they read. */
+
+/* Accent companions and the overlay radius.
+
+   --sc-accent-strong, --sc-accent-tint and --sc-radius-lg are public: set any of
+   them and that value wins. Left unset they follow --sc-accent and --sc-radius,
+   so a host that themes only its accent does not get violet focus rings and links
+   on a teal product. They are resolved on the kit's own roots rather than on
+   :root because a custom property computes where it is declared: resolved only on
+   :root, an accent set on a wrapper element would never reach them.
+
+   The --sc-live-* names are private. Read the public names above. */
+:where(:root, .sc-thread, .sc-threadwrap, .sc-msg, .sc-card, .sc-surface, .sc-ai, .sc-composer,
+  .sc-panel, .sc-plan, .sc-todo, .sc-code, .sc-toasts, .sc-doc__surface, .sc-btn, .sc-input,
+  .sc-choice, .sc-toggle) {
+  --sc-live-accent-strong: var(--sc-accent-strong, var(--sc-accent));
+  --sc-live-accent-tint: var(--sc-accent-tint, color-mix(in srgb, var(--sc-accent) var(--sc-tint-share), var(--sc-tint-base)));
+  --sc-live-radius-lg: var(--sc-radius-lg, calc(var(--sc-radius) + 4px));
+}
+@supports (color: rgb(from red r g b)) {
+  :where(:root, .sc-thread, .sc-threadwrap, .sc-msg, .sc-card, .sc-surface, .sc-ai, .sc-composer,
+    .sc-panel, .sc-plan, .sc-todo, .sc-code, .sc-toasts, .sc-doc__surface, .sc-btn, .sc-input,
+    .sc-choice, .sc-toggle) {
+    --sc-live-accent-strong: var(--sc-accent-strong, rgb(from var(--sc-accent) calc(r + var(--sc-strong-shift-r)) calc(g + var(--sc-strong-shift-g)) calc(b + var(--sc-strong-shift-b))));
+  }
+}
+
+/* One focus ring for every control in the kit. :focus-visible only, so a mouse
+   press does not paint it, and the radius is never touched: the ring follows the
+   corner the control already has. */
+.sc-btn:focus-visible,
+.sc-input:focus-visible,
+.sc-choice:focus-visible,
+.sc-composer__input:focus-visible,
+.sc-toggle:focus-visible,
+.sc-th-btn:focus-visible,
+.sc-jump:focus-visible,
+.sc-think__head:focus-visible,
+.sc-tools__head:focus-visible,
+.sc-quote__remove:focus-visible,
+.sc-code__copy:focus-visible,
+.sc-doc__expand:focus-visible,
+.sc-doc__quotedismiss:focus-visible,
+.sc-todo__head:focus-visible,
+.sc-plan__head:focus-visible,
+.sc-attachment__remove:focus-visible,
+.sc-composer__model:focus-visible,
+.sc-suggest__item:focus-visible,
+.sc-ai__chip-x:focus-visible,
+.sc-ai__pill-x:focus-visible,
+.sc-ai__paletteitem:focus-visible,
+.sc-ai__icon:focus-visible,
+.sc-ai__menuitem:focus-visible,
+.sc-ai__model:focus-visible,
+.sc-ai__modelitem:focus-visible,
+.sc-ai__enhance:focus-visible,
+.sc-ai__send:focus-visible,
+.sc-surface:focus-visible,
+.sc-surface-link:focus-visible,
+.sc-surface-slider:focus-visible,
+.sc-surface-toggle__input:focus-visible,
+.sc-surface-tabs__tab:focus-visible,
+.sc-surface-tabs__panel:focus-visible,
+.sc-card a:focus-visible,
+.sc-card input[type="checkbox"]:focus-visible,
+.sc-prose a:focus-visible {
+  outline: 2px solid var(--sc-live-accent-strong);
+  outline-offset: 2px;
+}
+/* Its own rule: a browser without :has() drops a whole selector list, and would
+   lose every ring above along with this one. */
+.sc-ai__frame:has(.sc-ai__editor:focus-visible) {
+  outline: 2px solid var(--sc-live-accent-strong);
+  outline-offset: 2px;
+}
+
+.sc-thread ::selection,
+.sc-card ::selection,
+.sc-surface ::selection,
+.sc-ai ::selection,
+.sc-composer ::selection { background: var(--sc-live-accent-tint); color: var(--sc-text); }
+
+/* Controls on the slab take their colour from it. Without this the ghost edit
+   button paints ink on ink, and the violet ring falls under 3:1 against the fill. */
+.sc-bubble .sc-btn--ghost { color: inherit; border-color: color-mix(in srgb, var(--sc-bg) 32%, transparent); }
+.sc-bubble .sc-btn--ghost:hover:not(:disabled) { background: color-mix(in srgb, var(--sc-bg) 16%, transparent); }
+.sc-bubble .sc-btn:focus-visible { outline-color: var(--sc-bg); }
+.sc-bubble ::selection { background: var(--sc-bg); color: var(--sc-text); }
 
 /* ── device: touch ────────────────────────────────────────────────────────
    44px of hit area, not a 44px button. Inflating .sc-ai__icon to 44 would
@@ -2828,11 +3051,13 @@
   /* Surface controls are spaced for a finger outright: they sit in open layout,
      not a dense bar, so there is room to be the size they need to be. */
   .sc-surface-button,
-  .sc-surface-tabs__tab,
-  .sc-surface .sc-input { min-height: 44px; }
-  .sc-surface-toggle { min-height: 44px; }
+  .sc-surface-tabs__tab { min-height: 44px; }
+  .sc-surface-toggle { position: relative; min-height: 44px; }
   .sc-surface-toggle__input { width: 24px; height: 24px; }
+  /* The box stays 24px; the label's hit area covers the whole row. */
+  .sc-surface-toggle__label::after { content: ""; position: absolute; inset: 0; }
   .sc-surface-slider { height: 44px; }
+  .sc-surface-link { display: inline-flex; align-items: center; min-height: 44px; }
 }
 
 @media (pointer: coarse) {
@@ -2845,6 +3070,15 @@
   .sc-code__copy,
   .sc-quote__remove,
   .sc-doc__quotedismiss,
+  .sc-doc__expand,
+  .sc-attachment__remove,
+  .sc-composer__model,
+  .sc-toggle,
+  .sc-th-btn,
+  .sc-think__head--clickable,
+  .sc-tools__head,
+  .sc-todo__head,
+  .sc-plan__head,
   .sc-jump { position: relative; }
 
   .sc-ai__icon::after,
@@ -2856,6 +3090,15 @@
   .sc-code__copy::after,
   .sc-quote__remove::after,
   .sc-doc__quotedismiss::after,
+  .sc-doc__expand::after,
+  .sc-attachment__remove::after,
+  .sc-composer__model::after,
+  .sc-toggle::after,
+  .sc-th-btn::after,
+  .sc-think__head--clickable::after,
+  .sc-tools__head::after,
+  .sc-todo__head::after,
+  .sc-plan__head::after,
   .sc-jump::after {
     content: "";
     position: absolute;
@@ -2875,7 +3118,15 @@
   /* Menu rows are already wide; they only need height. */
   .sc-ai__menuitem,
   .sc-ai__modelitem,
-  .sc-ai__paletteitem { min-height: 44px; }
+  .sc-ai__paletteitem,
+  .sc-suggest__item { min-height: 44px; }
+
+  .sc-btn, .sc-input, .sc-choice { min-height: 44px; }
+  .sc-btn { justify-content: center; }
+  .sc-hunk__head { min-height: 44px; }
+  .sc-card input[type="checkbox"] { width: 24px; height: 24px; }
+  /* A boolean field's label wraps its box, so the row is the target. */
+  .sc-field:has(> input[type="checkbox"]) { min-height: 44px; align-content: center; }
 }
 
 /* ── device: iOS focus zoom ───────────────────────────────────────────────
@@ -2888,7 +3139,7 @@
    16px is not a design size and gets no token: it is the number Safari stops
    at, and naming it would imply it is ours to tune. */
 @media (pointer: coarse) {
-  .sc-surface .sc-input,
+  .sc-input,
   .sc-ai__editor,
   .sc-composer__input { font-size: 16px; }
 }
@@ -2942,7 +3193,7 @@
     right: 0;
     width: auto;
     transform: none;
-    border-radius: var(--sc-radius) var(--sc-radius) 0 0;
+    border-radius: var(--sc-live-radius-lg) var(--sc-live-radius-lg) 0 0;
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
