@@ -259,6 +259,7 @@ const FALLBACK: DemoScript["steps"] = [
 const approveSpend: ToolDefinition = {
   name: "approveSpend",
   side: "confirm",
+  confirmation: "tool",
   description: "Record approval of the spend currently in view.",
   inputSchema: {
     type: "object",

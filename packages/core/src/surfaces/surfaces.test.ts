@@ -509,6 +509,7 @@ describe("action authority", () => {
     const confirming: ToolDefinition = {
       ...tool("pay"),
       side: "confirm",
+      confirmation: "tool",
       async execute(_input, c) {
         const answer = (await c.requestCard?.({ kind: "confirm", title: "Pay?", summary: [{ label: "a", value: 1 }] })) as { cancelled?: boolean };
         return answer.cancelled ? { output: { paid: false }, failure: "denied" as const } : { output: { paid: true } };
@@ -518,6 +519,47 @@ describe("action authority", () => {
     const events = await collect(runSurfaceToolAction({ tool: confirming, args: { n: 1 }, surfaceId: "s1", componentId: "b", provider: "p", model: "m", onUserDecision: decide }));
     expect(decide).toHaveBeenCalledOnce();
     expect(events.map((e) => e.type)).toContain("awaiting-user");
+    expect(events.find((e) => e.type === "tool-result")).toMatchObject({ failure: "denied" });
+  });
+});
+
+describe("enforced confirmation on surface actions", () => {
+  const guarded = (execute: ToolDefinition["execute"]): ToolDefinition => ({
+    name: "pay",
+    description: "Pay.",
+    side: "confirm",
+    inputSchema: { type: "object" },
+    execute,
+  });
+  const base = { args: { amount: 5 }, surfaceId: "s1", componentId: "b", provider: "p", model: "m" };
+  const drain = async (events: AsyncIterable<RunEvent>) => {
+    const out: RunEvent[] = [];
+    for await (const event of events) out.push(event);
+    return out;
+  };
+
+  it("asks before a button runs a tool that only declares side: confirm", async () => {
+    const execute = vi.fn(() => ({ output: { paid: true } }));
+    const decide = vi.fn(async (callId: string, card: Card) => ({ cardId: card.id, callId, kind: "confirm", type: "confirm" as const, value: { confirmed: true }, at: 0 }));
+    const events = await drain(runSurfaceToolAction({ ...base, tool: guarded(execute), onUserDecision: decide }));
+    expect(decide).toHaveBeenCalledOnce();
+    expect(decide.mock.calls[0]![1].spec).toMatchObject({ kind: "confirm", title: "Allow pay?" });
+    expect(execute).toHaveBeenCalledOnce();
+    expect(events.map((e) => e.type)).toContain("awaiting-user");
+  });
+
+  it("does not run when the person declines", async () => {
+    const execute = vi.fn(() => ({ output: { paid: true } }));
+    const decide = async (callId: string, card: Card) => ({ cardId: card.id, callId, kind: "confirm", type: "cancel" as const, at: 0 });
+    const events = await drain(runSurfaceToolAction({ ...base, tool: guarded(execute), onUserDecision: decide }));
+    expect(execute).not.toHaveBeenCalled();
+    expect(events.find((e) => e.type === "tool-result")).toMatchObject({ failure: "denied" });
+  });
+
+  it("does not run when the host has no way to ask", async () => {
+    const execute = vi.fn(() => ({ output: { paid: true } }));
+    const events = await drain(runSurfaceToolAction({ ...base, tool: guarded(execute) }));
+    expect(execute).not.toHaveBeenCalled();
     expect(events.find((e) => e.type === "tool-result")).toMatchObject({ failure: "denied" });
   });
 });

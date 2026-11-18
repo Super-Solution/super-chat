@@ -232,6 +232,7 @@ describe("surface actions", () => {
     const confirming: ToolDefinition = {
       ...lookup(),
       side: "confirm",
+      confirmation: "tool",
       async execute(_input, ctx) {
         const answer = (await ctx.requestCard?.({ kind: "confirm", title: "Sure?", summary: [{ label: "a", value: 1 }] })) as { cancelled?: boolean };
         if (answer.cancelled) return { output: { done: false }, failure: "denied" as const };
@@ -246,6 +247,18 @@ describe("surface actions", () => {
     client.respond({ cardId: card.id, callId: card.callId, kind: "confirm", type: "cancel", at: 0 });
     expect(await running).toBe("cancelled");
     expect(execute).not.toHaveBeenCalled();
+  });
+
+  it("holds a tool that only declares side: confirm until the person approves", async () => {
+    const execute = vi.fn(() => ({ output: { done: true } }));
+    const { client } = await created([], { tools: [{ ...lookup(execute), side: "confirm" }] });
+    const running = client.dispatchSurfaceAction("s1", "run");
+    await vi.waitFor(() => expect(client.pendingCard()).toBeDefined());
+    expect(execute).not.toHaveBeenCalled();
+    const card = client.pendingCard() as Card;
+    client.respond({ cardId: card.id, callId: card.callId, kind: "confirm", type: "confirm", value: { confirmed: true }, at: 0 });
+    expect(await running).toBe("done");
+    expect(execute).toHaveBeenCalledOnce();
   });
 
   it("queues a press made during a run and delivers it afterwards", async () => {

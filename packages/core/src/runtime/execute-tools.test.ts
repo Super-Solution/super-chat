@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
+import { confirmCard } from "../cards/builtin.js";
 import type { ToolDefinition } from "../tools/types.js";
-import { executeToolCalls, type ToolCallOutcome } from "./execute-tools.js";
+import { executeToolCall, executeToolCalls, type ToolCallOutcome } from "./execute-tools.js";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -67,5 +68,121 @@ describe("executeToolCalls", () => {
     expect(reported[0]!.failure).toBe("execution-error");
     expect(onCard).not.toHaveBeenCalled();
     expect(requestCard).not.toHaveBeenCalled();
+  });
+});
+
+describe('side: "confirm" is enforced', () => {
+  const yes = { confirmed: true };
+  const guarded = (over: Partial<ToolDefinition> = {}): ToolDefinition => ({
+    name: "transfer",
+    description: "Move funds.",
+    inputSchema: { type: "object" },
+    side: "confirm",
+    execute: vi.fn(() => ({ output: { moved: true } })),
+    ...over,
+  });
+  const call = { callId: "c1", name: "transfer", input: { amount: 5, to: "acct" } };
+
+  it("shows what will run, and runs only after an explicit yes", async () => {
+    const tool = guarded();
+    const order: string[] = [];
+    (tool.execute as ReturnType<typeof vi.fn>).mockImplementation(() => {
+      order.push("ran");
+      return { output: { moved: true } };
+    });
+    const requestCard = vi.fn(async () => {
+      order.push("asked");
+      return yes;
+    });
+    const outcome = await executeToolCall(call, { tools: [tool], vars: {}, requestCard });
+    expect(order).toEqual(["asked", "ran"]);
+    expect(outcome.failure).toBeUndefined();
+    expect(requestCard).toHaveBeenCalledWith("c1", expect.objectContaining({
+      kind: "confirm",
+      title: "Allow transfer?",
+      summary: expect.arrayContaining([expect.objectContaining({ label: "amount", value: "5" })]),
+    }));
+  });
+
+  it("produces a card the confirm kind accepts, even with no input", async () => {
+    const requestCard = vi.fn(async () => yes);
+    await executeToolCall({ callId: "c1", name: "transfer", input: undefined }, { tools: [guarded()], vars: {}, requestCard });
+    const spec = (requestCard.mock.calls[0] as unknown[])[1];
+    expect(confirmCard.validate(spec)).toEqual({ ok: true });
+  });
+
+  for (const [name, answer] of [
+    ["a decline", { cancelled: true, reason: "The user declined." }],
+    ["an empty answer", undefined],
+    ["an answer that is not a yes", { confirmed: "yes" }],
+  ] as const) {
+    it(`does not run on ${name}`, async () => {
+      const tool = guarded();
+      const outcome = await executeToolCall(call, { tools: [tool], vars: {}, requestCard: async () => answer });
+      expect(tool.execute).not.toHaveBeenCalled();
+      expect(outcome.failure).toBe("denied");
+    });
+  }
+
+  it("does not run when the host cannot ask", async () => {
+    const tool = guarded();
+    const outcome = await executeToolCall(call, { tools: [tool], vars: {} });
+    expect(tool.execute).not.toHaveBeenCalled();
+    expect(outcome.failure).toBe("denied");
+    expect(JSON.stringify(outcome.output)).toContain("cannot ask");
+  });
+
+  it("guards a tool the host executes too", async () => {
+    const onHostTool = vi.fn(async () => ({ moved: true }));
+    const tool = guarded({ execute: undefined });
+    await executeToolCall(call, { tools: [tool], vars: {}, onHostTool, requestCard: async () => ({ cancelled: true }) });
+    expect(onHostTool).not.toHaveBeenCalled();
+  });
+
+  it("does not run if the run was stopped while the question was open", async () => {
+    const controller = new AbortController();
+    const tool = guarded();
+    const requestCard = async () => {
+      controller.abort();
+      return yes;
+    };
+    const outcome = await executeToolCall(call, { tools: [tool], vars: {}, signal: controller.signal, requestCard });
+    expect(tool.execute).not.toHaveBeenCalled();
+    expect(outcome.failure).toBe("denied");
+  });
+
+  it("does not count the person's decision against the tool timeout", async () => {
+    const tool = guarded();
+    const requestCard = () => new Promise((resolve) => setTimeout(() => resolve(yes), 40));
+    const outcome = await executeToolCall(call, { tools: [tool], vars: {}, timeoutMs: 10, requestCard });
+    expect(outcome.failure).toBeUndefined();
+    expect(tool.execute).toHaveBeenCalledOnce();
+  });
+
+  it("asks once when the tool does its own asking", async () => {
+    const requestCard = vi.fn(async () => yes);
+    const tool = guarded({
+      confirmation: "tool",
+      async execute(_input, ctx) {
+        await ctx.requestCard?.({ kind: "confirm", title: "Exact terms", summary: [{ label: "a", value: 1 }] });
+        return { output: { moved: true } };
+      },
+    });
+    await executeToolCall(call, { tools: [tool], vars: {}, requestCard });
+    expect(requestCard).toHaveBeenCalledOnce();
+  });
+
+  it("refuses a self-asking tool when the host cannot ask", async () => {
+    const tool = guarded({ confirmation: "tool" });
+    const outcome = await executeToolCall(call, { tools: [tool], vars: {} });
+    expect(tool.execute).not.toHaveBeenCalled();
+    expect(outcome.failure).toBe("denied");
+  });
+
+  it("leaves other tools alone", async () => {
+    const tool = guarded({ side: "write" });
+    const outcome = await executeToolCall(call, { tools: [tool], vars: {} });
+    expect(tool.execute).toHaveBeenCalledOnce();
+    expect(outcome.failure).toBeUndefined();
   });
 });

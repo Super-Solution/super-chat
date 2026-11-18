@@ -90,7 +90,7 @@ Only `Button`, and an interactive `Card` once answered, can start one. Nothing f
 | Type | Effect |
 |------|--------|
 | `set` | Updates local state |
-| `tool` | Calls a tool the enabled presets allow. Same executor, approval cards and metering as a model's call |
+| `tool` | Calls a tool the enabled presets allow. Same executor, enforced `side: "confirm"` approval and metering as a model's call |
 | `event` | Sends the agent a new turn with the bound context |
 
 ## Agent tools

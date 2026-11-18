@@ -177,6 +177,8 @@ describe("plugin tools", () => {
       const ask = vi.fn(async () => ({ confirmed: true }));
       expect(def.side).toBe("confirm");
       expect((await run(def, ask)).output).toEqual({ ran: "a" });
+      // Once: the plugin host asks, and the runtime's own check must not ask again.
+      expect(ask).toHaveBeenCalledOnce();
       expect((ask.mock.calls[0] as unknown[])[0]).toMatchObject({ kind: "confirm", title: "Allow a?" });
       expect(t.run.mock.calls[0]).toEqual([{ a: 1 }, { confirmed: true }]);
     });

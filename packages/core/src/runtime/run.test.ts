@@ -960,6 +960,23 @@ describe("parallel tool results arrive as each tool finishes", () => {
     expect(results(events).map((r) => r.callId)).toEqual(["c_slow", "c_confirm"]);
   });
 
+  it("suspends a confirm tool on the user's answer and skips it when they decline", async () => {
+    const execute = vi.fn(() => ({ output: { sent: true } }));
+    const send: ToolDefinition = { name: "send", description: "Send it.", inputSchema: { type: "object" }, side: "confirm", execute };
+    const h = harness([respondToolCalls([{ callId: "c_send", name: "send" }]), respondText("Not sent.")], [send]);
+
+    const events = await collect(
+      runAgent([userMessage("go")], {
+        ...config(h),
+        onUserDecision: async (callId, card) => ({ cardId: card.id, callId, kind: "confirm", type: "cancel", at: 0 }),
+      }),
+    );
+
+    expect(events.map((e) => e.type)).toContain("awaiting-user");
+    expect(execute).not.toHaveBeenCalled();
+    expect(results(events)[0]).toMatchObject({ callId: "c_send", failure: "denied" });
+  });
+
   it("does not drop or repeat results when the run is aborted mid-step", async () => {
     const controller = new AbortController();
     const abortable = (name: string): ToolDefinition => ({

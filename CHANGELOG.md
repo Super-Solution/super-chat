@@ -18,6 +18,10 @@ SUPER SOLUTION LABS INC. See [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).
 - Text and interface parts now render in the order they happened, in live and finished turns. Threads saved earlier keep their original layout.
 - `AgentClientConfig.cards` and `CardRendererProvider`'s `registry` prop: interactive behaviour now comes from the card registry, so `editreview` and plugin kinds are treated as interactive.
 
+### Changed
+
+- **`side: "confirm"` is now enforced by the runtime.** A tool with that flag shows an approval card before it starts, and does not run if the person declines or the host cannot ask. A tool that already asks through `ctx.requestCard` should set `confirmation: "tool"`, or the person is asked twice.
+
 ### Fixed
 
 - Bars on a category axis are centred in their band instead of being cut off at the plot edges.

@@ -36,6 +36,7 @@ switches theme.
 
 This host renders `card` capabilities and offers `tool` capabilities. It does **not** render `panel` or `canvas`.
 A plugin may declare them, nothing is shown for them, and `installChatPlugin` lists them in `unsupportedSurfaces`.
+A plugin's card kinds can be composed into an agent-built interface: see [Surfaces](../../../docs/guide/surfaces.md).
 
 
 See [docs/PACKAGES.md](../../docs/PACKAGES.md).

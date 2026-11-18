@@ -318,6 +318,8 @@ before touching it:
   from presets and deny only: a skill's `allow` does not reach a button.
 - **Button tools go through `executeToolCall`** and emit ordinary run events, so
   approvals, the transcript and metering have one path. Do not add a shortcut.
+  `side: "confirm"` is enforced in that function: anything short of an explicit yes
+  means the tool does not run. `confirmation: "tool"` only changes who asks.
 - **Turn order depends on `callId` on the artifact part.** Its absence is what marks
   a thread saved before order existed, and those keep the old layout.
 
