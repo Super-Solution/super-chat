@@ -304,6 +304,23 @@ things to know before touching it:
 - **`listDocuments` is what makes the rest reachable.** A docId otherwise lives
   only in the transcript, which compaction trims and a new thread never had.
 
+**Surfaces landed after that** ([`guide/surfaces.md`](guide/surfaces.md)): an
+interface the agent composes, with cards as blocks inside it. Five things to know
+before touching it:
+
+- **A surface is a card of kind `surface` with the id `surface:<surfaceId>`.** That
+  is how it inherits persistence, shedding and the expired state. It is deliberately
+  absent from `BUILTIN_CARDS`, so `visualize` cannot offer it.
+- **State is derived from the active branch** (`foldSurfaces`). Nothing is stored
+  beside the thread. Local edits are written into the newest snapshot on the path.
+- **The client runs the action in the spec, never one handed to it.**
+  `dispatchSurfaceAction` takes a component id. Authority is checked at the press,
+  from presets and deny only: a skill's `allow` does not reach a button.
+- **Button tools go through `executeToolCall`** and emit ordinary run events, so
+  approvals, the transcript and metering have one path. Do not add a shortcut.
+- **Turn order depends on `callId` on the artifact part.** Its absence is what marks
+  a thread saved before order existed, and those keep the old layout.
+
 What is genuinely open:
 
 1. **A third provider (Gemini).** Two adapters proved the normalized content

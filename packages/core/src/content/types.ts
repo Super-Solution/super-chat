@@ -88,6 +88,11 @@ export type ContentPart =
        * what makes a re-rendered card readable.
        */
       action?: unknown;
+      /**
+       * The tool call that produced this artifact: where it belongs among the
+       * turn's text. Absent on turns saved before order was recorded.
+       */
+      callId?: string;
     };
 
 export type MessageRole = "system" | "user" | "assistant" | "tool";

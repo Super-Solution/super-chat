@@ -10,6 +10,8 @@
 import { CardRegistry, isObj } from "../cards/registry.js";
 import type { CardSpec } from "../cards/types.js";
 import type { SkillRegistry } from "../skills/registry.js";
+import type { SurfaceCatalogue } from "../surfaces/catalogue.js";
+import { createSurfaceTools } from "../surfaces/tools.js";
 import type { ToolDefinition } from "./types.js";
 
 export type VisualizeToolOptions = {
@@ -217,8 +219,10 @@ export function createUpdateCardTool(cards: CardRegistry): ToolDefinition {
 }
 
 /** The default built-in set, wired to the given registries. */
-export function createBuiltinTools(opts: { cards: CardRegistry; skills?: SkillRegistry }): ToolDefinition[] {
+export function createBuiltinTools(opts: { cards: CardRegistry; skills?: SkillRegistry; surfaces?: SurfaceCatalogue }): ToolDefinition[] {
   const tools = [createVisualizeTool({ cards: opts.cards }), createUpdateCardTool(opts.cards)];
+  // Opt-in: a host that has not asked for surfaces sees the same tool list as before.
+  if (opts.surfaces) tools.push(...createSurfaceTools({ catalogue: opts.surfaces }));
   if (opts.skills && opts.skills.list().some((s) => s.mode === "manual")) {
     tools.push(createLoadSkillTool(opts.skills));
   }

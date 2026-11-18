@@ -130,7 +130,16 @@ export function ChartCardView({ spec }: CardRendererProps<ChartCard>) {
     const yMin = yMinRaw < 0 ? yMinRaw - yPad : Math.max(0, yMinRaw - yPad);
     const yMax = yMaxRaw + yPad;
 
-    const x: Scale = (v) => PAD.left + (xMax === xMin ? innerW / 2 : ((v - xMin) / (xMax - xMin)) * innerW);
+    // Bars on a category axis sit in the middle of a band. Placed on the plot's
+    // edges, the first and last would be cut in half and cover the y axis.
+    const banded = categorical && series.some((s) => s.type === "bar");
+    const x: Scale = (v) =>
+      PAD.left +
+      (banded
+        ? ((v - xMin + 0.5) / (xMax - xMin + 1)) * innerW
+        : xMax === xMin
+          ? innerW / 2
+          : ((v - xMin) / (xMax - xMin)) * innerW);
     const y: Scale = (v) => PAD.top + innerH - ((v - yMin) / (yMax - yMin)) * innerH;
 
     const xTicks = categorical

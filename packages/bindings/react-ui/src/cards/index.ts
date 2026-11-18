@@ -33,6 +33,7 @@ import {
   TreeCardView,
 } from "./General.js";
 import { ChoiceCardView, ConfirmCardView, FormCardView } from "./Interactive.js";
+import { SurfaceCardView } from "../surfaces/AgentSurface.js";
 
 // One cast lives here instead of once per entry below: `register` still needs
 // to widen a `ComponentType<CardRendererProps<SpecificCard>>` into the map's
@@ -71,4 +72,6 @@ export const BUILTIN_RENDERERS: CardRendererMap = {
   ...register("confirm", ConfirmCardView),
   ...register("editreview", EditReviewCardView),
   ...register("email", EmailCardView),
+  // Not a kind `visualize` can pick: surfaces arrive through their own tools.
+  surface: SurfaceCardView as CardRendererMap[string],
 };

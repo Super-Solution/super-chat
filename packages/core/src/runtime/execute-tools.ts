@@ -13,6 +13,7 @@
 import { AgentError, toAgentError } from "../errors.js";
 import { makeCard } from "../cards/registry.js";
 import { CARD_KEY, isCardCarrier, withCard, type Card, type CardSpec } from "../cards/types.js";
+import type { SurfaceLedger } from "../surfaces/ledger.js";
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from "../tools/types.js";
 
 export type ToolCallRequest = { callId: string; name: string; input: unknown };
@@ -67,6 +68,8 @@ export type ExecuteToolOptions = {
    * standalone `executeToolCall` caller can leave it unset and pay the scan.
    */
   toolIndex?: ReadonlyMap<string, ToolDefinition>;
+  surfaces?: SurfaceLedger;
+  surfaceActionTools?: readonly string[];
 };
 
 export async function executeToolCall(call: ToolCallRequest, opts: ExecuteToolOptions): Promise<ToolCallOutcome> {
@@ -97,6 +100,8 @@ export async function executeToolCall(call: ToolCallRequest, opts: ExecuteToolOp
     vars: opts.vars,
     signal: opts.signal,
     callId: call.callId,
+    ...(opts.surfaces ? { surfaces: opts.surfaces } : {}),
+    ...(opts.surfaceActionTools ? { surfaceActionTools: opts.surfaceActionTools } : {}),
     emitCard: (spec) => {
       if (settled) return;
       const card = makeCard(spec, call.callId);

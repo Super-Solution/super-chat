@@ -27,6 +27,7 @@ const PANELS = [
   { path: "/app-state", name: "app state" },
   { path: "/documents", name: "documents" },
   { path: "/run", name: "run" },
+  { path: "/surfaces", name: "surfaces" },
 ];
 
 /** Elements sticking out past the viewport that no scroll container explains. */

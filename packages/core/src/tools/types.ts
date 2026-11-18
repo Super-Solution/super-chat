@@ -14,6 +14,7 @@
 
 import type { JSONSchema } from "../providers/types.js";
 import type { Card, CardSpec } from "../cards/types.js";
+import type { SurfaceLedger } from "../surfaces/ledger.js";
 
 export type ToolSide = "read" | "write" | "confirm";
 
@@ -44,6 +45,10 @@ export type ToolExecutionContext = {
   emitCard?: (spec: CardSpec) => void;
   /** Ask the user something and await the answer. Powers `side: "confirm"`. */
   requestCard?: (spec: CardSpec) => Promise<unknown>;
+  /** The surfaces on this conversation's active path, as this run sees them. */
+  surfaces?: SurfaceLedger;
+  /** Tools a surface button may call in this run. */
+  surfaceActionTools?: readonly string[];
 };
 
 export type ToolResultExtras = {
