@@ -1,7 +1,7 @@
 import { createElement, type ComponentType } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { CardRegistry, BUILTIN_CARDS } from "@supersolutions/super-chat-core";
+import { CardRegistry, BUILTIN_CARDS, ToolRegistry, executeToolCall, type ToolDefinition } from "@supersolutions/super-chat-core";
 import { EDITOR_CARD_KIND, editorCardKind, type CardMountHandle, type ChatPlugin } from "@supersolutions/super-protocol";
 import { MountController, PluginInstallError, installChatPlugin, pluginRenderers } from "./index.js";
 
@@ -86,5 +86,121 @@ describe("pluginRenderers", () => {
     const spec = { kind: EDITOR_CARD_KIND, service: { baseUrl: "https://e.example.com", documentId: "d" } };
     const html = renderToString(createElement(Renderer, { spec, card: { id: "c", spec } }));
     expect(html).toContain('class="sc-plugin-card"');
+  });
+});
+
+describe("plugin tools", () => {
+  const tool = (name: string, extra: Record<string, unknown> = {}) => ({ name, description: `Runs ${name}`, inputSchema: { type: "object" }, run: vi.fn(async () => ({ ran: name })), ...extra });
+  const withTools = (tools: ReturnType<typeof tool>[], declared = tools.map((t) => t.name)): ChatPlugin =>
+    ({
+      manifest: { ...manifest, capabilities: [manifest.capabilities[0]!, ...declared.map((n, i) => ({ id: `x.tool-${i}`, surface: "tool" as const, toolName: n }))] },
+      cardKinds: [editorCardKind],
+      mounts: { [EDITOR_CARD_KIND]: () => handle() },
+      tools,
+    }) as unknown as ChatPlugin;
+  const install = (plugin: ChatPlugin) => {
+    const tools = new ToolRegistry();
+    return { tools, report: installChatPlugin(new CardRegistry(BUILTIN_CARDS), plugin, { tools }) };
+  };
+  const run = (def: ToolDefinition, requestCard?: (spec: unknown) => Promise<unknown>) =>
+    executeToolCall({ callId: "c1", name: def.name, input: { a: 1 } }, { tools: [def], vars: {}, ...(requestCard ? { requestCard: (_id: string, spec: unknown) => requestCard(spec) } : {}) } as never);
+
+  it("puts each authority only in the presets that allow it", () => {
+    const { tools, report } = install(withTools([tool("r", { authority: "read" }), tool("d", { authority: "draft" }), tool("a", { authority: "act" })]));
+    expect(report.tools).toEqual(["r", "d", "a"]);
+    expect(report.refusedTools).toEqual([]);
+    expect(tools.namesInPreset("observer")).toEqual(["r"]);
+    expect(tools.namesInPreset("draft")).toEqual(["d", "r"]);
+    expect(tools.namesInPreset("executor")).toEqual(["a", "d", "r"]);
+    expect(tools.get("r")?.side).toBe("read");
+    expect(tools.get("a")?.side).toBe("write");
+  });
+
+  it.each([
+    ["no authority", {}, "undeclared-authority"],
+    ["an unknown authority", { authority: "admin" }, "undeclared-authority"],
+    ["an inherited property name", { authority: "toString" }, "undeclared-authority"],
+    ["a non-string authority", { authority: 1 }, "undeclared-authority"],
+    ["a non-boolean confirm", { authority: "read", confirm: "yes" }, "invalid-confirm"],
+    ["a non-object schema", { authority: "read", inputSchema: { type: "string" } }, "invalid-schema"],
+  ])("keeps a tool with %s out of every preset", (_label, extra, reason) => {
+    const { tools, report } = install(withTools([tool("t", extra)]));
+    expect(report.refusedTools).toEqual([{ name: "t", reason }]);
+    expect(tools.has("t")).toBe(false);
+    expect(tools.resolve({ presets: ["observer", "draft", "executor"], allow: ["t"] })).toEqual([]);
+  });
+
+  it("refuses a tool the manifest does not declare, and an invalid name", () => {
+    expect(install(withTools([tool("t", { authority: "read" })], [])).report.refusedTools).toEqual([{ name: "t", reason: "not-in-manifest" }]);
+    expect(install(withTools([tool("a b", { authority: "read" })])).report.refusedTools).toEqual([{ name: "a b", reason: "invalid-name" }]);
+  });
+
+  it("installs cards but no tools when no tool registry is given", () => {
+    const cards = new CardRegistry(BUILTIN_CARDS);
+    const report = installChatPlugin(cards, withTools([tool("t", { authority: "read" })]));
+    expect(cards.has(EDITOR_CARD_KIND)).toBe(true);
+    expect(report.tools).toEqual([]);
+    expect(report.refusedTools).toEqual([{ name: "t", reason: "no-tool-registry" }]);
+  });
+
+  it("never replaces a tool, and a collision installs nothing", () => {
+    const tools = new ToolRegistry();
+    const existing = { name: "t", description: "host", inputSchema: { type: "object" } } as ToolDefinition;
+    tools.register(existing, ["observer"]);
+    const cards = new CardRegistry(BUILTIN_CARDS);
+    expect(() => installChatPlugin(cards, withTools([tool("t", { authority: "read" })]), { tools })).toThrow(/tool "t" is already registered/);
+    expect(tools.get("t")).toBe(existing);
+    expect(cards.has(EDITOR_CARD_KIND)).toBe(false);
+  });
+
+  it("runs a tool and passes the abort signal without claiming confirmation", async () => {
+    const t = tool("r", { authority: "read" });
+    const { tools } = install(withTools([t]));
+    expect((await run(tools.get("r")!)).output).toEqual({ ran: "r" });
+    expect(t.run.mock.calls[0]).toEqual([{ a: 1 }, {}]);
+  });
+
+  it("reports a tool that throws as a failed call", async () => {
+    const { tools } = install(withTools([tool("r", { authority: "read", run: async () => { throw new Error("no chart"); } })]));
+    const outcome = await run(tools.get("r")!);
+    expect(outcome.failure).toBe("execution-error");
+    expect(outcome.output).toMatchObject({ error: "no chart" });
+  });
+
+  describe("confirm", () => {
+    const setup = () => {
+      const t = tool("a", { authority: "act", confirm: true });
+      return { t, def: install(withTools([t])).tools.get("a")! };
+    };
+    it("asks first and tells the plugin the user agreed", async () => {
+      const { t, def } = setup();
+      const ask = vi.fn(async () => ({ confirmed: true }));
+      expect(def.side).toBe("confirm");
+      expect((await run(def, ask)).output).toEqual({ ran: "a" });
+      expect((ask.mock.calls[0] as unknown[])[0]).toMatchObject({ kind: "confirm", title: "Allow a?" });
+      expect(t.run.mock.calls[0]).toEqual([{ a: 1 }, { confirmed: true }]);
+    });
+    it.each([
+      ["declines", { cancelled: true, reason: "The user declined." }],
+      ["answers without agreeing", { confirmed: false }],
+      ["answers nothing", undefined],
+      ["answers with a truthy non-boolean", { confirmed: "true" }],
+    ])("does not run when the user %s", async (_label, answer) => {
+      const { t, def } = setup();
+      const outcome = await run(def, async () => answer);
+      expect(outcome.failure).toBe("denied");
+      expect(t.run).not.toHaveBeenCalled();
+    });
+    it("does not run when the host cannot ask", async () => {
+      const { t, def } = setup();
+      expect((await run(def)).failure).toBe("denied");
+      expect(t.run).not.toHaveBeenCalled();
+    });
+  });
+
+  it("reports the surfaces this host does not render", () => {
+    const plugin = withTools([]);
+    plugin.manifest.capabilities.push({ id: "x.side", surface: "panel" }, { id: "x.board", surface: "canvas" });
+    expect(install(plugin).report.unsupportedSurfaces).toEqual([{ id: "x.side", surface: "panel" }, { id: "x.board", surface: "canvas" }]);
   });
 });

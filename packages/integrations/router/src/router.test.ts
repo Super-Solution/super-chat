@@ -98,8 +98,8 @@ describe("createSuperRouterProvider", () => {
     expect(captured[0]).toMatchObject({ service: "support-chat", customer_id: "cust", max_output_tokens: 8192, messages: [{ role: "system", content: "Be brief." }, { role: "user", content: "hi" }] });
   });
 
-  it("warns about dropped non-text parts and ignored tools", async () => {
-    const provider = createSuperRouterProvider({ gateway: fakeGateway([]), customerId: "c" });
+  it("warns about dropped non-text parts and ignored tools when tool calling is off", async () => {
+    const provider = createSuperRouterProvider({ gateway: fakeGateway([]), customerId: "c", toolCalling: false });
     const withImage: Message = { id: "m", role: "user", parts: [{ type: "text", text: "look" }, { type: "image", source: { kind: "url", url: "https://x/y.png" } }] };
     const result = await provider.generate(req({ messages: [withImage], tools: [{ name: "t", description: "d", parameters: {} }] }));
     expect(result.warnings).toHaveLength(2);
@@ -151,5 +151,169 @@ describe("createSuperRouterProvider", () => {
     const out: StreamEvent[] = [];
     for await (const e of createSuperRouterProvider({ gateway: fakeGateway(replay), customerId: "c" }).stream(req())) out.push(e);
     expect(out.at(-1)).toMatchObject({ type: "error" });
+  });
+});
+
+describe("createSuperRouterProvider tool calling", () => {
+  const fake = (events: object[] = [], result?: object) => {
+    const seen: Record<string, any>[] = [];
+    const gateway: InferenceGateway = {
+      async infer(request) {
+        seen.push(request);
+        return result as never;
+      },
+      async *stream(request) {
+        seen.push(request);
+        for (const event of events) yield event as RouterEvent;
+      },
+    };
+    return { seen, provider: createSuperRouterProvider({ gateway, customerId: "c" }) };
+  };
+  const collect = async (provider: ReturnType<typeof fake>["provider"], request = req()) => {
+    const out: StreamEvent[] = [];
+    for await (const event of provider.stream(request)) out.push(event);
+    return out;
+  };
+  const ids = { request_id: "r", sequence: 1 };
+  const history: Message[] = [
+    user("find it"),
+    { id: "a", role: "assistant", parts: [{ type: "text", text: "Looking" }, { type: "tool-call", callId: "functions.look:0", name: "look", input: { q: "x" }, status: "done" }] },
+    { id: "t", role: "tool", parts: [{ type: "tool-result", callId: "functions.look:0", name: "look", output: { hits: 1 } }] },
+  ];
+
+  it("declares tools and images", () => {
+    const { capabilities } = fake().provider;
+    expect(capabilities.tools).toBe(true);
+    expect(capabilities.parallelToolCalls).toBe(true);
+    expect(capabilities.images).toBe(true);
+  });
+
+  it("sends tools, the active subset, the choice and the tool history", async () => {
+    const { seen, provider } = fake([{ type: "request.completed", ...ids, execution_status: "succeeded", billing_status: "settled" }]);
+    const tools = [
+      { name: "look", description: "Find", parameters: { properties: { q: { type: "string" } } } },
+      { name: "hidden", description: "", parameters: { type: "object" } },
+    ];
+    await collect(provider, req({ messages: history, tools: tools as never, activeTools: ["look"], toolChoice: { type: "tool", name: "look" } }));
+    expect(seen[0]!.tools).toEqual([{ name: "look", description: "Find", input_schema: { type: "object", properties: { q: { type: "string" } } } }]);
+    expect(seen[0]!.tool_choice).toEqual({ name: "look" });
+    expect(seen[0]!.messages).toEqual([
+      { role: "user", content: "find it" },
+      { role: "assistant", content: "Looking", tool_calls: [{ id: "functions_look_0", name: "look", arguments: '{"q":"x"}' }] },
+      { role: "tool", tool_call_id: "functions_look_0", content: '{"hits":1}' },
+    ]);
+  });
+
+  it("marks a failed tool result and shortens an oversized one", async () => {
+    const { seen, provider } = fake([]);
+    const failed: Message[] = [
+      user("go"),
+      { id: "a", role: "assistant", parts: [{ type: "tool-call", callId: "c1", name: "t", input: {}, status: "error" }, { type: "tool-call", callId: "c2", name: "t", input: {}, status: "done" }] },
+      { id: "t", role: "tool", parts: [{ type: "tool-result", callId: "c1", name: "t", output: { error: "no" }, failure: "execution-error" }, { type: "tool-result", callId: "c2", name: "t", output: "x".repeat(300_000) }] },
+    ];
+    await collect(provider, req({ messages: failed }));
+    const [first, second] = seen[0]!.messages.slice(2);
+    expect(first.is_error).toBe(true);
+    expect(second.content.length).toBe(256_000);
+    expect(second.content.endsWith("…[truncated]")).toBe(true);
+  });
+
+  it("leaves out a call nobody answered and a result nobody asked for", async () => {
+    const { seen, provider } = fake([]);
+    const broken: Message[] = [
+      user("go"),
+      { id: "a", role: "assistant", parts: [{ type: "text", text: "Trying" }, { type: "tool-call", callId: "orphan", name: "t", input: {}, status: "pending" }] },
+      { id: "t", role: "tool", parts: [{ type: "tool-result", callId: "stray", name: "t", output: 1 }] },
+      user("again"),
+    ];
+    await collect(provider, req({ messages: broken }));
+    expect(seen[0]!.messages).toEqual([{ role: "user", content: "go" }, { role: "assistant", content: "Trying" }, { role: "user", content: "again" }]);
+  });
+
+  it("sends images it can carry and warns about what it cannot", async () => {
+    const { seen, provider } = fake(undefined, { id: "r", execution_status: "succeeded", billing_status: "settled", output: { role: "assistant", content: "ok" }, usage: { status: "confirmed" } });
+    const result = await provider.generate(req({ messages: [{ id: "u", role: "user", parts: [
+      { type: "text", text: "see" },
+      { type: "image", source: { kind: "url", url: "https://e.example/a.png" }, detail: "low" },
+      { type: "image", source: { kind: "base64", data: "AAAA" }, mediaType: "image/png" },
+      { type: "image", source: { kind: "url", url: "http://e.example/a.png" } },
+      { type: "file", source: { kind: "url", url: "https://e.example/a.pdf" }, mediaType: "application/pdf" },
+    ] }] }));
+    expect(seen[0]!.messages[0].content).toEqual([
+      { type: "text", text: "see" },
+      { type: "image", url: "https://e.example/a.png", detail: "low" },
+      { type: "image", url: "data:image/png;base64,AAAA" },
+    ]);
+    expect(result.warnings?.[0]).toContain("2 part(s) were dropped");
+  });
+
+  it("streams a tool call and finishes with usage", async () => {
+    const { provider } = fake([
+      { type: "request.started", ...ids, service_version: 1 },
+      { type: "output.tool_call.delta", ...ids, index: 0, id: "c1", name: "look", arguments_delta: '{"q"' },
+      { type: "output.tool_call.delta", ...ids, index: 0, arguments_delta: ':"x"}' },
+      { type: "output.tool_call.completed", ...ids, index: 0, id: "c1", name: "look", arguments: '{"q":"x"}' },
+      { type: "request.completed", ...ids, execution_status: "succeeded", billing_status: "settled", finish_reason: "tool_calls", usage: { status: "confirmed", meters: { input: 8, cached: 2, cache_write: 0, output: 5 } } },
+    ]);
+    const usage = { inputTokens: 10, outputTokens: 5, totalTokens: 15, cachedInputTokens: 2 };
+    expect((await collect(provider)).slice(1)).toEqual([
+      { type: "tool-call-start", callId: "c1", name: "look" },
+      { type: "tool-call-delta", callId: "c1", argsDelta: '{"q"' },
+      { type: "tool-call-delta", callId: "c1", argsDelta: ':"x"}' },
+      { type: "tool-call-end", callId: "c1", name: "look", input: { q: "x" }, repaired: false },
+      { type: "usage", usage },
+      { type: "finish", finishReason: "tool-calls", responseId: "r", usage },
+    ]);
+  });
+
+  it("never ends a call the model was cut off in", async () => {
+    const { provider } = fake([
+      { type: "output.tool_call.delta", ...ids, index: 0, id: "c1", name: "look", arguments_delta: '{"q"' },
+      { type: "request.failed", ...ids, execution_status: "partial", billing_status: "settled", finish_reason: "length" },
+    ]);
+    const out = await collect(provider);
+    expect(out.some((e) => e.type === "tool-call-end")).toBe(false);
+    expect(out.at(-1)).toMatchObject({ type: "finish", finishReason: "length" });
+  });
+
+  it("reports a failed request as an error even after a tool call began", async () => {
+    const { provider } = fake([
+      { type: "output.tool_call.delta", ...ids, index: 0, id: "c1", name: "look", arguments_delta: "{" },
+      { type: "request.failed", ...ids, execution_status: "unknown", error: { code: "execution_unknown" } },
+    ]);
+    expect((await collect(provider)).at(-1)).toMatchObject({ type: "finish", finishReason: "error" });
+  });
+
+  it("refuses a first tool call delta without an id", async () => {
+    const { provider } = fake([{ type: "output.tool_call.delta", ...ids, index: 0, arguments_delta: "{" }]);
+    expect((await collect(provider)).at(-1)?.type).toBe("error");
+  });
+
+  it("returns tool calls from a non-streaming call", async () => {
+    const { provider } = fake(undefined, { id: "r", execution_status: "succeeded", billing_status: "settled", finish_reason: "tool_calls", output: { role: "assistant", content: "", tool_calls: [{ id: "c1", name: "look", arguments: '{"q":"x"}' }] }, usage: { status: "confirmed" } });
+    const result = await provider.generate(req());
+    expect(result.finishReason).toBe("tool-calls");
+    expect(result.parts).toEqual([{ type: "tool-call", callId: "c1", name: "look", input: { q: "x" }, status: "pending" }]);
+  });
+
+  it("keeps the old behaviour when tool calling is off", async () => {
+    const seen: Record<string, any>[] = [];
+    const gateway = { infer: async (r: object) => (seen.push(r), { id: "r", execution_status: "succeeded", billing_status: "settled", output: { role: "assistant", content: "ok" }, usage: { status: "confirmed" } }), stream: async function* () {} } as unknown as InferenceGateway;
+    const provider = createSuperRouterProvider({ gateway, customerId: "c", toolCalling: false });
+    expect(provider.capabilities.tools).toBe(false);
+    const result = await provider.generate(req({ messages: history, tools: [{ name: "look", description: "d", parameters: { type: "object" } }] }));
+    expect(seen[0]!.tools).toBeUndefined();
+    expect(seen[0]!.messages.every((m: { role: string }) => m.role !== "tool")).toBe(true);
+    expect(result.warnings?.join(" ")).toContain("Tools were ignored");
+  });
+
+  it("the gateway puts tools on the wire and omits them when there are none", async () => {
+    const bodies: any[] = [];
+    const gateway = createSuperRouterGateway({ baseUrl: "https://r.test", apiKey: "k", fetch: (async (_u: string, init: RequestInit) => (bodies.push(JSON.parse(init.body as string)), Response.json({}))) as typeof fetch });
+    const tools = [{ name: "look", input_schema: { type: "object" } }];
+    await gateway.infer({ service: "s", customer_id: "c", messages: [], tools, tool_choice: "auto" } as never, "k1");
+    await gateway.infer({ service: "s", customer_id: "c", messages: [] }, "k2");
+    expect(bodies[0].input).toEqual({ messages: [], tools, tool_choice: "auto" });
+    expect(bodies[1].input).toEqual({ messages: [] });
   });
 });

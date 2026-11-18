@@ -1,3 +1,3 @@
-export { installChatPlugin, PluginInstallError } from "./install.js";
+export { installChatPlugin, PluginInstallError, type InstallChatPluginOptions, type PluginInstallReport, type RefusedPluginTool } from "./install.js";
 export { MountController } from "./controller.js";
-export { PluginCard, pluginRenderers } from "./react.js";
+export { PluginCard, pluginRenderers, readChatTheme } from "./react.js";

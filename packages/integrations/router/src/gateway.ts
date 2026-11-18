@@ -6,6 +6,7 @@ import {
   type InferenceResult,
   type StreamEvent,
 } from "@supersolutions/super-protocol";
+import type { NextInferenceRequest } from "./protocol-next.js";
 
 export type SuperRouterGatewayConfig = {
   /** Origin of the Super Router server, e.g. "https://router.example.com". */
@@ -15,18 +16,24 @@ export type SuperRouterGatewayConfig = {
   fetch?: typeof fetch;
 };
 
-const body = (request: InferenceRequest, stream: boolean) =>
-  JSON.stringify({
+const body = (plain: InferenceRequest, stream: boolean) => {
+  const request = plain as unknown as NextInferenceRequest;
+  return JSON.stringify({
     service: request.service,
     ...(request.service_version ? { service_version: request.service_version } : {}),
     customer_id: request.customer_id,
-    input: { messages: request.messages },
+    input: {
+      messages: request.messages,
+      ...(request.tools?.length ? { tools: request.tools } : {}),
+      ...(request.tools?.length && request.tool_choice !== undefined ? { tool_choice: request.tool_choice } : {}),
+    },
     limits: {
       max_output_tokens: request.max_output_tokens ?? 1024,
       ...(request.timeout_ms ? { timeout_ms: request.timeout_ms } : {}),
     },
     stream,
   });
+};
 
 /** An `InferenceGateway` over the Super Router HTTP API (`POST /v1/inferences`). */
 export function createSuperRouterGateway(config: SuperRouterGatewayConfig): InferenceGateway {
