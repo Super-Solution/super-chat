@@ -1,0 +1,7 @@
+html, body, #root { height: 100%; margin: 0; }
+body { background: var(--sc-bg); color: var(--sc-text); font-family: system-ui, sans-serif; }
+.app { box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; height: 100%; max-width: 920px; margin: 0 auto; padding: 16px; }
+.app__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.app__bar h1 { flex: 1 1 auto; margin: 0; font-size: 18px; }
+.app__bar label { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.app__note { margin: 0; color: var(--sc-text-muted); font-size: 13px; }

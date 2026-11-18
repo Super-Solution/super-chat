@@ -1,0 +1,67 @@
+{
+  "name": "@superchat/example-full-stack",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Reference integration: Super Chat, Super Router, Super Chart and Super Editor in one app.",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "pack:siblings": "node scripts/pack-siblings.mjs",
+    "dev": "vite --host 127.0.0.1 --port 3220",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supersolutions/super-chat-core": "file:.tarballs/super-chat-core.tgz",
+    "@supersolutions/super-chat-client": "file:.tarballs/super-chat-client.tgz",
+    "@supersolutions/super-chat-react": "file:.tarballs/super-chat-react.tgz",
+    "@supersolutions/super-chat-ui": "file:.tarballs/super-chat-ui.tgz",
+    "@supersolutions/super-chat-plugin": "file:.tarballs/super-chat-plugin.tgz",
+    "@supersolutions/super-chat-router": "file:.tarballs/super-chat-router.tgz",
+    "@supersolutions/super-chart-chat-plugin": "file:.tarballs/super-chart-chat-plugin.tgz",
+    "@supersolutions/super-editor-chat-plugin": "file:.tarballs/super-editor-chat-plugin.tgz",
+    "@supersolutions/super-editor-core": "file:.tarballs/super-editor-core.tgz",
+    "@supersolutions/super-editor-ui": "file:.tarballs/super-editor-ui.tgz",
+    "@supersolutions/super-router-contracts": "file:.tarballs/super-router-contracts.tgz",
+    "@supersolutions/super-router-core": "file:.tarballs/super-router-core.tgz",
+    "@supersolutions/super-router-storage-memory": "file:.tarballs/super-router-storage-memory.tgz",
+    "@supersolutions/super-router-server": "file:.tarballs/super-router-server.tgz",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@supersolutions/super-protocol": "file:.tarballs/super-protocol.tgz",
+      "@supersolutions/super-chat-core": "file:.tarballs/super-chat-core.tgz",
+      "@supersolutions/super-chat-client": "file:.tarballs/super-chat-client.tgz",
+      "@supersolutions/super-chat-react": "file:.tarballs/super-chat-react.tgz",
+      "@supersolutions/super-chat-ui": "file:.tarballs/super-chat-ui.tgz",
+      "@supersolutions/super-chat-ui-core": "file:.tarballs/super-chat-ui-core.tgz",
+      "@supersolutions/super-chat-plugin": "file:.tarballs/super-chat-plugin.tgz",
+      "@supersolutions/super-chat-router": "file:.tarballs/super-chat-router.tgz",
+      "@supersolutions/super-chart-core": "file:.tarballs/super-chart-core.tgz",
+      "@supersolutions/super-chart-superscript": "file:.tarballs/super-chart-superscript.tgz",
+      "@supersolutions/super-chart-web": "file:.tarballs/super-chart-web.tgz",
+      "@supersolutions/super-chart-chat-plugin": "file:.tarballs/super-chart-chat-plugin.tgz",
+      "@supersolutions/super-editor-core": "file:.tarballs/super-editor-core.tgz",
+      "@supersolutions/super-editor-ui": "file:.tarballs/super-editor-ui.tgz",
+      "@supersolutions/super-editor-chat-plugin": "file:.tarballs/super-editor-chat-plugin.tgz",
+      "@supersolutions/super-router-contracts": "file:.tarballs/super-router-contracts.tgz",
+      "@supersolutions/super-router-core": "file:.tarballs/super-router-core.tgz",
+      "@supersolutions/super-router-storage-memory": "file:.tarballs/super-router-storage-memory.tgz",
+      "@supersolutions/super-router-storage-postgres": "file:.tarballs/super-router-storage-postgres.tgz",
+      "@supersolutions/super-router-payments": "file:.tarballs/super-router-payments.tgz",
+      "@supersolutions/super-router-fetch-adapters": "file:.tarballs/super-router-fetch-adapters.tgz",
+      "@supersolutions/super-router-server": "file:.tarballs/super-router-server.tgz"
+    }
+  },
+  "packageManager": "pnpm@9.12.0"
+}

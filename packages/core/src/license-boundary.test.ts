@@ -34,3 +34,23 @@ describe("license boundary", () => {
     });
   }
 });
+
+// The reference integration imports the GPL plugins, so it must stay a private, GPL-licensed island.
+describe("full-stack example", () => {
+  const example = join(repoRoot, "examples", "full-stack");
+  const manifest = JSON.parse(readFileSync(join(example, "package.json"), "utf8")) as { private?: boolean; license?: string; name: string };
+
+  it("is private and carries the licence of what it imports", () => {
+    expect(manifest.private).toBe(true);
+    expect(manifest.license).toBe("GPL-3.0-or-later");
+    expect(readFileSync(join(example, "LICENSE"), "utf8")).toContain("GNU GENERAL PUBLIC LICENSE");
+  });
+  it("is outside the Apache-2.0 workspace", () => {
+    const workspace = readFileSync(join(repoRoot, "pnpm-workspace.yaml"), "utf8");
+    expect(workspace).not.toMatch(/examples/);
+    expect(existsSync(join(example, "pnpm-workspace.yaml"))).toBe(true);
+  });
+  it("is not a dependency of any workspace package", () => {
+    for (const file of manifestFiles) expect(readFileSync(file, "utf8")).not.toContain(manifest.name);
+  });
+});

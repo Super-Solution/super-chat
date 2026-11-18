@@ -13,6 +13,7 @@ This guide is the other axis: one page per subsystem, in the order you meet them
 | --- | --- | --- |
 | 1 | [Getting started](getting-started.md) | A working agent — proxy route, registries, first turn |
 | 2 | [Context assembly](context.md) | A budgeted context you can read a trace out of |
+| 3 | [Connecting Router, Chart and Editor](integrations.md) | An agent served through Super Router that uses Chart and Editor |
 
 Still being written: requests & transports, skills, tools, cards, React. Until
 they land, the package READMEs ([core](../../packages/core/README.md),
