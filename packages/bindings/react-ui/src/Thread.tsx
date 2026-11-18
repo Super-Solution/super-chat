@@ -8,28 +8,31 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
+  SURFACE_EVENT_METADATA_KEY,
   estimateTokens,
+  hasTurnOrder,
   isCardCarrier,
+  layoutTurn,
   type Card,
   type CardSpec,
   type ContentPart,
   type MediaSource,
   type Message,
   type RunState,
+  type SurfaceEventRecord,
 } from "@supersolutions/super-chat-core";
 import {
   useAgentClient,
   useAttachments,
   useBranches,
   useCardAction,
-  useCards,
   useRun,
   useSkills,
   useThread,
   useTools,
 } from "@supersolutions/super-chat-react";
 import type { TurnMeta } from "@supersolutions/super-chat-client";
-import { CardRenderer, CardSkeleton } from "./renderer-registry.js";
+import { CardRenderer, CardSkeleton, useInteractiveKinds } from "./renderer-registry.js";
 import { AttachIcon, Chevron, FileIcon, ImageIcon, StatusMark } from "./cards/icons.js";
 import { newMarkdownStream, renderMarkdown, renderMarkdownStream } from "@supersolutions/super-chat-ui-core";
 import { useDocumentQuotes } from "./quotes.js";
@@ -69,6 +72,7 @@ function partsOf(message: Message) {
         id: p.id,
         spec: p.data as Card["spec"],
         ...(p.action ? { action: p.action as Card["action"] } : {}),
+        ...(p.callId ? { callId: p.callId } : {}),
         ...(expired ? { expired: true } : {}),
       });
       continue;
@@ -123,10 +127,12 @@ function MessageMeta({ meta, onRegenerate }: { meta?: TurnMeta; onRegenerate?: (
         type="button"
         className={`sc-btn sc-btn--ghost sc-btn--sm${copyState === "failed" ? " sc-tone--negative" : ""}`}
         onClick={(e) => {
-          const body = e.currentTarget.closest(".sc-msg")?.querySelector(".sc-msg__text");
+          // A turn's text can sit in several blocks, either side of its cards.
+          const blocks = e.currentTarget.closest(".sc-msg")?.querySelectorAll(".sc-msg__text") ?? [];
+          const body = Array.from(blocks, (block) => block.textContent ?? "").join("\n\n");
           // Report the failure rather than swallowing it — a copy button that
           // does nothing visible is indistinguishable from a broken one.
-          void (navigator.clipboard?.writeText(body?.textContent ?? "") ?? Promise.reject())
+          void (navigator.clipboard?.writeText(body) ?? Promise.reject())
             .then(() => setCopyState("copied"))
             .catch(() => setCopyState("failed"))
             .finally(() => setTimeout(() => setCopyState("idle"), 1500));
@@ -143,6 +149,22 @@ function MessageMeta({ meta, onRegenerate }: { meta?: TurnMeta; onRegenerate?: (
   );
 }
 
+/** A finished block of prose. Memoised for identity: see HANDOFF, bug 8. */
+function SettledText({ text }: { text: string }) {
+  const inner = useMemo(() => ({ __html: renderMarkdown(text) }), [text]);
+  return <div className="sc-prose sc-msg__text" dangerouslySetInnerHTML={inner} />;
+}
+
+/** A press on a surface, shown as what it was rather than as words the person typed. */
+function SurfaceEventNote({ record }: { record: SurfaceEventRecord }) {
+  return (
+    <div className="sc-surface-event">
+      <span className="sc-surface-event__label">{record.label ?? record.name}</span>
+      {record.title ? <span className="sc-muted">{record.title}</span> : null}
+    </div>
+  );
+}
+
 export function MessageView({
   message,
   respond,
@@ -153,6 +175,9 @@ export function MessageView({
   onRegenerate?: () => void;
 }) {
   const { cards, rest, providerTools } = useMemo(() => partsOf(message), [message]);
+  const isInteractive = useInteractiveKinds();
+  // Turns saved before order was recorded keep the layout they were written for.
+  const segments = useMemo(() => (hasTurnOrder(message.parts) ? layoutTurn(message.parts, cards) : null), [message, cards]);
 
   // One pass over `rest` instead of four separate filter/map passes.
   const { text, reasoning, calls, results } = useMemo(() => {
@@ -177,15 +202,31 @@ export function MessageView({
     const interactive: Card[] = [];
     const passive: Card[] = [];
     for (const c of cards) {
-      (isInteractiveKind((c.spec as { kind?: string }).kind) ? interactive : passive).push(c);
+      (isInteractive((c.spec as { kind?: string }).kind) ? interactive : passive).push(c);
     }
     return { interactive, passive };
-  }, [cards]);
+  }, [cards, isInteractive]);
+
+  const renderCard = (c: Card) =>
+    isInteractive((c.spec as { kind?: string }).kind) ? (
+      <CardRenderer key={c.id} card={c} respond={respond} answered />
+    ) : (
+      <CardRenderer key={c.id} card={c} />
+    );
 
   const media = rest.filter(
     (p): p is Extract<ContentPart, { type: "image" | "file" | "audio" }> =>
       p.type === "image" || p.type === "file" || p.type === "audio",
   );
+
+  const surfaceEvent = message.metadata?.[SURFACE_EVENT_METADATA_KEY] as SurfaceEventRecord | undefined;
+  if (message.role === "user" && surfaceEvent) {
+    return (
+      <div className="sc-msg sc-msg--user">
+        <SurfaceEventNote record={surfaceEvent} />
+      </div>
+    );
+  }
 
   if (message.role === "user") {
     // Attachments render inside the bubble: a file the user sent that vanishes
@@ -216,15 +257,31 @@ export function MessageView({
       {media.length ? <MediaParts parts={media} /> : null}
       {providerTools.length ? <ProviderToolChips items={providerTools} /> : null}
       {calls.length || results.length ? <ToolActivity calls={calls} results={results} /> : null}
-      {passive.map((c) => (
-        <CardRenderer key={c.id} card={c} />
-      ))}
-      {interactive.map((c) => (
-        <CardRenderer key={c.id} card={c} respond={respond} answered />
-      ))}
-      {text ? <div className="sc-prose sc-msg__text" dangerouslySetInnerHTML={{ __html: html }} /> : null}
+      {segments ? (
+        segments.map((segment) =>
+          segment.type === "text" ? (
+            <SettledText key={segment.key} text={segment.text} />
+          ) : segment.type === "output" ? (
+            <div className="sc-tooloutput" key={segment.key} data-call-id={segment.callId}>
+              {segment.cards.map(renderCard)}
+            </div>
+          ) : (
+            renderCard(segment.card)
+          ),
+        )
+      ) : (
+        <>
+          {passive.map((c) => (
+            <CardRenderer key={c.id} card={c} />
+          ))}
+          {interactive.map((c) => (
+            <CardRenderer key={c.id} card={c} respond={respond} answered />
+          ))}
+          {text ? <div className="sc-prose sc-msg__text" dangerouslySetInnerHTML={{ __html: html }} /> : null}
+        </>
+      )}
       {!text && !cards.length && !calls.length ? <div className="sc-muted">(no response)</div> : null}
-      {text || cards.length ? (
+      {(text || cards.length) && (message.metadata as { turn?: TurnMeta } | undefined)?.turn?.origin !== "surface-action" ? (
         <MessageMeta meta={(message.metadata as { turn?: TurnMeta } | undefined)?.turn} onRegenerate={onRegenerate} />
       ) : null}
       <BranchNav messageId={message.id} />
@@ -320,9 +377,6 @@ function dayLabel(at: number): string {
   if (diffDays === 1) return "Yesterday";
   return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
-
-const INTERACTIVE_KINDS = new Set(["choice", "form", "confirm"]);
-const isInteractiveKind = (kind?: string) => (kind ? INTERACTIVE_KINDS.has(kind) : false);
 
 const formatBytes = (n: number) =>
   n < 1024 ? `${n} B` : n < 1024 * 1024 ? `${(n / 1024).toFixed(0)} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`;
@@ -574,18 +628,28 @@ function PartialCard({ callId, spec }: { callId: string; spec: CardSpec }) {
 /** The live turn: streamed text, cards as they arrive, and any blocking card. */
 export function LiveTurn() {
   const run = useRun();
-  const cards = useCards();
   const { pending, respond } = useCardAction();
 
   // Hooks must run on every render path — this sits above the early return, or
   // the hook count changes the moment a run starts and React tears the page down.
   const text = run.parts.filter((p) => p.type === "text").map((p) => (p as { text: string }).text).join("");
+  // The same order the finished message will have, so nothing moves on commit.
+  // Read from the run rather than useCards, whose id comparison would hold on to
+  // a card's previous spec after an in-place update.
+  const segments = layoutTurn(run.parts, run.cards, { keepEmptyOutputs: true });
+  const lastText = segments.reduce<Extract<(typeof segments)[number], { type: "text" }> | undefined>(
+    (found, segment) => (segment.type === "text" ? segment : found),
+    undefined,
+  );
   // Streamed text arrives token by token; re-running the markdown pipeline on
   // every one of them is O(n²) over the full response. Batch it to once per
   // frame while the run is actually streaming, and snap to the exact final
   // text the instant it isn't. Each frame then re-renders only the blocks the
   // stream can still change; the settled ones are kept from earlier frames.
-  const throttledText = useFrameThrottled(text, run.status === "running");
+  const liveText = lastText?.text ?? "";
+  const throttled = useFrameThrottled(liveText, run.status === "running");
+  // A new block starts from its own text, not one frame of the block before it.
+  const throttledText = liveText.startsWith(throttled) ? throttled : liveText;
   const [markdownStream] = useState(newMarkdownStream);
   const html = useMemo(() => renderMarkdownStream(throttledText, markdownStream), [throttledText, markdownStream]);
   const thoughtFor = useThinkingDuration(run.runId, run.parts.some((p) => p.type === "reasoning"), Boolean(text));
@@ -599,29 +663,49 @@ export function LiveTurn() {
   const providerTools = run.parts
     .filter((p): p is Extract<ContentPart, { type: "artifact" }> => p.type === "artifact" && p.kind.startsWith("provider-tool:"))
     .map((p) => ({ id: p.id, kind: p.kind.slice("provider-tool:".length) }));
-  const visibleCards = cards.filter((c) => c.id !== pending?.id);
   const callIds = new Set(calls.map((call) => call.callId));
-  const uncorrelatedCards = visibleCards.filter((card) => !card.callId || !callIds.has(card.callId));
+  // A card waiting on the person stays in its own slot, answerable and never
+  // collapsed: nothing can be written after it until they answer.
+  const renderLiveCard = (card: Card) =>
+    card.id === pending?.id ? <CardRenderer key={card.id} card={card} respond={respond} /> : <CardRenderer key={card.id} card={card} />;
   // Calls whose arguments are still being written have no tool-call part yet
   // (that lands when the step ends), but they already own an output slot.
   const partialTools = run.partialTools ?? {};
-  const slots = [...callIds, ...Object.keys(partialTools).filter((id) => !callIds.has(id))];
-  const outputs = slots.map((callId) => {
-    const correlated = visibleCards.filter((card) => card.callId === callId);
+  const writing = Object.keys(partialTools).filter((id) => !callIds.has(id));
+  const outputOf = (callId: string, correlated: Card[]) => {
     const preview = partialTools[callId];
     const loading = run.pendingTools?.[callId]?.loading ?? preview?.loading;
     // Validated card > streaming preview > shaped skeleton. The preview holds
     // its place past `tool-call` until the real card replaces it, so the slot
     // never drops back to a skeleton in between.
     const content = correlated.length
-      ? correlated.map((card) => <CardRenderer key={card.id} card={card} />)
+      ? correlated.map(renderLiveCard)
       : preview?.partialCard
         ? <PartialCard key={`partial:${callId}`} callId={callId} spec={preview.partialCard} />
         : loading
           ? <CardSkeleton hint={loading} />
           : null;
-    return content ? { callId, content } : null;
-  });
+    return content ? (
+      <div className="sc-tooloutput" key={`call:${callId}`} data-call-id={callId}>
+        {content}
+      </div>
+    ) : null;
+  };
+  const flow = [
+    ...segments.map((segment) => {
+      if (segment.type === "output") return outputOf(segment.callId, segment.cards);
+      if (segment.type === "card") return renderLiveCard(segment.card);
+      if (segment !== lastText) return <SettledText key={segment.key} text={segment.text} />;
+      return (
+        <div
+          key={segment.key}
+          className={`sc-prose sc-msg__text${run.status === "running" ? ` sc-msg__text--streaming sc-msg__text--${streamPhase}` : ""}`}
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      );
+    }),
+    ...writing.map((callId) => outputOf(callId, [])),
+  ];
 
   return (
     <div className="sc-msg sc-msg--assistant">
@@ -639,30 +723,14 @@ export function LiveTurn() {
       ) : null}
       {providerTools.length ? <ProviderToolChips items={providerTools} /> : null}
       {calls.length ? <ToolActivity calls={calls} results={results} /> : null}
-      {/* A known tool output owns one stable slot from arguments → preview or
-          skeleton → card. Keeping the wrapper keyed by callId prevents a
-          generated image or chart from jumping to a new position when its
-          real card arrives. */}
-      {outputs.map((slot) =>
-        slot ? (
-          <div className="sc-tooloutput" key={slot.callId} data-call-id={slot.callId}>
-            {slot.content}
-          </div>
-        ) : null,
-      )}
-      {uncorrelatedCards.map((card) => <CardRenderer key={card.id} card={card} />)}
-      {/* The blocking card renders last and un-collapsed — it is the thing the
-          user must act on, so nothing may hide it. */}
-      {pending ? <CardRenderer key={pending.id} card={pending} respond={respond} /> : null}
-      {text ? (
-        <div
-          className={`sc-prose sc-msg__text${run.status === "running" ? ` sc-msg__text--streaming sc-msg__text--${streamPhase}` : ""}`}
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
-      ) : null}
+      {/* Text and tool outputs, in the order they happened. A known tool output
+          owns one stable slot from arguments → preview or skeleton → card:
+          keying the wrapper by callId keeps a generated image or chart from
+          jumping to a new position when its real card arrives. */}
+      {flow}
       {/* Nothing to show yet. The orb carries the wait; the label stays derived
           from run state rather than a rotation of invented phrases. */}
-      {run.status === "running" && !text && !calls.length && !outputs.some(Boolean) ? (
+      {run.status === "running" && !text && !calls.length && !flow.some(Boolean) ? (
         <div className="sc-status" aria-live="polite">
           <Orb variant="S1" pill label={statusLine(run)} />
         </div>
@@ -713,8 +781,18 @@ export function Thread({ empty }: { empty?: ReactNode }) {
   const { messages, status, error, regenerate, isRunning } = useThread();
   const { respond } = useCardAction();
   const run = useRun();
+  const pendingCardId = useRun((r) => r.pendingCard?.id);
   const bottomRef = useRef<HTMLDivElement>(null);
   const [pinned, setPinned] = useState(true);
+
+  // A question the person has to answer is brought into view wherever they had
+  // scrolled to. A button high up a surface can raise one at the bottom of the
+  // thread, and an approval nobody can see reads as the button doing nothing.
+  useEffect(() => {
+    if (!pendingCardId) return;
+    setPinned(true);
+    bottomRef.current?.scrollIntoView({ block: "end" });
+  }, [pendingCardId]);
 
   // Autoscroll, but yield to the user: once they scroll up mid-stream, stop
   // yanking them back down.

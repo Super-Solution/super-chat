@@ -34,6 +34,8 @@ import {
   type MeteringSource,
 } from "./metering.js";
 import { shouldStop, type StopCondition } from "./stop.js";
+import { foldSurfaces, SurfaceLedger } from "../surfaces/ledger.js";
+import { surfaceActionTools } from "../surfaces/action-run.js";
 
 export type RunConfig = {
   provider: Provider;
@@ -84,6 +86,12 @@ export type RunConfig = {
    * long tool loops.
    */
   useServerHistory?: boolean;
+  /**
+   * The working copy of this conversation's surfaces. A client passes one so
+   * edits the person makes mid-run are visible to `readSurface`; without it the
+   * run derives its own from `messages`.
+   */
+  surfaces?: SurfaceLedger;
 };
 
 export async function* runAgent(
@@ -95,6 +103,7 @@ export async function* runAgent(
   const maxSteps = config.maxSteps ?? 8;
   const vars = config.vars ?? {};
   const runStartedAt = Date.now();
+  const surfaces = config.surfaces ?? new SurfaceLedger(foldSurfaces(messages));
 
   yield { type: "run-start", runId, mode };
 
@@ -369,6 +378,8 @@ export async function* runAgent(
         vars,
         signal: config.signal,
         timeoutMs: config.toolTimeoutMs,
+        surfaces,
+        surfaceActionTools: surfaceActionTools(config.tools, config.toolResolution).map((t) => t.name),
         onCard: (card) => channel.push({ type: "card", card }),
         onOutcome: (outcome) =>
           channel.push({

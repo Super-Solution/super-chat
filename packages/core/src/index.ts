@@ -5,6 +5,7 @@ export * from "./content/types.js";
 export * from "./content/parts.js";
 export { pathTo, childrenOf, siblingsOf, latestLeaf, linkLinear } from "./content/branching.js";
 export { splitBlocks, type MarkdownBlock, type MarkdownBlockKind } from "./content/blocks.js";
+export { layoutTurn, hasTurnOrder, type TurnSegment, type TurnLayoutOptions } from "./content/turn-layout.js";
 export {
   formatQuotes,
   withQuotes,
@@ -111,6 +112,9 @@ export {
   formCard,
   confirmCard,
 } from "./cards/builtin.js";
+
+// surfaces
+export * from "./surfaces/index.js";
 
 // tools
 export * from "./tools/types.js";

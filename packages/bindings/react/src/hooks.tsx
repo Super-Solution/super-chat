@@ -24,6 +24,9 @@ import {
   type PartialToolCall,
   type RunState,
   type Skill,
+  type SurfaceActivity,
+  type SurfaceCardAnswer,
+  type SurfaceSpec,
   type ThreadMeta,
   type ToolDefinition,
 } from "@supersolutions/super-chat-core";
@@ -39,6 +42,11 @@ export function useAgentClient(): AgentClient {
   const client = useContext(AgentContext);
   if (!client) throw new Error("useAgentClient must be used inside <AgentProvider>.");
   return client;
+}
+
+/** The client, or `null` outside a provider: for components that also render standalone. */
+export function useOptionalAgentClient(): AgentClient | null {
+  return useContext(AgentContext);
 }
 
 /**
@@ -243,6 +251,35 @@ export function useCardAction(): { pending: Card | undefined; respond: (action: 
   );
 
   return { pending, respond };
+}
+
+/** One surface's live state, and the ways a person can change it. */
+export function useSurface(surfaceId: string): {
+  spec: SurfaceSpec | undefined;
+  activity: SurfaceActivity | undefined;
+  setData: (path: string, value: unknown) => boolean;
+  press: (componentId: string, scope?: { item?: unknown; index?: number }) => void;
+  answer: (componentId: string, answer: Omit<SurfaceCardAnswer, "at">) => void;
+} {
+  const client = useAgentClient();
+  const spec = useAgentState((s) => s.surfaces[surfaceId]);
+  const activity = useAgentState((s) => s.surfaceActivity[surfaceId]);
+  return useMemo(
+    () => ({
+      spec,
+      activity,
+      setData: (path: string, value: unknown) => client.setSurfaceData(surfaceId, path, value),
+      press: (componentId: string, scope?: { item?: unknown; index?: number }) => void client.dispatchSurfaceAction(surfaceId, componentId, scope),
+      answer: (componentId: string, answer: Omit<SurfaceCardAnswer, "at">) => void client.respondToSurfaceCard(surfaceId, componentId, answer),
+    }),
+    [client, surfaceId, spec, activity],
+  );
+}
+
+/** Every surface on the active branch, for a host that places them in a panel or canvas. */
+export function useSurfaces(): SurfaceSpec[] {
+  const surfaces = useAgentState((s) => s.surfaces);
+  return useMemo(() => Object.values(surfaces).filter((s) => !s.deleted), [surfaces]);
 }
 
 /** What actually went into the last request, and why. */

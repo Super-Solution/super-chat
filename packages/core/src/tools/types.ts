@@ -14,6 +14,7 @@
 
 import type { JSONSchema } from "../providers/types.js";
 import type { Card, CardSpec } from "../cards/types.js";
+import type { SurfaceLedger } from "../surfaces/ledger.js";
 
 export type ToolSide = "read" | "write" | "confirm";
 
@@ -42,8 +43,12 @@ export type ToolExecutionContext = {
   callId: string;
   /** Emit a card mid-execution (progress updates on a long tool). */
   emitCard?: (spec: CardSpec) => void;
-  /** Ask the user something and await the answer. Powers `side: "confirm"`. */
+  /** Ask the user something and await the answer. Absent when this host cannot ask. */
   requestCard?: (spec: CardSpec) => Promise<unknown>;
+  /** The surfaces on this conversation's active path, as this run sees them. */
+  surfaces?: SurfaceLedger;
+  /** Tools a surface button may call in this run. */
+  surfaceActionTools?: readonly string[];
 };
 
 export type ToolResultExtras = {
@@ -81,8 +86,18 @@ export type ToolDefinition = {
   /**
    * `confirm` suspends the run and shows an approval card before executing.
    * The distinction from `write` is intent: `write` acts, `confirm` asks first.
+   * The runtime enforces this: with no approval, and no way to get one, the tool
+   * does not run.
    */
   side?: ToolSide;
+  /**
+   * Who asks, for a `side: "confirm"` tool. `"runtime"` (the default) shows a
+   * generic approval card before the tool starts. `"tool"` is for a tool whose
+   * approval needs something only it can compute, such as a diff: it must call
+   * `ctx.requestCard` itself before acting. A tool that asks for itself without
+   * saying so is asked about twice, which is the safe way for that to go wrong.
+   */
+  confirmation?: "runtime" | "tool";
   /** Ask the provider to enforce the schema (OpenAI strict mode). */
   strict?: boolean;
   /** Default card renderer key when the result carries no explicit card. */

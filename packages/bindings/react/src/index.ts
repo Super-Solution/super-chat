@@ -1,6 +1,9 @@
 export {
   AgentProvider,
   useAgentClient,
+  useOptionalAgentClient,
+  useSurface,
+  useSurfaces,
   useAgentClientInstance,
   useAgentState,
   useThread,

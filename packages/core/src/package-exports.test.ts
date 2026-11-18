@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -19,7 +19,8 @@ const fixtures: string[] = [];
 // Real Node resolution exercises the require/Jest condition set without
 // pretending the ESM build provides CommonJS execution support.
 function fixture(manifest: Manifest) {
-  const root = mkdtempSync(join(tmpdir(), "superchat-export-resolution-"));
+  // realpath: macOS tmpdir is a symlink, and Node resolves through it.
+  const root = realpathSync(mkdtempSync(join(tmpdir(), "superchat-export-resolution-")));
   fixtures.push(root);
   const installed = join(root, "node_modules", manifest.name);
   mkdirSync(installed, { recursive: true });

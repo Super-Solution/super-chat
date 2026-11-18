@@ -18,7 +18,8 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { BUILTIN_CARDS, type Card, type CardAction, type CardSpec, type ToolLoadingHint } from "@supersolutions/super-chat-core";
+import { BUILTIN_CARDS, CardRegistry, SURFACE_CARD_KIND, type Card, type CardAction, type CardSpec, type ToolLoadingHint } from "@supersolutions/super-chat-core";
+import { useOptionalAgentClient } from "@supersolutions/super-chat-react";
 
 export type CardRendererProps<S extends CardSpec = CardSpec> = {
   spec: S;
@@ -35,23 +36,48 @@ export type CardRendererProps<S extends CardSpec = CardSpec> = {
   partial?: boolean;
 };
 
+/** What a host that names no registry gets: the built-in kinds. */
+const DEFAULT_REGISTRY = new CardRegistry(BUILTIN_CARDS);
+const BUILTIN_INTERACTIVE: ReadonlySet<string> = new Set(BUILTIN_CARDS.filter((c) => c.interactive).map((c) => c.kind));
+
+const CardRegistryContext = createContext<CardRegistry | null>(null);
+
+/** The registry in force: the nearest provider's, then the client's, then the built-ins. */
+export function useCardRegistry(): CardRegistry {
+  const provided = useContext(CardRegistryContext);
+  const client = useOptionalAgentClient();
+  return provided ?? client?.getConfig().cards ?? DEFAULT_REGISTRY;
+}
+
 /**
- * Built-in kinds that ask the user something. A partial spec never reaches
- * one: core's `CardRegistry.partial` already refuses to derive a preview for
- * an interactive kind, and `CardRenderer` refuses again here, so a tool hook
- * that skipped the registry still cannot put a half-received question in
- * front of the user.
+ * Whether a kind asks the user something, as its registration says, so a plugin's
+ * interactive kind behaves like a built-in one. Built-in kinds count even under a
+ * registry that omits them: a partial spec must never put a half-received question
+ * in front of the user, whichever registry a host happened to pass.
  */
-const INTERACTIVE_KINDS: ReadonlySet<string> = new Set(BUILTIN_CARDS.filter((c) => c.interactive).map((c) => c.kind));
+export function useInteractiveKinds(): (kind: string | undefined) => boolean {
+  const registry = useCardRegistry();
+  return useMemo(() => (kind) => Boolean(kind) && (BUILTIN_INTERACTIVE.has(kind!) || registry.isInteractive(kind!)), [registry]);
+}
 
 export type CardRendererMap = Record<string, ComponentType<CardRendererProps<never>>>;
 
 const RendererContext = createContext<CardRendererMap>({});
 
-export function CardRendererProvider({ renderers, children }: { renderers: CardRendererMap; children: ReactNode }) {
+export function CardRendererProvider({
+  renderers,
+  registry,
+  children,
+}: {
+  renderers: CardRendererMap;
+  /** The registry these kinds were registered in. Defaults to the client's. */
+  registry?: CardRegistry;
+  children: ReactNode;
+}) {
   const inherited = useContext(RendererContext);
   const value = useMemo(() => ({ ...inherited, ...renderers }), [inherited, renderers]);
-  return <RendererContext.Provider value={value}>{children}</RendererContext.Provider>;
+  const tree = <RendererContext.Provider value={value}>{children}</RendererContext.Provider>;
+  return registry ? <CardRegistryContext.Provider value={registry}>{tree}</CardRegistryContext.Provider> : tree;
 }
 
 export function useCardRenderers(): CardRendererMap {
@@ -163,16 +189,21 @@ export function CardRenderer({
   partial?: boolean;
 }) {
   const renderers = useCardRenderers();
+  const isInteractive = useInteractiveKinds();
   const kind = (card.spec as { kind?: string }).kind ?? "unknown";
 
-  if (partial && INTERACTIVE_KINDS.has(kind)) return null;
+  if (partial && isInteractive(kind)) return null;
 
   if (card.expired) {
     // Large card payloads are trimmed out of persisted history. Say so — an
     // empty shell reads as a broken app.
     return (
       <div className="sc-card sc-card--muted">
-        <div className="sc-muted">This {kind} result expired from saved history. Ask again to refresh it.</div>
+        <div className="sc-muted">
+          {kind === SURFACE_CARD_KIND
+            ? "This interface expired from saved history. Ask the agent to rebuild it."
+            : `This ${kind} result expired from saved history. Ask again to refresh it.`}
+        </div>
       </div>
     );
   }

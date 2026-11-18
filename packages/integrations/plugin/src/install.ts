@@ -57,9 +57,10 @@ function toToolDefinition(tool: DeclaredPluginTool, authority: PluginToolAuthori
     description: tool.description,
     inputSchema: tool.inputSchema,
     side,
+    // The approval below names the plugin and passes `confirmed` on to it.
+    ...(confirm ? { confirmation: "tool" as const } : {}),
     execute: async (input: unknown, ctx: ToolExecutionContext): Promise<ToolResult> => {
       if (confirm) {
-        // The runtime does not ask on a tool's behalf, so the approval happens here, and no way to ask means no run.
         if (!ctx.requestCard) return { output: { error: `"${tool.name}" needs the user's approval and this host cannot ask for it.` }, failure: "denied" };
         const answer = (await ctx.requestCard({
           kind: "confirm",

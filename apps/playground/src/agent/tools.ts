@@ -270,6 +270,7 @@ export const compareInstruments: ToolDefinition = {
 export const createAlert: ToolDefinition = {
   name: "createAlert",
   side: "confirm",
+  confirmation: "tool",
   description:
     "Set a price alert. This is a real action, so it asks the user to confirm the exact terms first. Never call it without a specific symbol and price.",
   inputSchema: {

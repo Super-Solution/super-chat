@@ -262,6 +262,8 @@ export function createDocumentTools(opts: DocumentToolsOptions): ToolDefinition[
       "Propose changes to a document. The user sees them as a diff and accepts them one at a time; nothing is written until they do.",
     inputSchema: EDIT_SCHEMA,
     side: "confirm",
+    // The diff is the approval, and only this tool can compute it.
+    confirmation: "tool",
     async execute(input, ctx: ToolExecutionContext) {
       const i = (input ?? {}) as Record<string, unknown>;
       const docId = str(i["docId"]);

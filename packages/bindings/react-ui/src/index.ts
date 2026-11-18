@@ -4,6 +4,8 @@ export {
   CardBoundary,
   CardSkeleton,
   useCardRenderers,
+  useCardRegistry,
+  useInteractiveKinds,
   type CardRendererProps,
   type CardRendererMap,
   type CardSkeletonProps,
@@ -37,6 +39,17 @@ export { EditReviewCardView } from "./cards/EditReview.js";
 export { EmailCardView, type EmailCardViewProps } from "./cards/Email.js";
 
 export { Thread, Composer, MessageView, LiveTurn } from "./Thread.js";
+export {
+  SurfaceView,
+  SurfaceHostProvider,
+  useSurfaceCatalogue,
+  type SurfaceViewProps,
+  type SurfaceHostProviderProps,
+  type SurfacePlacement,
+  type SurfaceCustomRenderer,
+  type SurfaceCustomRendererProps,
+} from "./surfaces/SurfaceView.js";
+export { AgentSurface, SurfaceCardView, type AgentSurfaceProps } from "./surfaces/AgentSurface.js";
 export { ContextInspector } from "./ContextInspector.js";
 export { ToastProvider, ConnectionBanner, useToast, type Toast } from "./Toast.js";
 export { DocumentQuoteProvider, useDocumentQuotes, type QuoteBus } from "./quotes.js";

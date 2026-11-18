@@ -9,10 +9,14 @@
 //
 //  2. Errors are COMPACTED. A raw error can be a 40KB stack that then rides in
 //     history for the rest of the conversation, crowding out the actual work.
+//
+//  3. `side: "confirm"` is enforced HERE, on the one path every tool call takes,
+//     whether a model or a button started it. No approval means no execution.
 
 import { AgentError, toAgentError } from "../errors.js";
 import { makeCard } from "../cards/registry.js";
 import { CARD_KEY, isCardCarrier, withCard, type Card, type CardSpec } from "../cards/types.js";
+import type { SurfaceLedger } from "../surfaces/ledger.js";
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from "../tools/types.js";
 
 export type ToolCallRequest = { callId: string; name: string; input: unknown };
@@ -37,6 +41,45 @@ export function compactError(e: unknown): { error: string; kind?: string } {
   }
   const message = e instanceof Error ? e.message : String(e);
   return { error: message.slice(0, MAX_ERROR_CHARS) || "Tool failed with no message." };
+}
+
+const PREVIEW_CHARS = 200;
+const PREVIEW_FIELDS = 8;
+
+const preview = (value: unknown): string => {
+  const text = typeof value === "string" ? value : (JSON.stringify(value) ?? String(value));
+  return text.length > PREVIEW_CHARS ? `${text.slice(0, PREVIEW_CHARS)}…` : text;
+};
+
+/** The generic approval: what will run, and exactly what it was given. */
+function approvalCard(tool: ToolDefinition, input: unknown): CardSpec {
+  const fields =
+    typeof input === "object" && input !== null && !Array.isArray(input)
+      ? Object.entries(input).slice(0, PREVIEW_FIELDS).map(([label, value]) => ({ label, value: preview(value), mono: true }))
+      : input === undefined || input === null
+        ? []
+        : [{ label: "Input", value: preview(input), mono: true }];
+  return {
+    kind: "confirm",
+    title: `Allow ${tool.name}?`,
+    description: preview(tool.description),
+    summary: fields.length ? fields : [{ label: "Tool", value: tool.name, mono: true }],
+    confirmLabel: "Allow",
+    cancelLabel: "Decline",
+  };
+}
+
+/**
+ * Why a `side: "confirm"` tool may not start, or `undefined` when it may. Anything
+ * short of an explicit yes is a no: a host that cannot ask, a dismissed card, a
+ * stopped run, an answer this code does not recognise.
+ */
+async function confirmationRefusal(tool: ToolDefinition, call: ToolCallRequest, opts: ExecuteToolOptions): Promise<string | undefined> {
+  if (!opts.requestCard) return `"${tool.name}" needs the user's approval and this host cannot ask for it.`;
+  if (tool.confirmation === "tool") return undefined;
+  const answer = await opts.requestCard(call.callId, approvalCard(tool, call.input));
+  if (opts.signal?.aborted) return "The run was stopped before this was approved.";
+  return (answer as { confirmed?: unknown } | null | undefined)?.confirmed === true ? undefined : "The user declined.";
 }
 
 const isToolResult = (v: unknown): v is ToolResult =>
@@ -67,6 +110,8 @@ export type ExecuteToolOptions = {
    * standalone `executeToolCall` caller can leave it unset and pay the scan.
    */
   toolIndex?: ReadonlyMap<string, ToolDefinition>;
+  surfaces?: SurfaceLedger;
+  surfaceActionTools?: readonly string[];
 };
 
 export async function executeToolCall(call: ToolCallRequest, opts: ExecuteToolOptions): Promise<ToolCallOutcome> {
@@ -97,6 +142,8 @@ export async function executeToolCall(call: ToolCallRequest, opts: ExecuteToolOp
     vars: opts.vars,
     signal: opts.signal,
     callId: call.callId,
+    ...(opts.surfaces ? { surfaces: opts.surfaces } : {}),
+    ...(opts.surfaceActionTools ? { surfaceActionTools: opts.surfaceActionTools } : {}),
     emitCard: (spec) => {
       if (settled) return;
       const card = makeCard(spec, call.callId);
@@ -114,6 +161,12 @@ export async function executeToolCall(call: ToolCallRequest, opts: ExecuteToolOp
   };
 
   try {
+    // Before the timeout starts: a person deciding is not a tool running slowly.
+    if (tool.side === "confirm") {
+      const refusal = await confirmationRefusal(tool, call, opts);
+      if (refusal) return { callId: call.callId, name: call.name, output: { error: refusal }, failure: "denied", ms: Date.now() - started };
+    }
+
     const raw = tool.execute
       ? await withTimeout(Promise.resolve(tool.execute(call.input, ctx)), opts.timeoutMs, call.name)
       : opts.onHostTool

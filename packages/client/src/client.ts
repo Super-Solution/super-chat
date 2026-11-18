@@ -40,6 +40,28 @@ import {
   QUOTES_METADATA_KEY,
   type DocumentQuoteRef,
   type DocumentStore,
+  type CardRegistry,
+  type SurfaceAction,
+  type SurfaceActivity,
+  type SurfaceActivityState,
+  type SurfaceCardAnswer,
+  type SurfaceCatalogue,
+  type SurfaceComponent,
+  type SurfaceEventRecord,
+  type SurfaceSpec,
+  SURFACE_EVENT_METADATA_KEY,
+  SURFACE_LIMITS,
+  SurfaceLedger,
+  authorizeSurfaceTool,
+  evaluateSurfaceCondition,
+  foldSurfaces,
+  getAt,
+  isSurfaceSpec,
+  resolveSurfaceAction,
+  runSurfaceToolAction,
+  setAt,
+  stripCardPayload,
+  surfaceCardId,
 } from "@supersolutions/super-chat-core";
 import { Store } from "./store.js";
 
@@ -74,10 +96,21 @@ export type ThreadState = {
    * from "the button did nothing".
    */
   stopping?: boolean;
+  /** Current state of each surface on the active path, the person's edits included. */
+  surfaces: Record<string, SurfaceSpec>;
+  /** What became of the last action pressed on each surface. */
+  surfaceActivity: Record<string, SurfaceActivity>;
 };
 
 /** What a finished turn cost, attached to the committed message. */
-export type TurnMeta = { model: string; ms: number; usage?: RunState["usage"]; steps?: number };
+export type TurnMeta = {
+  model: string;
+  ms: number;
+  usage?: RunState["usage"];
+  steps?: number;
+  /** Set when a person's button press produced this turn rather than a model. */
+  origin?: "surface-action";
+};
 
 export type AgentClientConfig = {
   provider: Provider;
@@ -122,7 +155,18 @@ export type AgentClientConfig = {
    * Unset, quotes are sent as taken.
    */
   documentStore?: Pick<DocumentStore, "get">;
+  /** The card registry in use, so the UI can ask it which kinds are interactive. */
+  cards?: CardRegistry;
+  /** The surface catalogue in use, so the renderer validates against what the tools accept. */
+  surfaceCatalogue?: SurfaceCatalogue;
 };
+
+/** How long local edits gather before they are written into the thread and saved. */
+const SURFACE_SAVE_DELAY_MS = 300;
+const SURFACE_QUEUE_LIMIT = 8;
+const SURFACE_CONTEXT_CHARS = 4_000;
+
+type QueuedSurfaceAction = { spec: SurfaceSpec; component: SurfaceComponent; action: Exclude<SurfaceAction, { type: "set" }> };
 
 /** A card waiting on the user, with the resolver that unblocks the run. */
 type PendingDecision = { card: Card; resolve: (action: CardAction) => void };
@@ -143,6 +187,12 @@ export class AgentClient {
   private generation = 0;
   /** Wall-clock start of the current turn, for the committed TurnMeta. */
   private turnStartedAt = 0;
+  /** The current run's view of the surfaces, kept level with the person's edits. */
+  private surfaceLedger: SurfaceLedger | null = null;
+  private dirtySurfaces = new Set<string>();
+  private surfaceSaveTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Actions pressed while a run was busy. One run at a time, so they wait their turn. */
+  private surfaceQueue: QueuedSurfaceAction[] = [];
 
   constructor(config: AgentClientConfig) {
     this.config = config;
@@ -150,9 +200,10 @@ export class AgentClient {
     // tree with parentIds (a v2 snapshot); linkLinear handles both.
     const tree = linkLinear(config.initialMessages ?? []);
     const headId = config.initialHeadId ?? tree.at(-1)?.id ?? null;
+    const messages = pathTo(tree, headId);
     this.store = new Store<ThreadState>({
       id: config.threadId ?? nextId("thread"),
-      messages: pathTo(tree, headId),
+      messages,
       tree,
       headId,
       run: initialRunState("", config.mode ?? "stream"),
@@ -160,6 +211,8 @@ export class AgentClient {
       jobs: [],
       attachments: [],
       status: "idle",
+      surfaces: foldSurfaces(messages),
+      surfaceActivity: {},
     });
   }
 
@@ -268,7 +321,8 @@ export class AgentClient {
     for (let i = messages.length - 1; i >= 0; i -= 1) {
       const m = messages[i]!;
       if (m.role === "user") {
-        this.store.set((s) => ({ ...s, headId: m.id, messages: pathTo(s.tree, m.id) }));
+        this.flushSurfaceWrites();
+        this.store.set((s) => onPath({ ...s, headId: m.id, messages: pathTo(s.tree, m.id) }));
         await this.run([...this.store.get().messages], opts);
         return;
       }
@@ -283,7 +337,9 @@ export class AgentClient {
     if (this.isRunning) throw new Error("A run is already in progress.");
     const original = this.store.get().tree.find((m) => m.id === messageId);
     if (!original || original.role !== "user") return;
+    this.flushSurfaceWrites();
     this.appendMessage(userMessage(input), original.parentId ?? null);
+    this.store.set(onPath);
     this.persist();
     await this.run([...this.store.get().messages], opts);
   }
@@ -300,12 +356,16 @@ export class AgentClient {
     const index = siblings.findIndex((m) => m.id === messageId);
     const next = siblings[(index + delta + siblings.length) % siblings.length]!;
     const headId = latestLeaf(s.tree, next.id);
-    this.store.set((prev) => ({ ...prev, headId, messages: pathTo(prev.tree, headId) }));
+    this.flushSurfaceWrites();
+    this.store.set((prev) => onPath({ ...prev, headId, messages: pathTo(prev.tree, headId) }));
     this.persist();
   }
 
   private async run(messages: Message[], opts: { forceSkillIds?: string[] }): Promise<void> {
     const gen = this.generation;
+    this.flushSurfaceWrites();
+    const surfaces = new SurfaceLedger(this.store.get().surfaces);
+    this.surfaceLedger = surfaces;
     this.controller = new AbortController();
     const mode = this.config.mode ?? "stream";
     this.turnStartedAt = Date.now();
@@ -346,11 +406,9 @@ export class AgentClient {
       signal: this.controller.signal,
       forceSkillIds: opts.forceSkillIds,
       onHostTool: this.config.onHostTool,
+      surfaces,
       // Suspend the run on an interactive card; `respond()` resolves it.
-      onUserDecision: (callId, card) =>
-        new Promise<CardAction>((resolve) => {
-          this.pending.set(callId, { card, resolve });
-        }),
+      onUserDecision: this.awaitDecision,
     };
 
     try {
@@ -362,9 +420,18 @@ export class AgentClient {
       if (gen === this.generation) this.store.set((s) => ({ ...s, status: "error", error: e }));
     } finally {
       this.controller = null;
-      if (gen === this.generation) this.commitRun();
+      this.surfaceLedger = null;
+      if (gen === this.generation) {
+        this.commitRun();
+        this.drainSurfaceQueue();
+      }
     }
   }
+
+  private awaitDecision = (callId: string, card: Card): Promise<CardAction> =>
+    new Promise<CardAction>((resolve) => {
+      this.pending.set(callId, { card, resolve });
+    });
 
   private apply(event: RunEvent): void {
     this.store.set((s) => {
@@ -386,6 +453,9 @@ export class AgentClient {
         next.jobs = s.jobs.map((j) => (j.handle.id === event.handle.id ? { ...j, status: event.status, updatedAt: Date.now() } : j));
       }
       if (event.type === "error") next.error = event.error;
+      if (event.type === "card" && isSurfaceSpec(event.card.spec)) {
+        next.surfaces = { ...s.surfaces, [event.card.spec.surfaceId]: event.card.spec };
+      }
       return next;
     });
   }
@@ -397,7 +467,9 @@ export class AgentClient {
    * them — the ContextBuilder strips artifacts before they reach a provider,
    * so this costs nothing at request time.
    */
-  private commitRun(): void {
+  private commitRun(origin?: TurnMeta["origin"]): void {
+    // Edits still gathering belong to this turn's snapshot of the surface.
+    this.flushSurfaceWrites(true);
     this.store.set((s) => {
       // run.status reflects only what the agent loop itself saw, never a
       // throw caught in run()'s catch block — so a caught error must win
@@ -420,6 +492,8 @@ export class AgentClient {
         kind: `card:${(c.spec as { kind?: string }).kind ?? "unknown"}`,
         data: c.spec,
         ...(c.action ? { action: c.action } : {}),
+        // Where the card belongs among the turn's text.
+        ...(c.callId ? { callId: c.callId } : {}),
       }));
 
       // What the turn cost, recorded on the message. The UI has no other way to
@@ -429,6 +503,7 @@ export class AgentClient {
         ms: this.turnStartedAt ? Date.now() - this.turnStartedAt : 0,
         ...(s.run.usage && Object.keys(s.run.usage).length ? { usage: s.run.usage } : {}),
         ...(s.run.steps ? { steps: s.run.steps } : {}),
+        ...(origin ? { origin } : {}),
       };
 
       const linked: Message = {
@@ -482,12 +557,14 @@ export class AgentClient {
     if (!store) return false;
     const stored = await store.load(id);
     if (!stored) return false;
+    this.saveSurfacesNow();
     this.generation += 1; // invalidate any in-flight run before replacing state
     this.stop();
+    this.surfaceQueue = [];
     this.threadMeta = stored.meta;
     const tree = linkLinear(stored.messages);
     const headId = stored.headId ?? tree.at(-1)?.id ?? null;
-    this.store.set((s) => ({
+    this.store.set((s) => onPath({
       ...s,
       id: stored.meta.id,
       tree,
@@ -498,14 +575,17 @@ export class AgentClient {
       run: initialRunState("", this.config.mode ?? "stream"),
       status: "idle",
       error: undefined,
+      surfaceActivity: {},
     }));
     return true;
   }
 
   /** Start a fresh thread under a new id (`clear()` keeps the id; this doesn't). */
   newThread(): void {
+    this.saveSurfacesNow();
     this.generation += 1;
     this.stop();
+    this.surfaceQueue = [];
     this.threadMeta = undefined;
     this.store.set((s) => ({
       ...s,
@@ -518,6 +598,8 @@ export class AgentClient {
       run: initialRunState("", this.config.mode ?? "stream"),
       status: "idle",
       error: undefined,
+      surfaces: {},
+      surfaceActivity: {},
     }));
   }
 
@@ -553,11 +635,275 @@ export class AgentClient {
       entry.resolve({ cardId: entry.card.id, callId, kind: "cancel", type: "cancel", at: Date.now() });
     }
     this.pending.clear();
+    // Stop means stop: what was waiting behind this run does not start after it.
+    for (const queued of this.surfaceQueue.splice(0)) {
+      this.noteSurfaceActivity(queued.spec.surfaceId, queued.component.id, "cancelled", "Cancelled.");
+    }
+  }
+
+  // ── surfaces ──────────────────────────────────────────────────────────────
+
+  /**
+   * Write one value into a surface's data model. Neighbours bound to it update at
+   * once and no model is called. The thread is rewritten shortly after, not per
+   * keystroke, so typing does not re-render every message.
+   */
+  setSurfaceData(surfaceId: string, path: string, value: unknown): boolean {
+    const current = this.store.get().surfaces[surfaceId];
+    if (!current || current.deleted || current.expired) return false;
+    const data = setAt(current.data, path, value);
+    if (!data || JSON.stringify(data).length > SURFACE_LIMITS.dataChars) return false;
+    this.putSurface({ ...current, data, revision: current.revision + 1 });
+    return true;
+  }
+
+  private putSurface(spec: SurfaceSpec): void {
+    this.surfaceLedger?.put(spec);
+    this.store.set((s) => ({ ...s, surfaces: { ...s.surfaces, [spec.surfaceId]: spec } }));
+    this.dirtySurfaces.add(spec.surfaceId);
+    if (this.surfaceSaveTimer) return;
+    this.surfaceSaveTimer = setTimeout(() => this.saveSurfacesNow(), SURFACE_SAVE_DELAY_MS);
+  }
+
+  private saveSurfacesNow(): void {
+    if (this.surfaceSaveTimer) clearTimeout(this.surfaceSaveTimer);
+    this.surfaceSaveTimer = null;
+    if (!this.dirtySurfaces.size) return;
+    this.flushSurfaceWrites();
+    this.persist();
+  }
+
+  /**
+   * Fold pending edits into the newest snapshot of each surface: the live card, or
+   * the stored one. A finished run's cards stay in `run` until the next one starts,
+   * so they only count as the newest copy while that run has yet to commit.
+   */
+  private flushSurfaceWrites(uncommittedRun = this.isRunning): void {
+    if (this.surfaceSaveTimer) clearTimeout(this.surfaceSaveTimer);
+    this.surfaceSaveTimer = null;
+    if (!this.dirtySurfaces.size) return;
+    const ids = [...this.dirtySurfaces];
+    this.dirtySurfaces.clear();
+    this.store.set((s) => {
+      let { run, tree } = s;
+      for (const id of ids) {
+        const spec = s.surfaces[id];
+        if (!spec) continue;
+        const cardId = surfaceCardId(id);
+        if (uncommittedRun && run.cards.some((c) => c.id === cardId)) {
+          run = { ...run, cards: run.cards.map((c) => (c.id === cardId ? { ...c, spec } : c)) };
+          continue;
+        }
+        const holder = [...s.messages].reverse().find((m) => m.parts.some((p) => p.type === "artifact" && p.id === cardId));
+        if (!holder) continue;
+        tree = tree.map((m) =>
+          m.id === holder.id
+            ? { ...m, parts: m.parts.map((p) => (p.type === "artifact" && p.id === cardId ? { ...p, data: spec } : p)) }
+            : m,
+        );
+      }
+      if (run === s.run && tree === s.tree) return s;
+      return { ...s, run, cards: run.cards, tree, messages: tree === s.tree ? s.messages : pathTo(tree, s.headId) };
+    });
+  }
+
+  private noteSurfaceActivity(surfaceId: string, componentId: string, state: SurfaceActivityState, message?: string): SurfaceActivityState {
+    this.store.set((s) => ({
+      ...s,
+      surfaceActivity: { ...s.surfaceActivity, [surfaceId]: { componentId, state, ...(message ? { message } : {}), at: Date.now() } },
+    }));
+    return state;
+  }
+
+  /**
+   * Run the action of a control the person pressed.
+   *
+   * Takes the component's id rather than an action: what runs is read from the
+   * validated spec here, so nothing in the page can substitute a different one.
+   */
+  async dispatchSurfaceAction(
+    surfaceId: string,
+    componentId: string,
+    scope: { item?: unknown; index?: number } = {},
+  ): Promise<SurfaceActivityState> {
+    const spec = this.store.get().surfaces[surfaceId];
+    const component = spec?.components.find((c) => c.id === componentId);
+    const action = component?.["action"] as SurfaceAction | undefined;
+    if (!spec || spec.deleted || spec.expired || !component || !action) {
+      return this.noteSurfaceActivity(surfaceId, componentId, "refused", "This control is no longer available.");
+    }
+    const binding = { data: spec.data, ...scope };
+    const disabledWhen = component["disabledWhen"] as Parameters<typeof evaluateSurfaceCondition>[0];
+    if (disabledWhen && evaluateSurfaceCondition(disabledWhen, binding)) {
+      return this.noteSurfaceActivity(surfaceId, componentId, "refused", "This control is unavailable right now.");
+    }
+
+    const resolved = resolveSurfaceAction(action, binding);
+    if (resolved.type === "set") {
+      let data: Record<string, unknown> | undefined = spec.data;
+      for (const update of resolved.updates) data = data && setAt(data, update.path, update.value);
+      if (!data) return this.noteSurfaceActivity(surfaceId, componentId, "failed", "That change could not be applied.");
+      this.putSurface({ ...spec, data, revision: spec.revision + 1 });
+      return this.noteSurfaceActivity(surfaceId, componentId, "done");
+    }
+
+    if (resolved.type === "tool") {
+      const verdict = authorizeSurfaceTool(resolved.tool, resolved.args, this.config.tools, this.config.toolResolution);
+      if (!verdict.ok) return this.noteSurfaceActivity(surfaceId, componentId, "refused", verdict.reason);
+    }
+
+    const queued: QueuedSurfaceAction = { spec, component, action: resolved };
+    if (this.isRunning) {
+      if (this.surfaceQueue.length >= SURFACE_QUEUE_LIMIT) {
+        return this.noteSurfaceActivity(surfaceId, componentId, "refused", "Too many actions are waiting. Try again shortly.");
+      }
+      this.surfaceQueue.push(queued);
+      return this.noteSurfaceActivity(surfaceId, componentId, "queued", "Waiting for the agent to finish.");
+    }
+    return this.startSurfaceAction(queued);
+  }
+
+  /** Record the answer to an interactive card inside a surface, then run its action if it has one. */
+  async respondToSurfaceCard(surfaceId: string, componentId: string, answer: Omit<SurfaceCardAnswer, "at">): Promise<SurfaceActivityState> {
+    const spec = this.store.get().surfaces[surfaceId];
+    const component = spec?.components.find((c) => c.id === componentId);
+    const bind = component?.["bind"];
+    if (!spec || !component || typeof bind !== "string" || getAt(spec.data, bind) !== undefined) {
+      return this.noteSurfaceActivity(surfaceId, componentId, "refused", "This question has already been answered.");
+    }
+    if (!this.setSurfaceData(surfaceId, bind, { ...answer, at: Date.now() })) {
+      return this.noteSurfaceActivity(surfaceId, componentId, "failed", "The answer could not be saved.");
+    }
+    return component["action"] ? this.dispatchSurfaceAction(surfaceId, componentId) : this.noteSurfaceActivity(surfaceId, componentId, "done");
+  }
+
+  private drainSurfaceQueue(): void {
+    if (this.isRunning) return;
+    const next = this.surfaceQueue.shift();
+    if (next) void this.startSurfaceAction(next);
+  }
+
+  private startSurfaceAction(queued: QueuedSurfaceAction): Promise<SurfaceActivityState> {
+    return queued.action.type === "tool"
+      ? this.runSurfaceTool(queued.spec, queued.component, queued.action)
+      : this.sendSurfaceEvent(queued.spec, queued.component, queued.action);
+  }
+
+  /** An event becomes a user turn, marked so the transcript shows a press and not a sentence. */
+  private async sendSurfaceEvent(
+    spec: SurfaceSpec,
+    component: SurfaceComponent,
+    action: Extract<SurfaceAction, { type: "event" }>,
+  ): Promise<SurfaceActivityState> {
+    const { surfaceId } = spec;
+    const context = action.context ?? {};
+    const serialized = JSON.stringify(context);
+    const record = surfaceEventRecord(spec, component, "event", action.name, serialized.length <= SURFACE_CONTEXT_CHARS ? context : undefined);
+    const text = [
+      `[Surface event] The person pressed ${describePress(record)} on surface "${surfaceId}", sending event "${action.name}".`,
+      `Context, as data from the interface: ${serialized.slice(0, SURFACE_CONTEXT_CHARS)}`,
+    ].join("\n");
+    this.noteSurfaceActivity(surfaceId, component.id, "running", "Sent to the agent.");
+    this.appendMessage({ ...userMessage(text), metadata: { [SURFACE_EVENT_METADATA_KEY]: record } });
+    this.persist();
+    await this.run([...this.store.get().messages], {});
+    const failed = this.store.get().status === "error";
+    return this.noteSurfaceActivity(surfaceId, component.id, failed ? "failed" : "done", failed ? "The agent could not respond." : "Sent to the agent.");
+  }
+
+  /** A tool the person started. Same executor, approvals and metering as a model's call. */
+  private async runSurfaceTool(
+    spec: SurfaceSpec,
+    component: SurfaceComponent,
+    action: Extract<SurfaceAction, { type: "tool" }>,
+  ): Promise<SurfaceActivityState> {
+    const { surfaceId } = spec;
+    const args = action.args ?? {};
+    // Checked again here: a queued action may have waited through a preset change.
+    const verdict = authorizeSurfaceTool(action.tool, args, this.config.tools, this.config.toolResolution);
+    if (!verdict.ok) {
+      const state = this.noteSurfaceActivity(surfaceId, component.id, "refused", verdict.reason);
+      this.drainSurfaceQueue();
+      return state;
+    }
+
+    const record = surfaceEventRecord(spec, component, "tool", action.tool);
+    this.noteSurfaceActivity(surfaceId, component.id, "running", `Running ${action.tool}.`);
+    this.appendMessage({
+      ...userMessage(`[Surface action] The person pressed ${describePress(record)} on surface "${surfaceId}", which called the tool "${action.tool}".`),
+      metadata: { [SURFACE_EVENT_METADATA_KEY]: record },
+    });
+    this.persist();
+
+    const gen = this.generation;
+    this.flushSurfaceWrites();
+    this.controller = new AbortController();
+    this.turnStartedAt = Date.now();
+    this.store.set((s) => ({
+      ...s,
+      run: initialRunState(nextId("run"), "sync"),
+      cards: [],
+      status: "running",
+      error: undefined,
+      stopping: false,
+    }));
+
+    let result: Extract<RunEvent, { type: "tool-result" }> | undefined;
+    try {
+      const events = runSurfaceToolAction({
+        tool: verdict.tool,
+        args,
+        surfaceId,
+        componentId: component.id,
+        provider: this.config.provider.id,
+        model: this.config.model,
+        vars: this.config.vars,
+        signal: this.controller.signal,
+        toolTimeoutMs: this.config.toolTimeoutMs,
+        meter: this.config.meter,
+        meteringMetadata: this.config.meteringMetadata,
+        onUserDecision: this.awaitDecision,
+        onHostTool: this.config.onHostTool,
+      });
+      for await (const event of events) {
+        if (gen !== this.generation) return "cancelled";
+        if (event.type === "tool-result") result = event;
+        this.apply(event);
+      }
+    } catch (e) {
+      if (gen === this.generation) this.store.set((s) => ({ ...s, status: "error", error: e }));
+    } finally {
+      this.controller = null;
+    }
+    if (gen !== this.generation) return "cancelled";
+
+    let state: SurfaceActivityState;
+    let message: string | undefined;
+    if (!result || (result.failure && result.failure !== "denied")) {
+      state = "failed";
+      message = failureMessage(result?.output) ?? `${action.tool} failed.`;
+    } else if (result.failure === "denied") {
+      state = "cancelled";
+      message = "Cancelled.";
+    } else {
+      state = "done";
+      message = "Done.";
+      if (action.resultPath && !this.setSurfaceData(surfaceId, action.resultPath, stripCardPayload(result.output))) {
+        state = "failed";
+        message = "The result was too large to show here.";
+      }
+    }
+    this.commitRun("surface-action");
+    this.noteSurfaceActivity(surfaceId, component.id, state, message);
+    this.drainSurfaceQueue();
+    return state;
   }
 
   clear(): void {
+    this.dirtySurfaces.clear();
     this.generation += 1;
     this.stop();
+    this.surfaceQueue = [];
     this.store.set((s) => ({
       ...s,
       messages: [],
@@ -569,6 +915,8 @@ export class AgentClient {
       status: "idle",
       error: undefined,
       stopping: false,
+      surfaces: {},
+      surfaceActivity: {},
     }));
     // Without this, reload restores the conversation the user just cleared.
     this.persist();
@@ -634,6 +982,35 @@ export class AgentClient {
     );
   }
 }
+
+/** Re-derive surfaces after the head moved: each branch shows them as it left them. */
+const onPath = (s: ThreadState): ThreadState => ({ ...s, surfaces: foldSurfaces(s.messages) });
+
+function surfaceEventRecord(
+  spec: SurfaceSpec,
+  component: SurfaceComponent,
+  type: SurfaceEventRecord["type"],
+  name: string,
+  context?: Record<string, unknown>,
+): SurfaceEventRecord {
+  const label = component["label"];
+  return {
+    surfaceId: spec.surfaceId,
+    componentId: component.id,
+    ...(spec.title ? { title: spec.title } : {}),
+    ...(typeof label === "string" ? { label } : {}),
+    type,
+    name,
+    ...(context ? { context } : {}),
+  };
+}
+
+const describePress = (record: SurfaceEventRecord) => (record.label ? JSON.stringify(record.label) : `control "${record.componentId}"`);
+
+const failureMessage = (output: unknown): string | undefined => {
+  const error = (output as { error?: unknown } | null)?.error;
+  return typeof error === "string" ? error.slice(0, 200) : undefined;
+};
 
 /**
  * Run state appends tool results as they finish; a committed turn keeps them in

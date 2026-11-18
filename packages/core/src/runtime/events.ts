@@ -289,7 +289,10 @@ function upsertCard(cards: Card[], card: Card): Card[] {
   const i = cards.findIndex((c) => c.id === card.id);
   if (i === -1) return [...cards, card];
   const next = [...cards];
-  next[i] = card;
+  // A revision replaces the content, not the place: the card stays in the slot
+  // of the call that first drew it.
+  const home = cards[i]!.callId;
+  next[i] = home ? { ...card, callId: home } : card;
   return next;
 }
 

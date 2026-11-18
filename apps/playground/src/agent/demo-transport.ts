@@ -23,8 +23,13 @@ type ResponsesItem = {
 };
 
 type Step =
-  | { kind: "tool"; name: string; args: unknown }
+  /** `lead` is prose written before the call, in the same model response. */
+  | { kind: "tool"; name: string; args: unknown; lead?: string }
   | { kind: "text"; text: string };
+
+/** A step may depend on what earlier tool calls in this turn returned. */
+export type DemoStep = Step | ((outputs: unknown[]) => Step);
+export type DemoScript = { match: RegExp; steps: DemoStep[] };
 
 /** Scripts are keyed by a matcher over the user's message. First match wins. */
 const SCRIPTS: { match: RegExp; steps: Step[] }[] = [
@@ -441,6 +446,20 @@ function stepIndex(input: ResponsesItem[]): number {
   return input.slice(from + 1).filter((i) => i.type === "function_call_output").length;
 }
 
+/** Parsed outputs of the tool calls made since the last user message. */
+function outputsSinceUser(input: ResponsesItem[]): unknown[] {
+  return input
+    .slice(lastUserIndex(input) + 1)
+    .filter((i) => i.type === "function_call_output")
+    .map((i) => {
+      try {
+        return JSON.parse(i.output ?? "null") as unknown;
+      } catch {
+        return i.output;
+      }
+    });
+}
+
 let seq = 0;
 
 /**
@@ -471,8 +490,12 @@ function delay(ms: number, signal?: AbortSignal): Promise<void> {
  * `latencyMs` is deliberate: an instant reply hides every loading state, and the
  * point of a demo is to show what the UI does while it waits.
  */
-export function createDemoTransport(opts: { latencyMs?: number } = {}): Transport {
+export function createDemoTransport(
+  opts: { latencyMs?: number; argPaceMs?: number; scripts?: DemoScript[]; fallback?: DemoStep[]; onModelCall?: () => void } = {},
+): Transport {
   const latency = opts.latencyMs ?? 420;
+  const scripts: DemoScript[] = opts.scripts ?? SCRIPTS;
+  const fallback: DemoStep[] = opts.fallback ?? FALLBACK;
 
   return {
     kind: "custom",
@@ -500,8 +523,11 @@ export function createDemoTransport(opts: { latencyMs?: number } = {}): Transpor
       const body = (req.body ?? {}) as { model?: string; input?: ResponsesItem[]; stream?: boolean };
       const input = body.input ?? [];
       const text = lastUserText(input);
-      const script = SCRIPTS.find((s) => s.match.test(text))?.steps ?? FALLBACK;
-      const step = script[Math.min(stepIndex(input), script.length - 1)] ?? script[script.length - 1]!;
+      opts.onModelCall?.();
+      const script = scripts.find((s) => s.match.test(text))?.steps ?? fallback;
+      const planned = script[Math.min(stepIndex(input), script.length - 1)] ?? script[script.length - 1]!;
+      const step = typeof planned === "function" ? planned(outputsSinceUser(input)) : planned;
+      const lead = step.kind === "tool" ? step.lead : undefined;
 
       seq += 1;
       const id = `resp_demo_${seq}`;
@@ -516,6 +542,7 @@ export function createDemoTransport(opts: { latencyMs?: number } = {}): Transpor
               model: body.model ?? "demo",
               status: "completed",
               output: [
+                ...(lead ? [{ type: "message", role: "assistant", content: [{ type: "output_text", text: lead }] }] : []),
                 {
                   type: "function_call",
                   call_id: `call_demo_${seq}`,
@@ -545,6 +572,7 @@ export function createDemoTransport(opts: { latencyMs?: number } = {}): Transpor
           step.kind === "tool"
             ? [
                 { type: "response.created", sequence_number: 1, response: { ...payload, output: [] } },
+                ...(lead ? chunk(lead).map((delta) => ({ type: "response.output_text.delta", sequence_number: 1, delta })) : []),
                 {
                   type: "response.output_item.added",
                   sequence_number: 2,
@@ -582,7 +610,7 @@ export function createDemoTransport(opts: { latencyMs?: number } = {}): Transpor
               // Pace the deltas so streaming is visibly streaming — but a
               // Stop mid-pace should cut the wait short, not run it to the end.
               const pace =
-                e.type === "response.output_text.delta" ? 18 : e.type === "response.function_call_arguments.delta" ? 24 : 0;
+                e.type === "response.output_text.delta" ? 18 : e.type === "response.function_call_arguments.delta" ? (opts.argPaceMs ?? 24) : 0;
               if (pace) {
                 try {
                   await delay(pace, req.signal);

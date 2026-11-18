@@ -2675,12 +2675,166 @@
    "what does this look like on a phone" is one block of reading.
    ══════════════════════════════════════════════════════════════════════════ */
 
+/* ── surfaces ─────────────────────────────────────────────────────────────
+   An interface the agent assembled. One border around the whole thing and flat
+   groups inside it: nesting a bordered box per component would read as a pile of
+   cards rather than one tool. */
+.sc-surface {
+  container-type: inline-size;
+  margin: var(--sc-sp-12) 0;
+  border-radius: var(--sc-radius);
+  border: 1px solid var(--sc-border);
+  background: var(--sc-surface);
+  color: var(--sc-text);
+  font-family: var(--sc-sans);
+  font-size: var(--sc-fs-ui);
+}
+.sc-surface:focus { outline: none; }
+.sc-surface:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; }
+.sc-surface__body { display: grid; gap: var(--sc-sp-12); padding: var(--sc-sp-16); min-width: 0; }
+.sc-surface__title { font-size: var(--sc-fs-body); font-weight: 600; line-height: var(--sc-lh-tight); }
+.sc-surface__status { min-height: 1lh; font-size: var(--sc-fs-meta); color: var(--sc-text-muted); }
+.sc-surface__status:empty { display: none; }
+.sc-surface .sc-card { margin: 0; background: var(--sc-bg); }
+
+.sc-surface-stack { display: flex; flex-direction: column; min-width: 0; }
+.sc-surface-stack--row { flex-direction: row; align-items: flex-end; }
+.sc-surface-stack--wrap { flex-wrap: wrap; }
+.sc-surface-stack--row > * { min-width: 0; }
+.sc-surface-align--start { align-items: flex-start; }
+.sc-surface-align--center { align-items: center; }
+.sc-surface-align--end { align-items: flex-end; }
+.sc-surface-align--stretch { align-items: stretch; }
+.sc-surface-justify--start { justify-content: flex-start; }
+.sc-surface-justify--center { justify-content: center; }
+.sc-surface-justify--end { justify-content: flex-end; }
+.sc-surface-justify--between { justify-content: space-between; }
+.sc-surface-gap--none { gap: 0; }
+.sc-surface-gap--xs { gap: var(--sc-sp-4); }
+.sc-surface-gap--sm { gap: var(--sc-sp-8); }
+.sc-surface-gap--md { gap: var(--sc-sp-12); }
+.sc-surface-gap--lg { gap: var(--sc-sp-20); }
+
+.sc-surface-grid { display: grid; grid-template-columns: repeat(var(--sc-surface-columns, 2), minmax(0, 1fr)); min-width: 0; }
+.sc-surface-grid--1 { --sc-surface-columns: 1; }
+.sc-surface-grid--2 { --sc-surface-columns: 2; }
+.sc-surface-grid--3 { --sc-surface-columns: 3; }
+.sc-surface-grid--4 { --sc-surface-columns: 4; }
+
+.sc-surface-section { display: grid; gap: var(--sc-sp-8); min-width: 0; }
+.sc-surface-section__title { margin: 0; font-size: var(--sc-fs-ui); font-weight: 600; color: inherit; }
+.sc-surface-section__description { margin: 0; font-size: var(--sc-fs-meta); color: var(--sc-text-muted); }
+
+.sc-surface-text { margin: 0; line-height: var(--sc-lh-ui); overflow-wrap: anywhere; }
+.sc-surface-text--title { font-size: var(--sc-fs-stat); font-weight: 600; line-height: var(--sc-lh-tight); }
+.sc-surface-text--heading { font-size: var(--sc-fs-body); font-weight: 600; }
+.sc-surface-text--caption { font-size: var(--sc-fs-meta); color: var(--sc-text-muted); }
+.sc-surface-text--label { font-size: var(--sc-fs-micro); font-weight: 500; color: var(--sc-text-muted); }
+.sc-surface-text--code { font-family: var(--sc-mono); font-size: var(--sc-fs-meta); }
+.sc-surface-link { color: var(--sc-accent); overflow-wrap: anywhere; }
+.sc-surface-divider { width: 100%; margin: 0; border: 0; border-top: 1px solid var(--sc-border); }
+.sc-surface-figure { margin: 0; display: grid; gap: var(--sc-sp-6); }
+.sc-surface-figure img { display: block; max-width: 100%; height: auto; border-radius: var(--sc-radius-sm); }
+.sc-surface-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+
+.sc-surface-metric { display: grid; gap: var(--sc-sp-2); min-width: 0; }
+.sc-surface-metric__label { font-size: var(--sc-fs-meta); color: var(--sc-text-muted); }
+.sc-surface-metric__value {
+  font-size: var(--sc-fs-stat);
+  font-weight: 600;
+  line-height: var(--sc-lh-tight);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.sc-surface-metric__delta { font-size: var(--sc-fs-meta); font-variant-numeric: tabular-nums; }
+.sc-surface-metric__hint { font-size: var(--sc-fs-micro); color: var(--sc-text-muted); }
+
+.sc-surface-field { min-width: 0; }
+.sc-surface .sc-input { min-width: 0; }
+.sc-surface-slider__head { display: flex; justify-content: space-between; gap: var(--sc-sp-8); }
+.sc-surface-slider__value { font-size: var(--sc-fs-meta); font-variant-numeric: tabular-nums; }
+.sc-surface-slider { width: 100%; margin: 0; accent-color: var(--sc-accent); }
+.sc-surface-slider:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; }
+.sc-surface-toggle { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: var(--sc-sp-8); }
+.sc-surface-toggle__input { width: 16px; height: 16px; margin: 0; accent-color: var(--sc-accent); }
+.sc-surface-toggle__input:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; }
+.sc-surface-toggle__help { grid-column: 2; }
+.sc-surface-button { justify-content: center; }
+.sc-surface-button:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; }
+
+.sc-surface-tabs { display: grid; gap: var(--sc-sp-12); min-width: 0; }
+.sc-surface-tabs__list { display: flex; gap: var(--sc-sp-4); overflow-x: auto; border-bottom: 1px solid var(--sc-border); }
+.sc-surface-tabs__tab {
+  flex: none;
+  margin-bottom: -1px;
+  padding: var(--sc-sp-8) var(--sc-sp-12);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--sc-text-muted);
+  font: inherit;
+  cursor: pointer;
+  transition: color var(--sc-dur-1) ease, border-color var(--sc-dur-1) ease;
+}
+.sc-surface-tabs__tab--on { border-bottom-color: var(--sc-accent); color: var(--sc-text); font-weight: 500; }
+.sc-surface-tabs__tab:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: -2px; }
+.sc-surface-tabs__panel { min-width: 0; }
+.sc-surface-tabs__panel:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; }
+
+.sc-surface-fallback {
+  display: grid;
+  gap: var(--sc-sp-2);
+  padding: var(--sc-sp-8) var(--sc-sp-12);
+  border: 1px dashed color-mix(in srgb, var(--sc-warning) 45%, var(--sc-border));
+  border-radius: var(--sc-radius-sm);
+  font-size: var(--sc-fs-meta);
+}
+.sc-surface-fallback__title { color: var(--sc-warning); font-weight: 500; }
+.sc-surface-pending { height: 32px; border-radius: var(--sc-radius-sm); background: var(--sc-surface-2); animation: sc-surface-pulse 1.2s ease-in-out infinite; }
+@keyframes sc-surface-pulse { 50% { opacity: 0.5; } }
+
+.sc-surface-reference {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sc-sp-8);
+  margin: var(--sc-sp-4) 0;
+  font-size: var(--sc-fs-meta);
+  color: var(--sc-text-muted);
+}
+.sc-surface-event {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--sc-sp-6);
+  padding: var(--sc-sp-4) var(--sc-sp-10);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius-sm);
+  font-size: var(--sc-fs-meta);
+}
+.sc-surface-event__label { font-weight: 500; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-surface-pending { animation: none; }
+  .sc-surface-tabs__tab { transition: none; }
+}
+
 /* ── device: touch ────────────────────────────────────────────────────────
    44px of hit area, not a 44px button. Inflating .sc-ai__icon to 44 would
    thicken the composer bar and undo the density 4.3 settled on, so a
    transparent ::after carries the target while the painted control keeps its
    size. width:max(100%,44px) leaves already-wide controls alone instead of
    shrinking them to a square. */
+@media (pointer: coarse) {
+  /* Surface controls are spaced for a finger outright: they sit in open layout,
+     not a dense bar, so there is room to be the size they need to be. */
+  .sc-surface-button,
+  .sc-surface-tabs__tab,
+  .sc-surface .sc-input { min-height: 44px; }
+  .sc-surface-toggle { min-height: 44px; }
+  .sc-surface-toggle__input { width: 24px; height: 24px; }
+  .sc-surface-slider { height: 44px; }
+}
+
 @media (pointer: coarse) {
   .sc-ai__icon,
   .sc-ai__send,
@@ -2734,6 +2888,7 @@
    16px is not a design size and gets no token: it is the number Safari stops
    at, and naming it would imply it is ours to tune. */
 @media (pointer: coarse) {
+  .sc-surface .sc-input,
   .sc-ai__editor,
   .sc-composer__input { font-size: 16px; }
 }
@@ -2917,4 +3072,16 @@
 @container (max-width: 600px) {
   .sc-plan__step { column-gap: var(--sc-sp-8); }
   .sc-plan__body { padding-bottom: var(--sc-sp-12); }
+}
+
+/* surfaces — queries .sc-surface, so a surface in a 380px side panel collapses
+   exactly as one on a phone does. */
+@container (max-width: 900px) {
+  .sc-surface-grid--4 { --sc-surface-columns: 2; }
+}
+@container (max-width: 600px) {
+  .sc-surface-grid--2,
+  .sc-surface-grid--3 { --sc-surface-columns: 1; }
+  .sc-surface-stack--row:not(.sc-surface-stack--wrap) { flex-direction: column; align-items: stretch; }
+  .sc-surface__body { padding: var(--sc-sp-12); }
 }

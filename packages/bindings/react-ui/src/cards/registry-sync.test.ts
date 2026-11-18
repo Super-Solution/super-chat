@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BUILTIN_CARDS } from "@supersolutions/super-chat-core";
+import { BUILTIN_CARDS, SURFACE_CARD_KIND } from "@supersolutions/super-chat-core";
 import { BUILTIN_RENDERERS } from "./index.js";
 
 describe("card registry / renderer sync", () => {
@@ -8,13 +8,13 @@ describe("card registry / renderer sync", () => {
   // that had one but not the other silently degraded to a "ran ✓" chip in
   // production. Here that drift fails the build instead.
   it("has a renderer for every registered card kind", () => {
-    const defined = BUILTIN_CARDS.map((c) => c.kind).sort();
+    const defined = [...BUILTIN_CARDS.map((c) => c.kind), SURFACE_CARD_KIND].sort();
     const rendered = Object.keys(BUILTIN_RENDERERS).sort();
     expect(rendered).toEqual(defined);
   });
 
   it("has no renderer for a kind nothing validates", () => {
-    const defined = new Set(BUILTIN_CARDS.map((c) => c.kind));
+    const defined = new Set<string>([...BUILTIN_CARDS.map((c) => c.kind), SURFACE_CARD_KIND]);
     for (const kind of Object.keys(BUILTIN_RENDERERS)) {
       expect(defined.has(kind), `renderer "${kind}" has no card definition`).toBe(true);
     }
