@@ -274,7 +274,8 @@ test("P2 — every panel stays reachable on a phone", async ({ page }) => {
   // The shell used to display:none the sidebar below 900px, which left a phone
   // stranded on whichever panel it loaded. A strip that scrolls is the whole
   // fix; this asserts the links are present, hit-sized and actually navigate.
-  await settle(page, "/");
+  // From a panel: the homepage is a site page and carries no panel nav.
+  await settle(page, "/skills");
 
   const links = page.locator(".dev__nav a");
   // Not an exact count: the number of panels is not what this test is about,
@@ -326,7 +327,7 @@ test("desktop keeps the values the compact tier overrides", async ({ page }, tes
 
 test("desktop shell keeps the sidebar", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop-1280", "desktop-only regression check");
-  await settle(page, "/");
+  await settle(page, "/skills");
 
   const nav = page.locator(".dev__nav");
   await expect(nav).toBeVisible();
