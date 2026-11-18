@@ -2806,6 +2806,10 @@
 /* No card inside a card: a display card here is a well. A question keeps its
    surface and its border, because the border is what says it is waiting. */
 .sc-surface .sc-card { margin: 0; background: var(--sc-surface-2); border-color: transparent; }
+/* Success and warning text fall just under 4.5:1 on the well, so they move toward
+   the text colour here. */
+.sc-surface .sc-card:not(.sc-card--interactive) .sc-tone--positive { color: color-mix(in srgb, var(--sc-positive) 88%, var(--sc-text)); }
+.sc-surface .sc-card:not(.sc-card--interactive) .sc-tone--warning { color: color-mix(in srgb, var(--sc-warning) 88%, var(--sc-text)); }
 .sc-surface .sc-card--interactive { background: var(--sc-surface); border-color: var(--sc-line-strong); }
 .sc-surface .sc-card--interactive[data-waiting] { border-color: var(--sc-turn-line); }
 .sc-surface .sc-card--interactive.sc-card--danger[data-waiting] { border-color: var(--sc-negative); }
