@@ -53,7 +53,7 @@ const provider = createSuperRouterProvider({
 ```
 
 Any object implementing `InferenceGateway` from `super-protocol/router` works in place of the HTTP
-gateway. The provider is text-only: tools and media are reported as warnings, not silently sent.
+gateway. The provider carries tool calls, tool results, usage and images; files and audio are dropped with a warning. See the [integration guide](guide/integrations.md).
 Use a fixed `idempotencyKey` to make a retry safe; a repeated key returns the stored request
 status without output (the router never stores completions), which the provider reports as an error.
 

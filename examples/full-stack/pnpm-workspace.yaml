@@ -1,0 +1,3 @@
+# Keeps this example out of the Apache-2.0 workspace at the repository root.
+packages:
+  - "."
