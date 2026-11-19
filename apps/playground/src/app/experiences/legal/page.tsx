@@ -438,7 +438,6 @@ export default function LegalExperience() {
       </main>
 
       <footer className={styles.statusBar}>
-        <p><i aria-hidden="true" />Local mock API · synthetic agreement · no external provider call</p>
         <div className={styles.runStatus} role="status" aria-live="polite">
           <span>{briefVisible ? "Review ready" : apiError ?? currentApiStage?.label ?? STAGE_COPY[stage]}</span>
           {stagedRisks.length > 0 ? <b>{stagedRisks.length} redline{stagedRisks.length > 1 ? "s" : ""} staged</b> : null}

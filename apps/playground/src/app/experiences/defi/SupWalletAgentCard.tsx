@@ -79,11 +79,6 @@ export function SupWalletAgentCard({
   const state = phase === "complete" ? "settled" : phase === "executing" ? "running" : "preview";
   const lifecycle = LIFECYCLE[kind];
   const activeIndex = phase === "complete" ? lifecycle.length : phase === "executing" ? Math.min(completedSteps, lifecycle.length - 1) : 0;
-  const status = phase === "complete"
-    ? "Confirmed"
-    : phase === "executing"
-      ? lifecycle[activeIndex]
-      : "Ready to run";
   const action = kind === "compose" ? "compound" : kind === "scallop" ? "stake" : "perp";
 
   return (
@@ -106,7 +101,6 @@ export function SupWalletAgentCard({
             { label: "ETH→USDC", verb: "swap" },
             { label: "SCALLOP", verb: "in" },
           ] : undefined}
-          chip={status}
           sponsored
           className={styles.agentActionStage}
         />

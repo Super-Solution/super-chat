@@ -116,33 +116,6 @@ const STYLES = `
   /* legacy compact embed (kept for callers that don't want the hero bleed) */
   .aa-frame.aa-card { margin: 0 auto; background: transparent; }
 
-  /* ── status chip ─────────────────────────────────────────────────────────── */
-  .aa-chip {
-    position: absolute; top: 10px; left: 12px; z-index: 2;
-    display: inline-flex; align-items: center; gap: 7px;
-    max-width: calc(100% - 24px);
-    padding: 5px 11px 5px 9px;
-    border: var(--av-hair) solid var(--av-line-ink);
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--av-paper) 82%, transparent);
-    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-    font-family: var(--av-mono); font-size: 10px; font-weight: 700;
-    letter-spacing: .06em; text-transform: uppercase;
-    color: var(--av-ink);
-    animation: aa-chip-in .34s cubic-bezier(.22,1,.36,1);
-    white-space: nowrap; overflow: hidden;
-  }
-  .aa-chip__tx { overflow: hidden; text-overflow: ellipsis; }
-  .aa-chip__dot { flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: var(--av-muted); }
-  .aa-chip[data-tone="run"] .aa-chip__dot { background: var(--av-accent); animation: aa-dot-pulse 1.1s ease-in-out infinite; }
-  .aa-chip[data-tone="run"] { border-color: color-mix(in srgb, var(--av-accent) 45%, var(--av-line-ink)); }
-  .aa-chip[data-tone="ok"] .aa-chip__dot { background: var(--av-bull); }
-  .aa-chip[data-tone="ok"] { border-color: color-mix(in srgb, var(--av-bull) 55%, var(--av-line-ink)); color: var(--av-bull); }
-  .aa-chip[data-tone="err"] .aa-chip__dot { background: var(--av-danger, #d9534f); }
-  .aa-chip[data-tone="err"] { border-color: color-mix(in srgb, var(--av-danger, #d9534f) 55%, var(--av-line-ink)); color: var(--av-danger-ink, #d9534f); }
-  @keyframes aa-chip-in { from { transform: translateY(-6px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-  @keyframes aa-dot-pulse { 0%,100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--av-accent) 45%, transparent); } 55% { box-shadow: 0 0 0 5px transparent; } }
-
   /* ── phase feedback on the whole stage ───────────────────────────────────── */
   .aa-stage[data-phase="failed"] .aa-frame { animation: aa-shake .5s cubic-bezier(.36,.07,.19,.97); filter: saturate(.35); opacity: .88; }
   @keyframes aa-shake {
@@ -177,7 +150,6 @@ const STYLES = `
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .aa-chip, .aa-chip[data-tone="run"] .aa-chip__dot { animation: none; }
     .aa-stage[data-phase="failed"] .aa-frame { animation: none; }
     .aa-stage[data-phase="settled"]::after { animation: none; opacity: 0; }
     .aa-speed line { animation: none; opacity: 0; }
