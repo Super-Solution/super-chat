@@ -3082,8 +3082,9 @@
   .sc-think__head--clickable,
   .sc-tools__head,
   .sc-todo__head,
-  .sc-plan__head,
-  .sc-jump { position: relative; }
+  .sc-plan__head { position: relative; }
+  /* .sc-jump stays position: absolute, which already anchors its ::after.
+     Setting it to relative here laid the floating button out beside the thread. */
 
   .sc-ai__icon::after,
   .sc-ai__send::after,

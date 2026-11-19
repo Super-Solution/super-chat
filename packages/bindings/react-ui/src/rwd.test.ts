@@ -158,6 +158,15 @@ describe("rwd — touch", () => {
       ".sc-jump",
     ]) {
       expect(coarse, `${sel} needs a touch target`).toContain(`${sel}::after`);
+      // The jump button floats, so its own position: absolute already anchors the ::after.
+      // Making it relative on touch screens laid it out as a column beside the thread.
+      if (sel === ".sc-jump") {
+        const base = CSS.slice(CSS.indexOf(".sc-jump {"), CSS.indexOf("}", CSS.indexOf(".sc-jump {")));
+        expect(base).toContain("position: absolute");
+        expect(coarse, ".sc-jump must stay absolute on touch screens").not.toMatch(/\.sc-jump\s*\{\s*position:\s*relative/);
+        expect(coarse).not.toMatch(/\.sc-jump\s*,[^{]*\{\s*position:\s*relative/);
+        continue;
+      }
       const escaped = sel.replace(/[.\-]/g, (c) => "\\" + c);
       expect(coarse, `${sel}::after needs a positioned parent`).toMatch(
         new RegExp(`${escaped}\\s*[,{]`),
