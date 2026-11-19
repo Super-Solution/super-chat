@@ -12,18 +12,19 @@ import {
   type Transport,
   type Usage,
 } from "@supersolutions/super-chat-core";
-import { GatewayError, type InferenceGateway, type InferenceRequest, type Usage as RouterUsage } from "@supersolutions/super-protocol";
-import type {
-  InferenceContentPart,
-  InferenceFinishReason,
-  InferenceTool,
-  InferenceToolCall,
-  InferenceToolChoice,
-  NextInferenceMessage,
-  NextInferenceRequest,
-  NextInferenceResult,
-  NextStreamEvent,
-} from "./protocol-next.js";
+import {
+  GatewayError,
+  type InferenceContentPart,
+  type InferenceFinishReason,
+  type InferenceGateway,
+  type InferenceMessage,
+  type InferenceRequest,
+  type InferenceTool,
+  type InferenceToolCall,
+  type InferenceToolChoice,
+  type StreamEvent as RouterStreamEvent,
+  type Usage as RouterUsage,
+} from "@supersolutions/super-protocol";
 
 export type SuperRouterProviderConfig = {
   gateway: InferenceGateway;
@@ -79,9 +80,9 @@ function imageUrl(part: Extract<ContentPart, { type: "image" }>): string | undef
   return undefined;
 }
 
-function toMessages(req: NormalizedRequest, toolCalling: boolean): { messages: NextInferenceMessage[]; warnings: string[] } {
+function toMessages(req: NormalizedRequest, toolCalling: boolean): { messages: InferenceMessage[]; warnings: string[] } {
   const warnings: string[] = [];
-  const messages: NextInferenceMessage[] = [];
+  const messages: InferenceMessage[] = [];
   if (req.system) messages.push({ role: "system", content: req.system });
   const history = req.messages as Message[];
   // A call without a result, or a result without a call, is refused by the router: both happen in interrupted threads.
@@ -92,7 +93,7 @@ function toMessages(req: NormalizedRequest, toolCalling: boolean): { messages: N
     const texts: string[] = [];
     const images: InferenceContentPart[] = [];
     const calls: InferenceToolCall[] = [];
-    const results: NextInferenceMessage[] = [];
+    const results: InferenceMessage[] = [];
     for (const p of m.parts) {
       if (p.type === "text") {
         if (p.text) texts.push(p.text);
@@ -174,15 +175,14 @@ export function createSuperRouterProvider(config: SuperRouterProviderConfig): Pr
   const toolCalling = config.toolCalling !== false;
   const build = (req: NormalizedRequest) => {
     const { messages, warnings } = toMessages(req, toolCalling);
-    const next: NextInferenceRequest = {
+    const request: InferenceRequest = {
       service: req.model,
       customer_id: config.customerId,
       messages,
       ...(toolCalling ? toTools(req) : {}),
       max_output_tokens: Math.min(8192, Math.max(1, req.maxOutputTokens ?? config.defaultMaxOutputTokens ?? 1024)),
     };
-    // The gateway interface still names the 0.1.0 request; the wire form is a superset of it.
-    return { request: next as unknown as InferenceRequest, warnings };
+    return { request, warnings };
   };
 
   return {
@@ -197,7 +197,7 @@ export function createSuperRouterProvider(config: SuperRouterProviderConfig): Pr
     async generate(req: NormalizedRequest, _opts?: CallOptions): Promise<GenerateResult> {
       const { request, warnings } = build(req);
       try {
-        const result = (await config.gateway.infer(request, newKey())) as NextInferenceResult;
+        const result = await config.gateway.infer(request, newKey());
         const failed = result.execution_status !== "succeeded";
         if (!result.output) {
           // A repeated idempotency key reads the stored request back, and completions are never stored.
@@ -232,7 +232,8 @@ export function createSuperRouterProvider(config: SuperRouterProviderConfig): Pr
       let completed = 0;
       try {
         for await (const raw of config.gateway.stream(request, newKey(), opts?.signal)) {
-          const event = raw as NextStreamEvent;
+          // A failed request can also say why the model stopped, which the protocol does not name yet.
+          const event = raw as RouterStreamEvent & { finish_reason?: InferenceFinishReason };
           if (!started) {
             started = true;
             yield { type: "start", responseId: event.request_id, modelId: req.model };

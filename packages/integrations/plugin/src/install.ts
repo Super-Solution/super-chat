@@ -1,6 +1,9 @@
 import type { CardRegistry, ToolDefinition, ToolExecutionContext, ToolRegistry, ToolResult, ToolSide } from "@supersolutions/super-chat-core";
-import { validateChatPlugin, type ChatPlugin } from "@supersolutions/super-protocol";
-import { PLUGIN_TOOL_PRESETS, pluginToolAuthority, type DeclaredPluginTool, type PluginToolAuthority } from "./protocol-next.js";
+import { PLUGIN_TOOL_PRESETS, pluginToolAuthority as declaredAuthority, validateChatPlugin, type ChatPlugin, type PluginTool, type PluginToolAuthority } from "@supersolutions/super-protocol";
+
+/** A tool as a plugin declared it. These two fields are untrusted until they are checked here. */
+type DeclaredPluginTool = Omit<PluginTool, "authority" | "confirm"> & { authority?: unknown; confirm?: unknown };
+const pluginToolAuthority = (tool: DeclaredPluginTool) => declaredAuthority(tool as Pick<PluginTool, "authority">);
 
 export class PluginInstallError extends Error {
   constructor(

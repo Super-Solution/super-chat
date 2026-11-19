@@ -219,8 +219,8 @@ importers:
         specifier: workspace:*
         version: link:../../bindings/react-ui
       '@supersolutions/super-protocol':
-        specifier: 0.1.0
-        version: 0.1.0
+        specifier: 0.2.0
+        version: 0.2.0
     devDependencies:
       '@types/react':
         specifier: ^19.0.2
@@ -247,8 +247,8 @@ importers:
         specifier: workspace:*
         version: link:../../core
       '@supersolutions/super-protocol':
-        specifier: 0.1.0
-        version: 0.1.0
+        specifier: 0.2.0
+        version: 0.2.0
     devDependencies:
       tsup:
         specifier: ^8.3.5
@@ -912,8 +912,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@supersolutions/super-protocol@0.1.0':
-    resolution: {integrity: sha512-ZyVPrQSw2rAzd+nBmU4uam/sp1FTQFLSuip3CGFEqzQejfmQqSIm7rBmnbWcngDRh+Jj2giwCxFbURcr0sNuuw==}
+  '@supersolutions/super-protocol@0.2.0':
+    resolution: {integrity: sha512-ZQOla/x7NNsIoMt2aPPyYoR5myF/uD/sssX0/EkOEYNXKLTTH2RB/PmtD4jWV0GRWYlXGqPQGZjLdYOsTJVFwA==}
 
   '@swc/helpers@0.5.15':
     resolution: {integrity: sha512-JQ5TuMi45Owi4/BIMAJBoSQoOJu12oOk/gADqlcUL9JEdHB8vyjUSsxqeNXnmXHjYKMi2WcYtezGEEhqUI/E2g==}
@@ -1784,7 +1784,7 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.62.4':
     optional: true
 
-  '@supersolutions/super-protocol@0.1.0': {}
+  '@supersolutions/super-protocol@0.2.0': {}
 
   '@swc/helpers@0.5.15':
     dependencies:

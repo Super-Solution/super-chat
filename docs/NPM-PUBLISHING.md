@@ -16,7 +16,7 @@ an empty environment, and permission for direct `npm publish`:
 `@supersolutions/super-protocol` is not released from this repository: it comes from
 `Super-Solution/super-protocol` (its own `npm-publish.yml`) and must be on npm first, because the
 packed packages depend on it. The workflow fails early if the version it packs against is missing.
-The plugin and router packages pin `@supersolutions/super-protocol` exactly (`0.1.0`); the old
+The plugin and router packages pin `@supersolutions/super-protocol` exactly (`0.2.0`); the old
 in-repo copy, the Go and Python ports and `conformance/` were removed in favour of that dependency.
 
 An npm maintainer completes this setup with account 2FA. npm only lets you configure a package that
