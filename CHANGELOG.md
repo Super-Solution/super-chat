@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.2
+
+### Fixed
+
+- A streaming surface no longer jumps or redraws. The part the model is still writing holds its place with a placeholder sized for its kind, parts that have not arrived get a single line, and each part fades in where its placeholder stood. A surface card keeps one view from its first streamed part to the finished interface, so charts and tables are not drawn twice.
+- A card's Copy and Download no longer leave an empty row under a well inside a surface. With a mouse they float over the card's top corner.
+
+### Added
+
+- `previewSurface` reports the part still being written as `pending`, and `AgentSurface` takes a `streaming` spec to show it before the client knows the surface.
+
 ## 0.2.1
 
 ### Removed

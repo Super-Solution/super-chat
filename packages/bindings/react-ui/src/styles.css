@@ -482,6 +482,10 @@
 @media (hover: hover) and (pointer: fine) {
   .sc-card__actions--aux { opacity: 0; transition: opacity var(--sc-dur-1) var(--sc-ease-out); }
   .sc-card:hover .sc-card__actions--aux, .sc-card:focus-within .sc-card__actions--aux { opacity: 1; }
+  /* Inside a surface the well is one part among many, so the utilities float over
+     its top corner instead of holding an empty row under it. */
+  .sc-surface .sc-card { position: relative; }
+  .sc-surface .sc-card__actions--aux { position: absolute; top: var(--sc-sp-8); right: var(--sc-sp-8); margin: 0; }
 }
 .sc-th-btn .sc-mark { display: inline-block; margin-left: var(--sc-sp-4); vertical-align: middle; }
 .sc-jump .sc-mark { display: inline-block; vertical-align: middle; }
@@ -2896,11 +2900,48 @@
   font-size: var(--sc-fs-meta);
 }
 .sc-surface-fallback__title { color: var(--sc-warning); font-weight: 500; }
-.sc-surface-pending { height: 32px; border-radius: var(--sc-radius-sm); background: var(--sc-surface-2); }
-@keyframes sc-surface-pulse { 50% { opacity: 0.5; } }
-@media (prefers-reduced-motion: no-preference) {
-  .sc-surface-pending { animation: sc-surface-pulse 1.2s ease-in-out infinite; }
+/* A part still arriving. Each kind reserves about the height the finished part
+   takes, so the interface does not jump when it lands. The first span is a label
+   line, the second the body. */
+.sc-surface-pending { display: grid; gap: var(--sc-sp-6); align-content: start; min-width: 0; }
+.sc-surface-pending > span {
+  display: block;
+  height: 12px;
+  border-radius: var(--sc-radius-xs);
+  background: linear-gradient(90deg, var(--sc-surface-2) 25%, var(--sc-border) 50%, var(--sc-surface-2) 75%);
+  background-size: 200% 100%;
 }
+.sc-surface-pending > span:first-child { width: 36%; }
+.sc-surface-pending--unknown > span:first-child,
+.sc-surface-pending--text > span:first-child,
+.sc-surface-pending--divider > span:first-child,
+.sc-surface-pending--button > span:first-child,
+.sc-surface-pending--badge > span:first-child,
+.sc-surface-pending--toggle > span:first-child { display: none; }
+.sc-surface-pending--unknown > span { height: 32px; }
+.sc-surface-pending--text > span { height: 14px; width: 72%; }
+.sc-surface-pending--divider > span { height: 1px; }
+.sc-surface-pending--metric > span:last-child { height: 26px; width: 56%; }
+.sc-surface-pending--field > span:last-child,
+.sc-surface-pending--select > span:last-child { height: 40px; border-radius: var(--sc-radius-sm); }
+.sc-surface-pending--slider > span:last-child { height: 20px; }
+.sc-surface-pending--toggle > span { height: 18px; width: 48%; }
+.sc-surface-pending--button > span { height: 34px; width: 152px; border-radius: var(--sc-radius-sm); }
+.sc-surface-pending--badge > span { height: 22px; width: 72px; border-radius: var(--sc-radius-pill); }
+.sc-surface-pending--image > span:last-child { height: auto; aspect-ratio: 16 / 9; border-radius: var(--sc-radius-sm); }
+.sc-surface-pending[class*="sc-surface-pending--card-"] { padding: var(--sc-sp-16); border-radius: var(--sc-radius-md); background: var(--sc-surface-2); }
+.sc-surface-pending[class*="sc-surface-pending--card-"] > span { background: linear-gradient(90deg, var(--sc-surface) 25%, var(--sc-border) 50%, var(--sc-surface) 75%); background-size: 200% 100%; }
+.sc-surface-pending--card-chart > span:last-child { height: 220px; border-radius: var(--sc-radius-sm); }
+.sc-surface-pending--card-table > span:last-child { height: 160px; border-radius: var(--sc-radius-sm); }
+.sc-surface-pending[class*="sc-surface-pending--card-"]:not(.sc-surface-pending--card-chart):not(.sc-surface-pending--card-table) > span:last-child { height: 72px; border-radius: var(--sc-radius-sm); }
+@media (prefers-reduced-motion: no-preference) {
+  .sc-surface-pending > span { animation: sc-shimmer 1.2s linear infinite; }
+  /* While the surface streams, each part fades in where its placeholder stood. */
+  .sc-surface[aria-busy="true"] :is(.sc-surface-metric, .sc-surface-field, .sc-surface-toggle, .sc-surface-text, .sc-surface-badge, .sc-surface-button, .sc-card) {
+    animation: sc-surface-in var(--sc-dur-2) var(--sc-ease-out) both;
+  }
+}
+@keyframes sc-surface-in { from { opacity: 0; } }
 
 .sc-surface-reference {
   display: inline-flex;

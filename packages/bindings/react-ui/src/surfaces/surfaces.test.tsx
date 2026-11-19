@@ -5,6 +5,7 @@ import {
   CardRegistry,
   SurfaceCatalogue,
   buildSurface,
+  previewSurface,
   type Card,
   type Message,
   type SurfaceSpec,
@@ -61,8 +62,35 @@ describe("SurfaceView", () => {
   });
 
   it("disables every control while the spec is still streaming", () => {
-    const html = render(<SurfaceView partial spec={surface([{ id: "main", component: "Button", label: "Go", action: { type: "event", name: "go" } }])} />);
+    const html = render(<SurfaceView partial spec={surface([
+      { id: "main", component: "Stack", children: ["go", "note"] },
+      { id: "go", component: "Button", label: "Go", action: { type: "event", name: "go" } },
+      { id: "note", component: "Text", text: "Still arr" },
+    ])} />);
     expect(html).toMatch(/<button[^>]*disabled/);
+  });
+
+  it("holds the place of the part still streaming, sized for its kind", () => {
+    const preview = previewSurface({ surfaceId: "s1", title: "Explorer", root: "main", components: [
+      { id: "main", component: "Stack", children: ["total", "trend", "later"] },
+      { id: "total", component: "Metric", label: "Total", value: 12 },
+      { id: "trend", component: "Card", kind: "chart", spec: { title: "Spe" } },
+    ] }, catalogue)!;
+    expect(preview.pending).toEqual({ id: "trend", component: "Card", kind: "chart" });
+    const html = render(<SurfaceView partial spec={preview} />);
+    expect(html).toContain("Total");
+    expect(html).toContain("sc-surface-pending--card-chart");
+    expect(html).not.toContain("Spe<");
+    // A child whose id has not arrived yet gets a single line.
+    expect(html).toContain("sc-surface-pending--unknown");
+  });
+
+  it("renders the last part once the spec is complete", () => {
+    const html = render(<SurfaceView spec={surface([
+      { id: "main", component: "Stack", children: ["total"] },
+      { id: "total", component: "Metric", label: "Total", value: 12 },
+    ])} />);
+    expect(html).not.toContain("sc-surface-pending");
   });
 
   it("marks tabs for keyboard and assistive technology", () => {

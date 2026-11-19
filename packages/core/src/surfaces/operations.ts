@@ -250,6 +250,16 @@ export function previewSurface(partial: unknown, catalogue: SurfaceCatalogue): S
     valid.push(component);
   }
   if (!valid.length) return undefined;
+  // The last part listed is the one still being written, whether or not it is valid yet.
+  const last: unknown = components.at(-1);
+  const pending =
+    isObject(last) && typeof last["id"] === "string"
+      ? {
+          id: last["id"],
+          ...(typeof last["component"] === "string" ? { component: last["component"] } : {}),
+          ...(typeof last["kind"] === "string" ? { kind: last["kind"] } : {}),
+        }
+      : undefined;
   return {
     kind: SURFACE_CARD_KIND,
     version: SURFACE_FORMAT_VERSION,
@@ -259,6 +269,7 @@ export function previewSurface(partial: unknown, catalogue: SurfaceCatalogue): S
     components: valid,
     data: model,
     revision: 0,
+    ...(pending ? { pending } : {}),
   };
 }
 

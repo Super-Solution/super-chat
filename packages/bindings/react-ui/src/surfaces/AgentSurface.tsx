@@ -15,22 +15,30 @@ export type AgentSurfaceProps = {
   surfaceId: string;
   /** Shown until the client knows this surface. */
   fallback?: SurfaceSpec;
+  /**
+   * The surface as it streams in, before the client knows it. Passing it here
+   * keeps one view from the first part to the finished interface, so nothing is
+   * drawn twice.
+   */
+  streaming?: SurfaceSpec;
   className?: string;
 };
 
 /** Render a surface anywhere inside `<AgentProvider>`: inline, in a panel, on a canvas. */
-export function AgentSurface({ surfaceId, fallback, className }: AgentSurfaceProps) {
+export function AgentSurface({ surfaceId, fallback, streaming, className }: AgentSurfaceProps) {
   const { spec, activity, setData, press, answer } = useSurface(surfaceId);
-  const current = spec ?? fallback;
+  const current = spec ?? streaming ?? fallback;
   if (!current) return null;
+  const partial = !spec && current === streaming;
   return (
     <SurfaceView
       spec={current}
-      data={current.data}
-      activity={activity}
-      onDataChange={setData}
-      onPress={press}
-      onCardAnswer={answer}
+      data={partial ? undefined : current.data}
+      activity={partial ? undefined : activity}
+      partial={partial}
+      onDataChange={partial ? undefined : setData}
+      onPress={partial ? undefined : press}
+      onCardAnswer={partial ? undefined : answer}
       className={className}
     />
   );
@@ -56,19 +64,20 @@ function SurfaceReference({ spec, placedElsewhere }: { spec: SurfaceSpec; placed
   );
 }
 
-function ConnectedSurfaceCard({ spec, callId }: { spec: SurfaceSpec; callId: string | undefined }) {
+function ConnectedSurfaceCard({ spec, callId, partial }: { spec: SurfaceSpec; callId: string | undefined; partial: boolean }) {
   const { spec: live } = useSurface(spec.surfaceId);
   const { placement } = useSurfaceHost();
   const current = live ?? spec;
   const origin = current.originCallId ?? spec.originCallId;
-  if (origin && callId && callId !== origin) return <SurfaceReference spec={current} placedElsewhere={false} />;
-  if (!current.deleted && placement(current) === "elsewhere") return <SurfaceReference spec={current} placedElsewhere />;
-  return <AgentSurface surfaceId={spec.surfaceId} fallback={spec} />;
+  if (!partial && origin && callId && callId !== origin) return <SurfaceReference spec={current} placedElsewhere={false} />;
+  if (!partial && !current.deleted && placement(current) === "elsewhere") return <SurfaceReference spec={current} placedElsewhere />;
+  // The same view while the card streams and once it is final, so it is never redrawn from scratch.
+  return <AgentSurface surfaceId={spec.surfaceId} {...(partial ? { streaming: spec } : { fallback: spec })} />;
 }
 
 /** The `surface` card kind. */
 export function SurfaceCardView({ spec, card, partial }: CardRendererProps<SurfaceSpec>) {
   const client = useOptionalAgentClient();
-  if (partial || !client) return <SurfaceView spec={spec} partial={partial} />;
-  return <ConnectedSurfaceCard spec={spec} callId={card.callId} />;
+  if (!client) return <SurfaceView spec={spec} partial={partial} />;
+  return <ConnectedSurfaceCard spec={spec} callId={card.callId} partial={Boolean(partial)} />;
 }

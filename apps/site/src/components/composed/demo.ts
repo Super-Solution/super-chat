@@ -98,7 +98,7 @@ export function createComposedDemo(): ComposedDemo {
 
   const transport = createDemoTransport({
     latencyMs: instant ? 0 : 320,
-    argPaceMs: instant ? 0 : 4,
+    argPaceMs: instant ? 0 : 10,
     scripts: SCRIPTS,
     fallback: FALLBACK,
     onModelCall: () => {
