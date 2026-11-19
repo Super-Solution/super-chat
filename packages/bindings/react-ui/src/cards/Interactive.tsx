@@ -13,6 +13,7 @@ import { useState } from "react";
 import type { ChoiceCard, ConfirmCard, FormCard, FormField } from "@supersolutions/super-chat-core";
 import type { CardRendererProps } from "../renderer-registry.js";
 import { formatValue, toneClass } from "@supersolutions/super-chat-ui-core";
+import { FormattedValue } from "./FormattedValue.js";
 
 export function ChoiceCardView({ spec, card, respond, answered }: CardRendererProps<ChoiceCard>) {
   // `card.action` is the durable record; local state only covers the gap between
@@ -68,7 +69,7 @@ export function ChoiceCardView({ spec, card, respond, answered }: CardRendererPr
                   {opt.meta.map((m, i) => (
                     <span key={i} className="sc-choice__metaitem">
                       <span className="sc-muted">{m.label}</span>
-                      <strong>{formatValue(m.value, m.format)}</strong>
+                      <strong><FormattedValue value={m.value} format={m.format} /></strong>
                     </span>
                   ))}
                 </span>

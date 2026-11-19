@@ -11,6 +11,7 @@ import { useId, useMemo } from "react";
 import type { ChartCard } from "@supersolutions/super-chat-core";
 import type { CardRendererProps } from "../renderer-registry.js";
 import { formatValue } from "@supersolutions/super-chat-ui-core";
+import { FormattedValue, useFormatOptions } from "./FormattedValue.js";
 
 const PALETTE = ["var(--sc-series-1)", "var(--sc-series-2)", "var(--sc-series-3)", "var(--sc-series-4)", "var(--sc-series-5)"];
 
@@ -85,6 +86,7 @@ function arrMax(values: number[], seed = -Infinity): number {
 
 export function ChartCardView({ spec }: CardRendererProps<ChartCard>) {
   const gradientId = useId();
+  const formatOptions = useFormatOptions();
   const isCandles = spec.variant === "candlestick" && spec.candles?.length;
 
   const model = useMemo(() => {
@@ -146,11 +148,11 @@ export function ChartCardView({ spec }: CardRendererProps<ChartCard>) {
       ? thin((series[0]?.points ?? []).map((p, i) => ({ at: x(i), label: String(p[0]) })))
       : (spec.xType === "time" ? timeTicks(xMin, xMax) : niceTicks(xMin, xMax, 5)).map((t) => ({
           at: x(t),
-          label: spec.xType === "time" ? formatTimeTick(t, xMax - xMin) : formatValue(t, "number"),
+          label: spec.xType === "time" ? formatTimeTick(t, xMax - xMin) : formatValue(t, "number", formatOptions),
         }));
 
     return { kind: "series" as const, series, categorical, x, y, yTicks: niceTicks(yMin, yMax), xTicks };
-  }, [spec, isCandles]);
+  }, [spec, isCandles, formatOptions]);
 
   return (
     <div className="sc-card">
@@ -168,7 +170,7 @@ export function ChartCardView({ spec }: CardRendererProps<ChartCard>) {
             <g key={`y${t}`}>
               <line x1={PAD.left} x2={W - PAD.right} y1={model.y(t)} y2={model.y(t)} className="sc-chart__grid" />
               <text x={PAD.left - 8} y={model.y(t)} className="sc-chart__label" textAnchor="end" dominantBaseline="middle">
-                {formatValue(t, "number")}
+                <FormattedValue value={t} format="number" />
               </text>
             </g>
           ))}

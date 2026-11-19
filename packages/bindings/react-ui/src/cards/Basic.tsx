@@ -19,7 +19,6 @@ import type { CardRendererProps } from "../renderer-registry.js";
 import { CodeBlock } from "../agent/CodeBlock.js";
 import {
   deltaTone,
-  formatDelta,
   formatValue,
   newMarkdownStream,
   renderMarkdown,
@@ -27,6 +26,7 @@ import {
   toneClass,
 } from "@supersolutions/super-chat-ui-core";
 import { CardActions } from "./CardActions.js";
+import { FormattedDelta, FormattedValue } from "./FormattedValue.js";
 import { Chevron, StatusMark } from "./icons.js";
 
 // Rows beyond this render behind a "Show all" toggle — a 200-row agent result
@@ -130,9 +130,9 @@ export function TableCardView({ spec, partial }: CardRendererProps<TableCard>) {
                   {spec.columns.map((c) => (
                     <td key={c.key} style={{ textAlign: c.align ?? "left" }}>
                       {c.pill ? (
-                        <span className="sc-pill">{formatValue(row[c.key], c.format)}</span>
+                        <span className="sc-pill"><FormattedValue value={row[c.key]} format={c.format} /></span>
                       ) : (
-                        formatValue(row[c.key], c.format)
+                        <FormattedValue value={row[c.key]} format={c.format} />
                       )}
                     </td>
                   ))}
@@ -163,10 +163,10 @@ export function StatsCardView({ spec }: CardRendererProps<StatsCard>) {
         {spec.items.map((item, i) => (
           <div key={i} className="sc-stat">
             <div className="sc-stat__label">{item.label}</div>
-            <div className={`sc-stat__value${toneClass(item.tone)}`}>{formatValue(item.value, item.format)}</div>
+            <div className={`sc-stat__value${toneClass(item.tone)}`}><FormattedValue value={item.value} format={item.format} /></div>
             {item.delta != null ? (
               <div className={`sc-stat__delta sc-tone--${deltaTone(item.delta)}`}>
-                {formatDelta(item.delta, item.deltaFormat ?? "percent")}
+                <FormattedDelta delta={item.delta} format={item.deltaFormat ?? "percent"} />
               </div>
             ) : null}
             {item.hint ? <div className="sc-muted sc-stat__hint">{item.hint}</div> : null}
@@ -185,7 +185,7 @@ export function KeyValueCardView({ spec }: CardRendererProps<KeyValueCard>) {
         {spec.items.map((item, i) => (
           <div key={i} className="sc-kv__row">
             <dt>{item.label}</dt>
-            <dd className={`${item.mono ? "sc-mono" : ""}${toneClass(item.tone)}`}>{formatValue(item.value, item.format)}</dd>
+            <dd className={`${item.mono ? "sc-mono" : ""}${toneClass(item.tone)}`}><FormattedValue value={item.value} format={item.format} /></dd>
           </div>
         ))}
       </dl>
@@ -203,7 +203,7 @@ export function TimelineCardView({ spec }: CardRendererProps<TimelineCard>) {
             <span className="sc-timeline__dot" aria-hidden />
             <div>
               <div className="sc-timeline__label">{e.label}</div>
-              <div className="sc-muted sc-timeline__at">{formatValue(e.at, "datetime")}</div>
+              <div className="sc-muted sc-timeline__at"><FormattedValue value={e.at} format="datetime" /></div>
               {e.detail ? <div className="sc-timeline__detail">{e.detail}</div> : null}
             </div>
           </li>

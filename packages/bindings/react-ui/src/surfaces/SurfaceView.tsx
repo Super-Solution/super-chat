@@ -44,7 +44,8 @@ import {
   type SurfaceSpec,
 } from "@supersolutions/super-chat-core";
 import { useOptionalAgentClient } from "@supersolutions/super-chat-react";
-import { formatDelta, formatValue, toneClass, deltaTone } from "@supersolutions/super-chat-ui-core";
+import { formatValue, toneClass, deltaTone } from "@supersolutions/super-chat-ui-core";
+import { FormattedDelta, FormattedValue, useFormatOptions } from "../cards/FormattedValue.js";
 import { CardRenderer, useCardRegistry, useInteractiveKinds } from "../renderer-registry.js";
 
 export type SurfacePlacement = "inline" | "elsewhere";
@@ -301,9 +302,9 @@ function Metric({ props }: NodeProps) {
   return (
     <div className="sc-surface-metric">
       <span className="sc-surface-metric__label">{asText(props["label"])}</span>
-      <span className={`sc-surface-metric__value${toneClass(props["tone"] as string)}`}>{formatValue(props["value"], format)}</span>
+      <span className={`sc-surface-metric__value${toneClass(props["tone"] as string)}`}><FormattedValue value={props["value"]} format={format} /></span>
       {delta !== undefined ? (
-        <span className={`sc-surface-metric__delta${toneClass(deltaTone(delta))}`}>{formatDelta(delta, props["deltaFormat"] as CardValueFormat | undefined)}</span>
+        <span className={`sc-surface-metric__delta${toneClass(deltaTone(delta))}`}><FormattedDelta delta={delta} format={props["deltaFormat"] as CardValueFormat | undefined} /></span>
       ) : null}
       {asText(props["hint"]) ? <span className="sc-surface-metric__hint">{asText(props["hint"])}</span> : null}
     </div>
@@ -447,13 +448,14 @@ function Toggle({ component, props }: NodeProps) {
 
 function Slider({ component, props }: NodeProps) {
   const ctx = useSurfaceContext();
+  const formatOptions = useFormatOptions();
   const id = useId();
   const path = boundPath(component)!;
   const min = Number(props["min"]);
   const max = Number(props["max"]);
   const stored = Number(getAt(ctx.data, path));
   const value = Number.isFinite(stored) ? stored : min;
-  const shown = formatValue(value, (props["format"] as CardValueFormat | undefined) ?? "number");
+  const shown = formatValue(value, (props["format"] as CardValueFormat | undefined) ?? "number", formatOptions);
   return (
     <div className="sc-field sc-surface-field">
       <div className="sc-surface-slider__head">

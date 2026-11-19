@@ -1,0 +1,128 @@
+/* Applies the Super Chat brand to kit components on branded pages only. */
+.schat-page {
+  --sc-bg: var(--ground);
+  --sc-surface: var(--surface);
+  --sc-surface-2: var(--surface-sunken);
+  --sc-border: var(--line);
+  --sc-text: var(--ink);
+  --sc-text-muted: var(--ink-muted);
+  --sc-accent: var(--violet);
+  --sc-accent-contrast: var(--on-violet);
+  --sc-negative-contrast: var(--on-danger);
+  --sc-positive: var(--success);
+  --sc-negative: var(--danger);
+  --sc-warning: var(--warning);
+  --sc-info: var(--info);
+  --sc-radius: var(--radius-md);
+  --sc-radius-sm: var(--radius-sm);
+  --sc-radius-xs: var(--radius-xs);
+  --sc-sans: var(--font-sans);
+  --sc-mono: var(--font-mono);
+  --sc-series-1: var(--series-1);
+  --sc-series-2: var(--series-2);
+  --sc-series-3: var(--series-3);
+  --sc-series-4: var(--series-4);
+  --sc-series-5: var(--series-5);
+  --sc-shadow-overlay: var(--shadow-overlay);
+}
+
+.schat-page ::selection { background: var(--ink); color: var(--ground); }
+
+/* Two tones, so the ring holds on every colour field and on white or dark cards. */
+.schat-page :focus-visible {
+  outline: 3px solid #111113;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 3px #ffffff;
+}
+.schat-page main:focus { outline: none; box-shadow: none; }
+
+@media (pointer: coarse) {
+  .schat-page .sc-btn,
+  .schat-page .sc-input,
+  .schat-page .sc-code__copy,
+  .schat-page .schat-install button,
+  .schat-page .sc-card button { min-height: 44px; }
+}
+
+.schat-page .sc-card--interactive { border-color: var(--line-strong); }
+.schat-page .sc-card--interactive:has(button:not(:disabled)) { border-color: var(--turn-line); }
+.schat-page .sc-card--interactive.sc-card--danger:has(button:not(:disabled)) { border-color: var(--danger); }
+.schat-page .sc-card--interactive:has(button:not(:disabled))::before {
+  content: "Your turn";
+  display: block;
+  width: fit-content;
+  margin-bottom: var(--sp-8);
+  padding: 2px var(--sp-8);
+  border-radius: var(--radius-pill);
+  background: var(--turn);
+  color: var(--on-turn);
+  font: 600 11px/16px var(--font-sans);
+}
+.schat-page .sc-card textarea.sc-input { box-sizing: border-box; max-width: 100%; }
+
+.schat-mark { display: block; width: auto; }
+.schat-mark__layer { fill: currentColor; }
+.schat-mark__middle { fill: var(--mark-middle, var(--brand-violet)); }
+
+.schat-install {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
+  min-width: 0;
+  min-height: 48px;
+  padding: var(--sp-4) var(--sp-4) var(--sp-4) var(--sp-16);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+}
+.schat-install code {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  font: 400 13px/20px var(--font-mono);
+  white-space: nowrap;
+}
+.schat-install button {
+  flex: none;
+  min-width: 88px;
+  min-height: 38px;
+  padding: 0 var(--sp-12);
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: var(--surface-sunken);
+  color: var(--ink);
+  font: 600 13px/18px var(--font-sans);
+  cursor: pointer;
+  transition: background-color var(--dur-1) var(--ease-out);
+}
+.schat-install button:hover { background: var(--line); }
+.schat-install button[data-state="copied"] { background: var(--violet-tint); color: var(--violet-strong); }
+.schat-install button[data-state="failed"] { color: var(--danger); }
+
+.sitenav.schat-header { border-bottom-color: var(--line); background: var(--ground); color: var(--ink); font-family: var(--font-sans); }
+.schat-header .sitenav__brand { color: var(--ink); font-family: var(--font-display); font-size: 20px; font-weight: 800; }
+.schat-header .sitenav__links a { color: var(--ink-muted); }
+.schat-header .sitenav__links a:hover,
+.schat-header .sitenav__links a[aria-current="page"] { color: var(--violet-strong); }
+.schat-header .sitenav__btn { border-color: var(--line-strong); border-radius: var(--radius-sm); color: var(--ink); }
+.schat-header .sitenav__btn--primary { border-color: var(--violet); background: var(--violet); color: var(--on-violet); }
+.schat-header .sitenav__btn:focus-visible,
+.schat-header .sitenav__links a:focus-visible,
+.schat-header .sitenav__brand:focus-visible { outline-color: var(--violet-strong); }
+
+/* MotionTurn: the layers land in conversation order. Reduced motion shows the finished mark. */
+@keyframes schat-turn-land {
+  from { opacity: 0; transform: translateX(var(--turn-from)); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.schat-page) { scroll-behavior: smooth; }
+  .schat-turn-play .schat-turn-top,
+  .schat-turn-play .schat-turn-middle,
+  .schat-turn-play .schat-turn-bottom { animation: schat-turn-land var(--dur-brand) var(--ease-settle) both; }
+  .schat-turn-play .schat-turn-top { --turn-from: 28px; }
+  .schat-turn-play .schat-turn-middle { --turn-from: -28px; animation-delay: 220ms; }
+  .schat-turn-play .schat-turn-bottom { --turn-from: 28px; animation-delay: 440ms; }
+}

@@ -1,1 +1,5 @@
-export { default } from "../../../playground/src/app/page";
+import { Home } from "../components/home/Home";
+
+export default function Page() {
+  return <Home />;
+}
