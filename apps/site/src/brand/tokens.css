@@ -1,0 +1,177 @@
+/* Super Chat design tokens. Scoped to .schat-scope so the docs and playground keep their own styles. */
+@font-face {
+  font-family: "Funnel Display";
+  src: url("./fonts/funnel-display-latin-600-normal.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Funnel Display";
+  src: url("./fonts/funnel-display-latin-700-normal.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Funnel Display";
+  src: url("./fonts/funnel-display-latin-800-normal.woff2") format("woff2");
+  font-weight: 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("./fonts/inter-latin-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("./fonts/inter-latin-500-normal.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("./fonts/inter-latin-600-normal.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("./fonts/jetbrains-mono-latin-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("./fonts/jetbrains-mono-latin-500-normal.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}
+
+.schat-scope {
+  color-scheme: light;
+  --ground: #fafafa;
+  --surface: #ffffff;
+  --surface-sunken: #f2f2f4;
+  --line: #e4e4e7;
+  --line-strong: #8a8a94;
+  --ink: #111113;
+  --ink-muted: #5f5f68;
+  --brand-violet: #6c4af2;
+  --violet: #6c4af2;
+  --violet-strong: #5a38e0;
+  --violet-tint: #eeeaff;
+  --violet-deep: #2c1392;
+  --on-violet: #ffffff;
+  --turn: #f5b301;
+  --turn-strong: #7a4f00;
+  --turn-tint: #fff3d1;
+  --turn-line: #b57a00;
+  --on-turn: #111113;
+  --success: #12805c;
+  --danger: #c2362b;
+  --on-danger: #ffffff;
+  --warning: #9a6400;
+  --info: #2b6cb0;
+  --series-1: #6c4af2;
+  --series-2: #008f7c;
+  --series-3: #c8590c;
+  --series-4: #2a78d6;
+  --series-5: #b02a7f;
+  --shadow-overlay: 0 8px 24px rgba(0, 0, 0, 0.16);
+  --sp-2: 2px;
+  --sp-4: 4px;
+  --sp-6: 6px;
+  --sp-8: 8px;
+  --sp-10: 10px;
+  --sp-12: 12px;
+  --sp-16: 16px;
+  --sp-20: 20px;
+  --sp-24: 24px;
+  --sp-32: 32px;
+  --sp-48: 48px;
+  --sp-96: 96px;
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+  --dur-1: 120ms;
+  --dur-2: 160ms;
+  --dur-3: 320ms;
+  --dur-brand: 900ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-settle: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --font-display: "Funnel Display", "Inter", system-ui, sans-serif;
+  --font-sans: "Inter", "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .schat-scope {
+    color-scheme: dark;
+    --ground: #0e0e10;
+    --surface: #17171a;
+    --surface-sunken: #1d1d21;
+    --line: #2a2a30;
+    --line-strong: #6b6b75;
+    --ink: #f4f4f5;
+    --ink-muted: #a1a1aa;
+    --brand-violet: #6c4af2;
+    --violet: #a28cff;
+    --violet-strong: #b9a8ff;
+    --violet-tint: #2a2150;
+    --violet-deep: #2c1392;
+    --on-violet: #111113;
+    --turn: #ffc94d;
+    --turn-strong: #ffd57a;
+    --turn-tint: #3a2a05;
+    --turn-line: #ffc94d;
+    --on-turn: #111113;
+    --success: #4fd1a1;
+    --danger: #ff7b72;
+    --on-danger: #111113;
+    --warning: #e0a53a;
+    --info: #6b9bff;
+    --series-1: #9379ff;
+    --series-2: #0f9f8b;
+    --series-3: #e0702c;
+    --series-4: #4f92e6;
+    --series-5: #d65fa5;
+    --shadow-overlay: 0 8px 24px rgba(0, 0, 0, 0.5);
+  }
+}
+
+:root[data-theme="dark"] .schat-scope {
+  color-scheme: dark;
+  --ground: #0e0e10;
+  --surface: #17171a;
+  --surface-sunken: #1d1d21;
+  --line: #2a2a30;
+  --line-strong: #6b6b75;
+  --ink: #f4f4f5;
+  --ink-muted: #a1a1aa;
+  --brand-violet: #6c4af2;
+  --violet: #a28cff;
+  --violet-strong: #b9a8ff;
+  --violet-tint: #2a2150;
+  --violet-deep: #2c1392;
+  --on-violet: #111113;
+  --turn: #ffc94d;
+  --turn-strong: #ffd57a;
+  --turn-tint: #3a2a05;
+  --turn-line: #ffc94d;
+  --on-turn: #111113;
+  --success: #4fd1a1;
+  --danger: #ff7b72;
+  --on-danger: #111113;
+  --warning: #e0a53a;
+  --info: #6b9bff;
+  --series-1: #9379ff;
+  --series-2: #0f9f8b;
+  --series-3: #e0702c;
+  --series-4: #4f92e6;
+  --series-5: #d65fa5;
+  --shadow-overlay: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
