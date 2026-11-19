@@ -1,38 +1,16 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useState } from "react";
 import { CodeBlock } from "@supersolutions/super-chat-ui";
 import { SiteHeader } from "../SiteHeader";
-import { ASKS, CREATE_APP, INSTALL_ALL, PACKAGES, PROXY_CODE, TOKEN_BUDGET, TRACE } from "./content";
-import { BubbleArt, InstallCommand, LiveCard, SiteFooter } from "./parts";
+import { CREATE_APP, INSTALL_ALL, PACKAGES, PROXY_CODE, TOKEN_BUDGET, TRACE } from "./content";
+import { BubbleArt, InstallCommand, SiteFooter } from "./parts";
+import { Showcase } from "./Showcase";
 import styles from "./home.module.css";
-
-// Runs a real client in the browser, so it loads after the hero copy and never on the server.
-const ComposedDemo = dynamic(() => import("../composed/ComposedDemo").then((mod) => mod.ComposedDemo), {
-  ssr: false,
-  loading: () => <div className={styles.demoSlot} />,
-});
 
 const HEADROOM_COLOR = "var(--trace-empty)";
 
-function Segments<T extends { id: string; label: string }>({ items, value, onChange, label }: { items: T[]; value: string; onChange: (id: string) => void; label: string }) {
-  return (
-    <div className={styles.segments} role="group" aria-label={label}>
-      {items.map((item) => (
-        <button key={item.id} type="button" aria-pressed={item.id === value} onClick={() => onChange(item.id)}>
-          {item.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export function Home() {
-  const [askId, setAskId] = useState("confirm");
-
-  const ask = ASKS.find((item) => item.id === askId) ?? ASKS[0];
   const used = TRACE.reduce((total, item) => total + item.tokens, 0);
   const headroom = TOKEN_BUDGET - used;
 
@@ -50,8 +28,8 @@ export function Home() {
             <div className={styles.heroCopy}>
               <h1 className={styles.h1}>Your agent builds the interface for each question.</h1>
               <p className={styles.heroLede}>
-                Super Chat is an open-source front end for agent services. The agent assembles tables, charts, inputs and
-                approvals into an interface for the request, and your product checks every part before it renders.
+                Super Chat is an open-source front end for agent services. The agent assembles tables, charts and inputs for
+                each request, and stops to ask when it needs a choice, a form, an approval or a redline.
               </p>
               <div className={styles.heroActions}>
                 <Link className={styles.solid} href="/playground">Try it without an API key</Link>
@@ -59,27 +37,7 @@ export function Home() {
               </div>
             </div>
             <div className={styles.heroDemo}>
-              <ComposedDemo />
-            </div>
-          </div>
-        </section>
-
-        <section id="questions" className={`${styles.field} ${styles.fieldTurn}`}>
-          <div className={`${styles.wrap} ${styles.block}`}>
-            <div className={styles.head}>
-              <p className={styles.question}>What can the agent ask me?</p>
-              <h2 className={styles.answer}>A choice, a form, an approval or a redline.</h2>
-            </div>
-            <div className={styles.two}>
-              <div className={styles.stack}>
-                <Segments items={ASKS} value={askId} onChange={setAskId} label="Question type" />
-                <p className={styles.lede}>
-                  {ask.text} The run stays paused until you answer, and your answer becomes the tool result the model reads next.
-                </p>
-              </div>
-              <div className={styles.slot} aria-live="polite">
-                <LiveCard kind={ask.id} instance="question" />
-              </div>
+              <Showcase />
             </div>
           </div>
         </section>

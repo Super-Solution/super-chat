@@ -1,0 +1,222 @@
+/* The hero animation. Every movement is opacity or transform, and each one only
+   runs under prefers-reduced-motion: no-preference. Without motion the scene is
+   shown finished. */
+
+.showcase { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
+
+.controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.scenes { display: flex; flex-wrap: wrap; gap: 6px; }
+.scenes button,
+.pause {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.14);
+  color: inherit;
+  font: 600 14px/20px var(--font-sans);
+  cursor: pointer;
+  transition: background-color var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out);
+}
+.scenes button:hover,
+.pause:hover { background: rgba(255, 255, 255, 0.24); }
+.scenes button[aria-pressed="true"] { background: #ffffff; color: #111113; }
+.pause { flex: none; background: transparent; }
+
+.srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* ── the window ─────────────────────────────────────────────────────────── */
+
+.window {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 14px;
+  height: clamp(420px, calc(100svh - 270px), 590px);
+  padding: 18px;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 28px 64px rgba(17, 17, 19, 0.32);
+  font-family: var(--font-sans);
+}
+
+.bubble {
+  justify-self: end;
+  max-width: 86%;
+  min-height: 22px;
+  padding: 10px 16px;
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-xs) var(--radius-lg);
+  background: var(--ink);
+  color: var(--ground);
+  font: 600 15px/22px var(--font-sans);
+}
+.caret { display: inline-block; width: 2px; height: 1em; margin-left: 2px; vertical-align: -0.12em; background: currentColor; }
+
+.stage { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 12px; min-height: 0; }
+.surface { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 10px; }
+
+/* ── parts ──────────────────────────────────────────────────────────────── */
+
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.well { padding: 12px 14px; border-radius: var(--radius-md); background: var(--surface-sunken); }
+
+.metric { display: grid; gap: 2px; min-width: 0; }
+.metric span { color: var(--ink-muted); font-size: 12px; line-height: 16px; }
+.metric b { font: 700 clamp(17px, 1.6vw, 22px)/1.15 var(--font-sans); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.chart { height: 132px; }
+.bars { display: flex; align-items: flex-end; justify-content: space-around; gap: 14%; height: 100%; padding: 0 6%; }
+.bars span { display: grid; grid-template-rows: minmax(0, 1fr) auto; justify-items: center; gap: 6px; flex: 1; height: 100%; }
+.bars i { align-self: end; width: 100%; max-width: 72px; border-radius: 4px 4px 0 0; background: color-mix(in srgb, var(--violet) 55%, var(--surface-sunken)); transform-origin: bottom; }
+.bars span[data-mark] i { background: var(--violet); }
+.bars small { color: var(--ink-muted); font: 500 11px/14px var(--font-mono); }
+
+.rows { display: grid; padding-block: 6px; }
+.rows > div { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) auto; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; line-height: 18px; }
+.rows > div:last-child { border-bottom: 0; }
+.rows > div span:last-child { font-variant-numeric: tabular-nums; text-align: right; }
+
+.vendor { display: grid; gap: 4px; align-content: start; min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface); transition: border-color var(--dur-2) var(--ease-out), background-color var(--dur-2) var(--ease-out); }
+.vendor strong { margin-bottom: 4px; font-size: 14px; line-height: 18px; }
+.vendor span { color: var(--ink-muted); font-size: 12px; line-height: 16px; }
+.vendor b { font: 700 18px/1.2 var(--font-sans); font-variant-numeric: tabular-nums; }
+.vendor[data-picked] { border-color: var(--violet); background: var(--violet-tint); }
+
+.meter { height: 6px; overflow: hidden; border-radius: 3px; background: var(--line); }
+.meter i { display: block; height: 100%; border-radius: 3px; background: var(--violet); transform-origin: left; }
+
+.timeline { display: grid; gap: 6px; }
+.timeline span { font-size: 12px; font-weight: 600; }
+.timeline small { color: var(--ink-muted); font-size: 12px; }
+
+.doc,
+.page { display: grid; gap: 8px; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface); }
+.doc strong,
+.page strong { font-size: 14px; }
+.doc > span,
+.page > span { display: block; width: 100%; height: 8px; border-radius: 4px; background: var(--line); }
+.page p { margin: 0; font-size: 14px; line-height: 21px; }
+.page mark { padding: 0 2px; border-radius: 3px; background: color-mix(in srgb, var(--danger) 18%, transparent); color: inherit; }
+
+.window ins { padding: 0 2px; border-radius: 3px; background: color-mix(in srgb, var(--success) 18%, transparent); text-decoration: none; }
+
+/* ── the question the agent asks ────────────────────────────────────────── */
+
+.ask {
+  position: relative;
+  z-index: 2;
+  justify-self: end;
+  display: grid;
+  gap: 10px;
+  width: min(80%, 340px);
+  padding: 14px;
+  border: 1.5px solid var(--turn-line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: 0 18px 44px rgba(17, 17, 19, 0.28);
+}
+.askTitle { font-size: 14px; font-weight: 700; line-height: 18px; }
+
+.facts { display: grid; gap: 4px; margin: 0; }
+.facts div { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; line-height: 18px; }
+.facts dt { color: var(--ink-muted); }
+.facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+
+.actions { display: flex; gap: 8px; }
+.primary,
+.secondary { position: relative; display: inline-flex; align-items: center; min-height: 34px; padding: 0 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; }
+.primary { background: var(--violet); color: var(--on-violet); transition: background-color var(--dur-2) var(--ease-out); }
+.primary[data-done] { background: var(--ink); color: var(--ground); }
+.primary[data-done]::before { content: "✓"; margin-right: 6px; }
+.secondary { border: 1px solid var(--line-strong); }
+
+.options { display: grid; gap: 6px; }
+.option { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); font-size: 13px; transition: border-color var(--dur-2) var(--ease-out), background-color var(--dur-2) var(--ease-out); }
+.option i { flex: none; width: 14px; height: 14px; border: 1.5px solid var(--line-strong); border-radius: 50%; }
+.option[data-picked] { border-color: var(--violet); background: var(--violet-tint); }
+.option[data-picked] i { border: 4px solid var(--violet); }
+
+.fields { display: grid; gap: 8px; }
+.fields label { display: grid; gap: 3px; }
+.fields span { color: var(--ink-muted); font-size: 12px; }
+.fields em { display: block; min-height: 32px; padding: 6px 10px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); font: 400 13px/20px var(--font-sans); }
+
+.diff { margin: 0; font-size: 13px; line-height: 20px; }
+.diff del { padding: 0 2px; border-radius: 3px; background: color-mix(in srgb, var(--danger) 18%, transparent); }
+
+.pointer { position: absolute; right: 6px; bottom: -10px; z-index: 3; pointer-events: none; }
+
+/* ── motion ─────────────────────────────────────────────────────────────── */
+
+@keyframes part-in { from { opacity: 0; translate: 0 14px; scale: 0.97; } }
+@keyframes grow-up { from { scale: 1 0; } }
+@keyframes grow-right { from { scale: 0 1; } }
+@keyframes row-in { from { opacity: 0; translate: -8px 0; } }
+@keyframes ask-in { from { opacity: 0; translate: 0 24px; } }
+@keyframes bubble-in { from { opacity: 0; translate: 12px 6px; scale: 0.96; } }
+@keyframes pointer-in {
+  0% { opacity: 0; translate: 64px 46px; }
+  70% { opacity: 1; translate: 0 0; scale: 1; }
+  82% { scale: 0.86; }
+  100% { opacity: 1; translate: 0 0; scale: 1; }
+}
+@keyframes caret-blink { 50% { opacity: 0; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  .window[data-motion] .bubble { animation: bubble-in 360ms var(--ease-settle) both; }
+  .window[data-motion] .caret { animation: caret-blink 1s step-end infinite; }
+
+  /* Parts wait for the question, then settle in one after another. */
+  .window[data-motion][data-phase="type"] .part { opacity: 0; }
+  .window[data-motion]:not([data-phase="type"]) .part {
+    animation: part-in 560ms var(--ease-settle) both;
+    animation-delay: calc(var(--i, 0) * 120ms);
+  }
+  .window[data-motion]:not([data-phase="type"]) .bars i {
+    animation: grow-up 720ms var(--ease-settle) both;
+    animation-delay: calc(var(--i, 0) * 120ms + 220ms + var(--b, 0) * 90ms);
+  }
+  .window[data-motion]:not([data-phase="type"]) .meter i {
+    animation: grow-right 760ms var(--ease-settle) both;
+    animation-delay: calc(var(--i, 0) * 120ms + 260ms);
+  }
+  .window[data-motion]:not([data-phase="type"]) .rows > div {
+    animation: row-in 420ms var(--ease-settle) both;
+    animation-delay: calc(var(--i, 0) * 120ms + 200ms + var(--r, 0) * 80ms);
+  }
+
+  /* The question rises once the interface is in place. */
+  .window[data-motion]:is([data-phase="type"], [data-phase="build"]) .ask { opacity: 0; visibility: hidden; }
+  .window[data-motion]:is([data-phase="ask"], [data-phase="answer"], [data-phase="done"]) .ask { animation: ask-in 460ms var(--ease-settle) both; }
+
+  .window[data-motion] .pointer { animation: pointer-in 900ms var(--ease-settle) both; }
+}
+
+/* ── phone ──────────────────────────────────────────────────────────────── */
+
+@media (max-width: 999px) {
+  .window { height: calc(100svh - 250px); min-height: 440px; padding: 14px; }
+  .ask { width: 88%; }
+  .grid3 { gap: 8px; }
+  .vendor { padding: 10px; }
+  .vendor strong { font-size: 13px; }
+}
+
+/* Shorter screens: the same scene, packed a little tighter, so it still fits the window. */
+@media (max-height: 860px) {
+  .window { gap: 10px; }
+  .chart { height: 108px; }
+  .rows > div { padding: 5px 0; }
+  .ask { gap: 8px; padding: 12px; }
+  .fields em { min-height: 30px; padding: 5px 10px; }
+  .doc, .page { gap: 6px; padding: 12px 14px; }
+}
+@media (max-width: 420px) {
+  .scenes { gap: 4px; }
+  .scenes button, .pause { padding: 0 9px; font-size: 13px; }
+  .vendor { gap: 2px; padding: 8px; }
+  .vendor b { font-size: 16px; }
+  .rows > div { font-size: 12px; }
+}

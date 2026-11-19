@@ -1,10 +1,3 @@
-export const ASKS = [
-  { id: "choice", label: "Choice", text: "Pick one option from a short list." },
-  { id: "form", label: "Form", text: "Fill in several values at once." },
-  { id: "confirm", label: "Approval", text: "Approve an action before the agent takes it." },
-  { id: "editreview", label: "Redline", text: "Accept or reject proposed document edits." },
-];
-
 export const PROXY_CODE = `import { createProxyHandler } from "@supersolutions/super-chat-server";
 
 export const POST = createProxyHandler({
