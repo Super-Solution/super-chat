@@ -38,6 +38,7 @@ import {
   type SurfaceAction,
   type SurfaceActivity,
   type SurfaceCardAnswer,
+  type SurfacePendingPart,
   type SurfaceComponent,
   type SurfaceCondition,
   type SurfaceIssue,
@@ -125,7 +126,24 @@ function Fallback({ message }: { message?: string }) {
   );
 }
 
-const Pending = () => <div className="sc-surface-pending" aria-hidden />;
+/**
+ * Stands in for a part that is still arriving. Each kind reserves about the height
+ * the finished part will take, so the interface does not jump when it lands.
+ * A part whose id has not arrived yet has no kind, and gets a single line.
+ */
+function Pending({ part }: { part?: { component?: unknown; kind?: unknown } }) {
+  const type = typeof part?.component === "string" ? part.component : undefined;
+  const kind = !type ? "unknown" : type === "Card" ? `card-${typeof part?.kind === "string" ? part.kind : "other"}` : type.toLowerCase();
+  return (
+    <div className={`sc-surface-pending sc-surface-pending--${kind}`} aria-hidden>
+      <span />
+      <span />
+    </div>
+  );
+}
+
+/** Parts that only arrange others. They render while streaming, with their children as placeholders. */
+const CONTAINERS = new Set(["Stack", "Grid", "Section", "Tabs", "List"]);
 
 type SurfaceContextValue = {
   surfaceId: string;
@@ -133,6 +151,8 @@ type SurfaceContextValue = {
   issues: ReadonlyMap<string, SurfaceIssue>;
   data: Record<string, unknown>;
   partial: boolean;
+  /** While streaming, the part the model is still writing. Every part listed before it is complete. */
+  pending?: SurfacePendingPart;
   activity?: SurfaceActivity;
   write: (path: string, value: unknown) => void;
   press: (componentId: string, scope: { item?: unknown; index?: number }) => void;
@@ -573,10 +593,11 @@ function SurfaceNode({ id, scope, trail }: { id: string; scope: BindingScope; tr
   const ctx = useSurfaceContext();
   const { components: custom } = useSurfaceHost();
   const component = ctx.byId.get(id);
-  if (!component) return ctx.partial ? <Pending /> : <Fallback message={ctx.issues.get(id)?.message} />;
+  if (!component) return ctx.partial ? <Pending part={ctx.pending?.id === id ? ctx.pending : undefined} /> : <Fallback message={ctx.issues.get(id)?.message} />;
   // Validation refuses cycles. This holds even if a stored spec slipped past it.
   if (trail.includes(id) || trail.length >= SURFACE_LIMITS.depth) return <Fallback />;
   if (component.visibleWhen && !evaluateSurfaceCondition(component.visibleWhen, scope)) return null;
+  if (ctx.partial && id === ctx.pending?.id && !CONTAINERS.has(component.component)) return <Pending part={component} />;
 
   const nextTrail = [...trail, id];
   const props = resolveProps(component, scope);
@@ -644,8 +665,9 @@ export function SurfaceView({ spec, data, activity, partial = false, onDataChang
       const bind = byId.get(componentId)?.["bind"];
       if (typeof bind === "string") write(bind, { ...next, at: Date.now() });
     };
-    return { surfaceId: clean.surfaceId, byId, issues, data: current, partial, activity, write, press, answer };
-  }, [clean, current, partial, activity, onDataChange, onPress, onAction, onCardAnswer]);
+    const pending = partial ? spec.pending : undefined;
+    return { surfaceId: clean.surfaceId, byId, issues, data: current, partial, pending, activity, write, press, answer };
+  }, [clean, current, partial, spec.pending, activity, onDataChange, onPress, onAction, onCardAnswer]);
 
   if (spec.deleted) return <div className="sc-card sc-card--muted"><div className="sc-muted">{spec.title ? `“${spec.title}” was removed.` : "This interface was removed."}</div></div>;
   if (spec.expired) return <div className="sc-card sc-card--muted"><div className="sc-muted">This interface expired from saved history. Ask the agent to rebuild it.</div></div>;

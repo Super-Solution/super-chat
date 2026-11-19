@@ -8,7 +8,6 @@ import {
   CardRenderer,
   CardRendererProvider,
   SurfaceHostProvider,
-  SurfaceView,
 } from "@supersolutions/super-chat-ui";
 import type { SurfaceSpec } from "@supersolutions/super-chat-core";
 import { createComposedDemo, type ComposedDemo as Demo } from "./demo";
@@ -83,12 +82,18 @@ function Stage() {
       </div>
       <p className={styles.srOnly} role="status">{announcement}</p>
       <div className={styles.canvas}>
-        {live ? (
-          <AgentSurface surfaceId={live.surfaceId} />
-        ) : streaming?.components?.length ? (
-          <SurfaceView spec={streaming} partial />
+        {live || streaming?.components?.length ? (
+          // One view from the first streamed part to the finished interface, so nothing is drawn twice.
+          <AgentSurface key={scenario.surfaceId} surfaceId={scenario.surfaceId} streaming={streaming} />
         ) : (
-          <div className={styles.blank} aria-hidden="true"><span /><span /><span /></div>
+          <div className="sc-surface" aria-hidden="true">
+            <div className="sc-surface__body">
+              <div className="sc-surface-pending sc-surface-pending--text"><span /><span /></div>
+              <div className="sc-surface-pending sc-surface-pending--select"><span /><span /></div>
+              <div className="sc-surface-pending sc-surface-pending--metric"><span /><span /></div>
+              <div className="sc-surface-pending sc-surface-pending--card-chart"><span /><span /></div>
+            </div>
+          </div>
         )}
         {pending ? (
           <div ref={askRef} className={styles.ask}>
@@ -96,7 +101,6 @@ function Stage() {
           </div>
         ) : null}
       </div>
-      <p className={styles.reply}>{!isRunning && live ? scenario.reply : "\u00a0"}</p>
     </div>
   );
 }

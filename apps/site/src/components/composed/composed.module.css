@@ -1,57 +1,51 @@
 /* The hero's live demo: the visitor picks a request and watches the agent assemble its interface. */
-.stage { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; min-width: 0; }
+.stage { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
 
-.requests { display: flex; flex-wrap: wrap; gap: 8px; }
+.requests { display: flex; flex-wrap: wrap; gap: 6px; }
 .request {
-  min-height: 44px;
-  padding: 10px 16px;
-  border: 1.5px solid currentColor;
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 0;
   border-radius: var(--radius-lg) var(--radius-lg) var(--radius-xs) var(--radius-lg);
-  background: transparent;
+  background: rgba(255, 255, 255, 0.14);
   color: inherit;
-  font: 600 15px/20px var(--font-sans);
+  font: 600 14px/20px var(--font-sans);
   text-align: left;
   cursor: pointer;
-  transition: background-color var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out), border-color var(--dur-1) var(--ease-out);
+  transition: background-color var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out);
 }
-.request:hover { background: rgba(255, 255, 255, 0.14); }
-.request[aria-pressed="true"] { border-color: #111113; background: #111113; color: #ffffff; }
+.request:hover { background: rgba(255, 255, 255, 0.24); }
+.request[aria-pressed="true"] { background: #ffffff; color: #111113; }
 
+/* One panel: the surface is the panel, so there is no frame inside a frame. */
 .canvas {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
   align-content: start;
+  gap: 12px;
   min-width: 0;
-  min-height: 420px;
-  max-height: min(640px, 72svh);
+  height: min(640px, 72svh);
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 20px;
+  scrollbar-width: thin;
   border-radius: var(--radius-lg);
-  background: var(--ground);
+  background: var(--sc-surface);
   color: var(--ink);
-  box-shadow: 0 24px 60px rgba(17, 17, 19, 0.28);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 28px 64px rgba(17, 17, 19, 0.32);
   container-type: inline-size;
 }
-.ask { min-width: 0; }
+.canvas > :global(.sc-surface) { margin: 0; border: 0; border-radius: 0; background: transparent; }
+.canvas > :global(.sc-surface) > :global(.sc-surface__body) { padding: 20px; gap: 16px; }
+.ask { min-width: 0; padding: 0 20px 20px; }
 .ask :global(.sc-card) { margin: 0; }
-
-.reply { min-height: 24px; margin: 0; font-size: 16px; line-height: 24px; text-wrap: pretty; }
-
-.blank { display: grid; gap: 12px; }
-.blank span { height: 40px; border-radius: var(--radius-sm); background: var(--surface-sunken); }
-.blank span:nth-child(2) { height: 96px; }
-.blank span:nth-child(3) { height: 200px; }
 
 .srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-/* On a desktop screen the panel scrolls inside the hero instead of pushing the page down. */
 @media (min-width: 1000px) and (min-height: 640px) {
-  .canvas { height: calc(100svh - 300px); min-height: 360px; max-height: 640px; overflow-y: auto; overscroll-behavior: contain; }
+  .canvas { height: clamp(360px, calc(100svh - 260px), 640px); }
 }
 @media (max-width: 999px) {
-  .canvas { min-height: 0; height: calc(100svh - 380px); max-height: none; }
+  .canvas { height: calc(100svh - 300px); }
 }
 @media (prefers-reduced-motion: reduce) {
   .request { transition: none; }

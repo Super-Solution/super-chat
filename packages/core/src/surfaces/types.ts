@@ -158,7 +158,15 @@ export type SurfaceSpec = {
   deleted?: boolean;
   /** The payload was shed from saved history. */
   expired?: boolean;
+  /**
+   * Only on a streaming preview: the part the model is still writing. Every part
+   * listed before it is complete. A renderer holds its place until it lands.
+   */
+  pending?: SurfacePendingPart;
 };
+
+/** The part of a streaming surface that is still arriving, as far as it has arrived. */
+export type SurfacePendingPart = { id: string; component?: string; kind?: string };
 
 /** Patches for an existing surface, applied in order and validated before rendering. */
 export type SurfaceOperation =
