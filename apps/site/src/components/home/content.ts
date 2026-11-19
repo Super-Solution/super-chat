@@ -64,15 +64,6 @@ export const SCENES: Scene[] = [
   },
 ];
 
-export const FAMILIES = [
-  { name: "Structured data", kinds: ["table", "stats", "comparison", "keyvalue", "tree"] },
-  { name: "Quantitative shape", kinds: ["chart", "funnel", "gauge"] },
-  { name: "Sequence and state", kinds: ["timeline", "progress", "checklist"] },
-  { name: "Prose and evidence", kinds: ["markdown", "callout", "citations", "code", "diff", "media"] },
-  { name: "Artifacts", kinds: ["document", "email"] },
-  { name: "Questions for a person", kinds: ["choice", "form", "confirm", "editreview"] },
-];
-
 export const OUTCOMES = [
   {
     id: "valid",
@@ -109,14 +100,6 @@ export const ASKS = [
   { id: "form", label: "Form", text: "Fill in several values at once." },
   { id: "confirm", label: "Approval", text: "Approve an action before the agent takes it." },
   { id: "editreview", label: "Redline", text: "Accept or reject proposed document edits." },
-];
-
-export const DIALECTS = [
-  { field: "Tool declaration", responses: "{ type, name, parameters }", chat: "{ type, function: { ... } }", anthropic: "{ name, input_schema }" },
-  { field: "User text", responses: "input_text", chat: "text", anthropic: "text" },
-  { field: "Image", responses: "input_image", chat: "image_url", anthropic: "image" },
-  { field: "Tool output", responses: "function_call_output", chat: 'role: "tool"', anthropic: "tool_result" },
-  { field: "Output limit", responses: "max_output_tokens", chat: "max_completion_tokens", anthropic: "max_tokens" },
 ];
 
 export const PROXY_CODE = `import { createProxyHandler } from "@supersolutions/super-chat-server";

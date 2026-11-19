@@ -6,10 +6,10 @@ import { Shell } from "@/components/Shell";
 import { SITE_FONTS } from "@/components/site-fonts";
 import { SiteHeader } from "./SiteHeader";
 
-/** The homepage draws its own navigation; every other route keeps the shared shell. */
+/** Brand pages draw the shared header over their own hero; every other route keeps the shell. */
 export function SiteShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  if (pathname === "/") return <>{children}</>;
+  if (pathname === "/" || pathname.startsWith("/whats-inside")) return <>{children}</>;
   return (
     <>
       {/* The guide and playground still use these faces. The homepage self-hosts its own. */}

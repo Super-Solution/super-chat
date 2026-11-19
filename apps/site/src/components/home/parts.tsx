@@ -1,10 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { CardAction, CardSpec } from "@supersolutions/super-chat-core";
 import { BUILTIN_RENDERERS, CardRenderer, CardRendererProvider } from "@supersolutions/super-chat-ui";
 import { CARD_SAMPLES } from "@/agent/card-samples";
+import { REPO_URL } from "@/components/SiteNav";
 import { MARK_LAYERS, MARK_VIEWBOX } from "../Mark";
+import styles from "./home.module.css";
 
 /** Renders a real kit card, from a sample when no spec is given. */
 export function LiveCard({
@@ -83,5 +86,19 @@ export function BubbleArt({ className, top, middle, bottom, onView = false }: { 
         <path className="schat-turn-bottom" style={{ fill: bottom }} d={MARK_LAYERS.bottom} />
       </g>
     </svg>
+  );
+}
+
+export function SiteFooter() {
+  return (
+    <footer className={`${styles.wrap} ${styles.footer}`}>
+      <span>Super Chat is part of <a href="https://github.com/Super-Solution">Super Solution Lab</a>. Sample data on this page is synthetic.</span>
+      <nav className={styles.footerLinks} aria-label="Footer">
+        <Link href="/docs">Docs</Link>
+        <a href={REPO_URL}>GitHub</a>
+        <a href="https://www.npmjs.com/package/@supersolutions/super-chat-core">npm</a>
+        <a href={`${REPO_URL}/blob/main/LICENSE`}>License</a>
+      </nav>
+    </footer>
   );
 }

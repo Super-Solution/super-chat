@@ -1,0 +1,151 @@
+.bar { position: relative; z-index: 4; flex: none; font-family: var(--font-sans); }
+.solid { border-bottom: 1px solid var(--line); background: var(--ground); color: var(--ink); --primary-bg: var(--violet); --primary-fg: var(--on-violet); }
+.overlay { position: absolute; top: 0; right: 0; left: 0; --primary-bg: var(--solid-bg); --primary-fg: var(--solid-fg); }
+
+.inner {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 1280px;
+  min-height: 60px;
+  margin-inline: auto;
+  padding-left: max(20px, env(safe-area-inset-left, 0px));
+  padding-right: max(20px, env(safe-area-inset-right, 0px));
+}
+.overlay .inner { min-height: 76px; }
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: auto;
+  color: inherit;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.overlay .brand { font-size: 23px; }
+
+.nav { display: flex; align-items: center; order: 3; }
+
+.menuButton,
+.themeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.menuButton svg,
+.themeButton svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Narrow: the list is a popover under the bar. */
+.menu {
+  position: fixed;
+  inset: 68px max(12px, env(safe-area-inset-right, 0px)) auto auto;
+  box-sizing: border-box;
+  width: min(280px, calc(100dvw - 24px));
+  max-height: calc(100dvh - 80px);
+  margin: 0;
+  padding: 8px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-overlay);
+  color: var(--ink);
+  list-style: none;
+}
+.menu a,
+.themeButton {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  color: inherit;
+  font: 500 15px/20px var(--font-sans);
+  text-decoration: none;
+}
+.menu a:hover,
+.themeButton:hover { background: var(--surface-sunken); }
+.menu a[aria-current="page"] { background: var(--violet-tint); color: var(--violet-strong); }
+
+/* Two classes: the brand pages set `a { color: inherit }` at one class of specificity. */
+.bar .primary {
+  display: inline-flex;
+  align-items: center;
+  order: 2;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--radius-sm);
+  background: var(--primary-bg);
+  color: var(--primary-fg);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 480ms var(--ease-in-out), color 480ms var(--ease-in-out), transform var(--dur-1) var(--ease-out);
+}
+.primary:hover { transform: translateY(-1px); }
+.primary[aria-current="page"] { text-decoration: underline; text-underline-offset: 4px; }
+
+.bar :focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.menu :focus-visible { outline-color: var(--violet-strong); outline-offset: -2px; }
+.solid .primary:focus-visible { outline-color: var(--violet-strong); }
+
+/* Wide: the same list, laid out in the bar. */
+@media (min-width: 900px) {
+  .inner { gap: 4px; }
+  .brand { margin-right: 20px; }
+  .nav { flex: 1; order: 0; }
+  .menuButton { display: none; }
+  .menu {
+    position: static;
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 4px;
+    width: auto;
+    max-height: none;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: inherit;
+  }
+  .menu a { width: auto; padding: 0 10px; }
+  .menu a:hover { background: transparent; text-decoration: underline; text-underline-offset: 4px; }
+  .menu a[aria-current="page"] { background: transparent; color: inherit; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
+  .menu :focus-visible { outline-color: currentColor; outline-offset: 2px; }
+  .themeItem { margin-left: auto; }
+  .themeButton { width: 44px; padding: 0; justify-content: center; }
+  .themeButton:hover { background: transparent; }
+  .themeLabel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primary { transition: none; }
+  .primary:hover { transform: none; }
+}
+
+@media (forced-colors: active) {
+  .menu a[aria-current="page"] { outline: 2px solid LinkText; outline-offset: -2px; }
+}
