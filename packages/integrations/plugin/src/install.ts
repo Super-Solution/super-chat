@@ -93,7 +93,9 @@ function toToolDefinition(tool: DeclaredPluginTool, authority: PluginToolAuthori
  * is listed in `refusedTools`.
  */
 export function installChatPlugin(registry: CardRegistry, plugin: ChatPlugin, options: InstallChatPluginOptions = {}): PluginInstallReport {
-  const issues = validateChatPlugin(plugin);
+  // A malformed tool is refused on its own below, with a reason in the report, so it
+  // does not stop the plugin's cards and other tools from installing.
+  const issues = validateChatPlugin(plugin).filter((issue) => !/^tools\[\d+\]\.(authority|confirm)$/.test(issue.path));
   const name = plugin?.manifest?.name ?? "(unknown)";
   if (issues.length) throw new PluginInstallError(name, issues);
 

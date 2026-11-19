@@ -6,6 +6,10 @@
 
 - The "Your turn" chip on unanswered cards. The waiting border still marks them until they are answered.
 
+### Fixed
+
+- `installChatPlugin` installs a plugin again when one of its tools has an invalid `authority` or `confirm`. Since 0.2.0 the whole plugin was rejected; now only that tool is refused and listed in `refusedTools`, as before.
+
 ## 0.2.0
 
 ### Added
