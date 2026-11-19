@@ -57,7 +57,9 @@
 
 /* ── install ──────────────────────────────────────────────────────────── */
 .install { max-width: 880px; margin: 0 auto; padding: 72px 24px 120px; box-sizing: border-box; display: flex; flex-direction: column; gap: 40px; }
+.embedded { max-width: none; margin: 0; padding: 0; }
 .h1 { margin: 0; font-size: clamp(40px, 5vw, 64px); line-height: 1; letter-spacing: -0.035em; font-weight: 700; }
+.h2 { margin: 0; font-size: clamp(26px, 3vw, 34px); line-height: 1.15; letter-spacing: -0.02em; font-weight: 700; }
 .controls { display: flex; flex-wrap: wrap; gap: 12px 24px; }
 .segment { display: inline-flex; padding: 3px; border: 1px solid #d0d0c9; border-radius: 6px; background: #ffffff; }
 .segment button { min-height: 38px; padding: 0 14px; border: 0; border-radius: 4px; background: transparent; color: #4a4a47; font: inherit; font-size: 14px; cursor: pointer; }

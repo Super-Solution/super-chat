@@ -184,6 +184,7 @@
 .h1 { margin: 0; font-family: var(--font-display); font-size: clamp(50px, 6.3vw, 88px); font-weight: 800; line-height: 0.96; letter-spacing: -0.03em; text-wrap: balance; }
 .heroLede { max-width: 44ch; margin: 0; font-size: clamp(17px, 1.45vw, 20px); line-height: 1.5; }
 .heroActions { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; max-width: 480px; }
+.heroNote { margin: 0; font-size: 14px; line-height: 20px; }
 
 .scene { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
 /* Invisible copies reserve the tallest text, so the stage never jumps between phases. */
@@ -245,6 +246,8 @@
 .rows span { color: var(--muted); }
 .rows b { font: 500 14px/20px var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
 
+.h4 { margin: 0; font-family: var(--font-display); font-size: clamp(22px, 2.2vw, 28px); font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; text-wrap: balance; }
+.textLink { display: inline-flex; align-items: center; width: fit-content; min-height: 44px; font-size: 16px; font-weight: 600; }
 .packages { display: grid; margin: 0; padding: 0; list-style: none; }
 .packages li { display: grid; gap: 3px; padding-block: 16px; border-bottom: 1px solid var(--line); }
 .packages code { font: 500 15px/22px var(--font-mono); overflow-wrap: anywhere; }

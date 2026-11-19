@@ -68,7 +68,8 @@ for await (const event of runAgent([userMessage("Summarise the contract")], {
   },
 ];
 
-export function InstallView() {
+/** `embedded` drops the page frame and title, for a host page that leads with another install path. */
+export function InstallView({ embedded = false }: { embedded?: boolean }) {
   const [manager, setManager] = useState<(typeof MANAGERS)[number]["id"]>("pnpm");
   const [coreOnly, setCoreOnly] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -77,10 +78,9 @@ export function InstallView() {
   const command = `${MANAGERS.find((m) => m.id === manager)!.add} ${pkgs.join(" ")}`;
   const steps = STEPS.filter((s) => s.for === "both" || s.for === (coreOnly ? "server" : "react"));
 
-  return (
-    <div className={styles.page}>
-      <div className={styles.install}>
-        <h1 className={styles.h1}>Install</h1>
+  const content = (
+      <div className={embedded ? `${styles.install} ${styles.embedded}` : styles.install}>
+        {embedded ? <h2 className={styles.h2}>Add Super Chat to an existing app</h2> : <h1 className={styles.h1}>Install</h1>}
 
         <div className={styles.controls}>
           <div className={styles.segment} role="group" aria-label="Package manager">
@@ -135,6 +135,7 @@ export function InstallView() {
 
         <Link className={styles.more} href="/docs/getting-started">Getting started, step by step →</Link>
       </div>
-    </div>
   );
+
+  return embedded ? content : <div className={styles.page}>{content}</div>;
 }

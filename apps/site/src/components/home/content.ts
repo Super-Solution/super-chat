@@ -132,5 +132,5 @@ export const PACKAGES = [
   { name: "super-chat-ui", description: "Card renderers, chat parts and the context inspector." },
 ];
 
-export const INSTALL_UI = "pnpm add @supersolutions/super-chat-ui";
+export const CREATE_APP = "npx create-super-app@latest my-agent";
 export const INSTALL_ALL = "pnpm add @supersolutions/super-chat-core @supersolutions/super-chat-react @supersolutions/super-chat-ui";

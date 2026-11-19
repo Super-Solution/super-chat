@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { CodeBlock } from "@supersolutions/super-chat-ui";
 import { SiteHeader } from "../SiteHeader";
-import { ASKS, INSTALL_ALL, INSTALL_UI, OUTCOMES, PACKAGES, PROXY_CODE, TOKEN_BUDGET, TRACE } from "./content";
+import { ASKS, CREATE_APP, INSTALL_ALL, OUTCOMES, PACKAGES, PROXY_CODE, TOKEN_BUDGET, TRACE } from "./content";
 import { HeroScene, useHeroScene } from "./HeroScene";
 import { BubbleArt, InstallCommand, LiveCard, SiteFooter } from "./parts";
 import styles from "./home.module.css";
@@ -60,7 +60,8 @@ export function Home() {
               </p>
               <div className={styles.heroActions}>
                 <Link className={styles.solid} href="/playground">Try it without an API key</Link>
-                <InstallCommand command={INSTALL_UI} />
+                <InstallCommand command={CREATE_APP} />
+                <p className={styles.heroNote}>Creates a working app with a demo agent. You don&apos;t need an API key.</p>
               </div>
             </div>
             <HeroScene scene={scene} />
@@ -168,15 +169,23 @@ export function Home() {
 
         <section id="install" className={`${styles.wrap} ${styles.block}`}>
           <p className={styles.question}>What do I need to start?</p>
-          <h2 className={styles.answer}>Install only the layers you need.</h2>
+          <h2 className={styles.answer}>One command creates a working agent app.</h2>
           <div className={styles.two}>
-            <ul className={styles.packages}>
-              {PACKAGES.map((item) => (
-                <li key={item.name}><code>{item.name}</code><span>{item.description}</span></li>
-              ))}
-            </ul>
-            <div>
+            <div className={styles.stack}>
+              <InstallCommand command={CREATE_APP} />
+              <p className={styles.lede}>
+                Start with a working Super Chat interface and a scripted demo agent. You don&apos;t need an API key to try it.
+              </p>
+              <Link className={styles.textLink} href="/install">See every install option</Link>
+            </div>
+            <div className={styles.stack}>
+              <h3 className={styles.h4}>Already have an app? Install only the layers you need.</h3>
               <InstallCommand command={INSTALL_ALL} />
+              <ul className={styles.packages}>
+                {PACKAGES.map((item) => (
+                  <li key={item.name}><code>{item.name}</code><span>{item.description}</span></li>
+                ))}
+              </ul>
               <dl className={styles.facts}>
                 <div><dt>License</dt><dd>Apache-2.0</dd></div>
               </dl>
