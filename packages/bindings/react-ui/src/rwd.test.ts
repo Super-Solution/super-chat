@@ -180,6 +180,66 @@ describe("rwd — touch", () => {
   });
 });
 
+describe("design rules", () => {
+  // Durations come from the three motion tokens. The exceptions are the spinner's
+  // loop and the plan's check, spine and strike, whose timing belongs to the state
+  // they report.
+  it("takes transition and entrance timing from the motion tokens", () => {
+    const raw = RULES.split("\n")
+      .filter((l) => /\b(?:transition|animation):/.test(l) && /\b\d{3}ms\b/.test(l))
+      .map((l) => l.trim());
+    expect(raw).toEqual([
+      "animation: sc-spin 700ms linear infinite;",
+      "transition: stroke-dashoffset 420ms var(--sc-ease-out) 90ms;",
+      "transition: transform 520ms var(--sc-ease-out);",
+      "transition: clip-path 520ms var(--sc-ease-out);",
+    ]);
+  });
+
+  // A thick coloured edge is the stock generated alert. The blockquote's neutral
+  // rule is typography, and is the one place a 2px side rule is allowed.
+  it("allows a side rule above 1px only on a blockquote", () => {
+    const thick = [...RULES.matchAll(/([^{}]+)\{[^{}]*border-(?:left|right):\s*(?:[2-9]|\d{2,})px[^{}]*\}/g)]
+      .map((m) => (m[1] ?? "").trim());
+    expect(thick).toEqual([".sc-prose blockquote"]);
+  });
+
+  it("gives every control the same focus ring and never removes it on a control", () => {
+    const ring = /outline: 2px solid var\(--sc-live-accent-strong\);\s*outline-offset: 2px;/;
+    expect(RULES).toMatch(ring);
+    expect(RULES).not.toMatch(/outline: 2px solid var\(--sc-accent\)/);
+    for (const sel of [".sc-btn", ".sc-input", ".sc-choice", ".sc-composer__input", ".sc-surface-tabs__tab", ".sc-surface-slider", ".sc-ai__send"]) {
+      expect(RULES, `${sel} needs the ring`).toContain(`${sel}:focus-visible`);
+    }
+  });
+
+  // The promise to hosts: set --sc-accent alone and the whole kit follows it.
+  it("derives the accent companions from the host's accent", () => {
+    expect(RULES).toMatch(/--sc-live-accent-strong: var\(--sc-accent-strong, rgb\(from var\(--sc-accent\)/);
+    expect(RULES).toMatch(/--sc-live-accent-tint: var\(--sc-accent-tint, color-mix\(in srgb, var\(--sc-accent\)/);
+    expect(RULES).toMatch(/--sc-live-radius-lg: var\(--sc-radius-lg, calc\(var\(--sc-radius\)/);
+  });
+
+  // `turn` means a person is being waited for, and nothing else.
+  it("spends the turn colours only on the waiting state", () => {
+    const users = [...RULES.matchAll(/([^{}]+)\{[^{}]*var\(--sc-(?:turn|turn-line|on-turn)\)[^{}]*\}/g)]
+      .map((m) => (m[1] ?? "").trim())
+      .filter((sel) => !sel.startsWith(":root") && !sel.startsWith("@media"));
+    expect(users.length).toBeGreaterThan(0);
+    for (const sel of users) expect(sel).toMatch(/sc-turnchip|data-waiting/);
+  });
+
+  it("keeps movement out of the reduced-motion path", () => {
+    const reduce = blocksMatching(RULES, /prefers-reduced-motion:\s*reduce/).join("\n");
+    expect(reduce).toMatch(/\.sc-msg__text--paused::after/);
+    expect(reduce).toMatch(/\.sc-toast/);
+    const optIn = blocksMatching(RULES, /prefers-reduced-motion:\s*no-preference/).join("\n");
+    for (const sel of [".sc-turnchip", ".sc-ai__menu", ".sc-surface-pending", "scroll-behavior: smooth"]) {
+      expect(optIn, `${sel} must opt in to motion`).toContain(sel);
+    }
+  });
+});
+
 describe("rwd — token discipline", () => {
   // Principle 3, now enforced. The agent surfaces landed after the D1 token
   // migration and reintroduced raw values: three copies of the overlay shadow

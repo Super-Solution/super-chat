@@ -47,17 +47,6 @@
 .schat-page .sc-card--interactive { border-color: var(--line-strong); }
 .schat-page .sc-card--interactive:has(button:not(:disabled)) { border-color: var(--turn-line); }
 .schat-page .sc-card--interactive.sc-card--danger:has(button:not(:disabled)) { border-color: var(--danger); }
-.schat-page .sc-card--interactive:has(button:not(:disabled))::before {
-  content: "Your turn";
-  display: block;
-  width: fit-content;
-  margin-bottom: var(--sp-8);
-  padding: 2px var(--sp-8);
-  border-radius: var(--radius-pill);
-  background: var(--turn);
-  color: var(--on-turn);
-  font: 600 11px/16px var(--font-sans);
-}
 .schat-page .sc-card textarea.sc-input { box-sizing: border-box; max-width: 100%; }
 
 .schat-mark { display: block; width: auto; }
