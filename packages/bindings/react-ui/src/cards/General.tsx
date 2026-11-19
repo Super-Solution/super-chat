@@ -21,6 +21,7 @@ import type {
 } from "@supersolutions/super-chat-core";
 import type { CardRendererProps } from "../renderer-registry.js";
 import { formatValue, safeHref } from "@supersolutions/super-chat-ui-core";
+import { FormattedValue, useFormatOptions } from "./FormattedValue.js";
 import { StatusMark, ToneIcon, type StatusMarkKind } from "./icons.js";
 
 export function ComparisonCardView({ spec }: CardRendererProps<ComparisonCard>) {
@@ -145,6 +146,7 @@ export function CalloutCardView({ spec }: CardRendererProps<CalloutCard>) {
 }
 
 export function CitationsCardView({ spec }: CardRendererProps<CitationsCard>) {
+  const formatOptions = useFormatOptions();
   return (
     <div className="sc-card">
       <div className="sc-card__title">{spec.title ?? "Sources"}</div>
@@ -171,7 +173,7 @@ export function CitationsCardView({ spec }: CardRendererProps<CitationsCard>) {
                 {item.relevance ? <span className="sc-pill">{item.relevance}</span> : null}
               </div>
               <div className="sc-muted sc-cite__meta">
-                {[item.source, item.locator, item.date ? formatValue(item.date, "datetime") : null]
+                {[item.source, item.locator, item.date ? formatValue(item.date, "datetime", formatOptions) : null]
                   .filter(Boolean)
                   .join(" · ")}
               </div>
@@ -221,12 +223,12 @@ export function FunnelCardView({ spec }: CardRendererProps<FunnelCard>) {
                     used to spill onto the track and vanish into it. */}
                 <div className="sc-funnel__bar" style={{ width: `${Math.max(2, (stage.value / top) * 100)}%` }} />
               </div>
-              <span className="sc-funnel__value">{formatValue(stage.value, spec.format ?? "number")}</span>
+              <span className="sc-funnel__value"><FormattedValue value={stage.value} format={spec.format ?? "number"} /></span>
               <div className="sc-funnel__rate">
                 {stepRate == null ? (
                   <span className="sc-muted">—</span>
                 ) : (
-                  <span className={i === dropAt ? "sc-funnel__drop" : "sc-muted"}>{formatValue(stepRate, "percent")}</span>
+                  <span className={i === dropAt ? "sc-funnel__drop" : "sc-muted"}><FormattedValue value={stepRate} format="percent" /></span>
                 )}
               </div>
             </div>
@@ -251,7 +253,7 @@ export function GaugeCardView({ spec }: CardRendererProps<GaugeCard>) {
           says how good or bad it is, and a red headline number is an alarm the
           card can't take back. */}
       <div className="sc-gauge">
-        <div className="sc-gauge__value">{formatValue(spec.value, spec.format ?? "number")}</div>
+        <div className="sc-gauge__value"><FormattedValue value={spec.value} format={spec.format ?? "number"} /></div>
         {band || spec.label ? <div className="sc-gauge__label">{spec.label ?? band?.label}</div> : null}
       </div>
       <div className="sc-gauge__track" role="meter" aria-valuenow={clamped} aria-valuemin={min} aria-valuemax={max}>
@@ -266,7 +268,7 @@ export function GaugeCardView({ spec }: CardRendererProps<GaugeCard>) {
         <div className="sc-gauge__needle" style={{ left: `${pct}%` }} />
       </div>
       <div className="sc-gauge__scale">
-        <span className="sc-muted sc-mono">{formatValue(min, spec.format ?? "number")}</span>
+        <span className="sc-muted sc-mono"><FormattedValue value={min} format={spec.format ?? "number"} /></span>
         {spec.bands?.length ? (
           <span className="sc-gauge__bandlabels">
             {spec.bands.map((b, i) => (
@@ -276,7 +278,7 @@ export function GaugeCardView({ spec }: CardRendererProps<GaugeCard>) {
             ))}
           </span>
         ) : null}
-        <span className="sc-muted sc-mono">{formatValue(max, spec.format ?? "number")}</span>
+        <span className="sc-muted sc-mono"><FormattedValue value={max} format={spec.format ?? "number"} /></span>
       </div>
     </div>
   );
