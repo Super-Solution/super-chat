@@ -244,8 +244,6 @@ export function Home() {
               <InstallCommand command={INSTALL_ALL} />
               <dl className={styles.facts}>
                 <div><dt>License</dt><dd>Apache-2.0</dd></div>
-                <div><dt>Status</dt><dd>Version 0.1.0. It is working and tested, and the API is not frozen.</dd></div>
-                <div><dt>Not built yet</dt><dd>A Gemini adapter, speech and transcription adapters, and video generation adapters.</dd></div>
               </dl>
             </div>
           </div>
