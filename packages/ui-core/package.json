@@ -1,6 +1,6 @@
 {
   "name": "@supersolutions/super-chat-ui-core",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Framework-free helpers shared by superchat UI bindings: markdown rendering (incl. streaming), value formatting and thread export.",
   "license": "Apache-2.0",
   "author": "SUPER SOLUTION LABS INC",

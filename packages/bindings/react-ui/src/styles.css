@@ -429,7 +429,9 @@
   .sc-skeleton__bar,
   .sc-skeleton__surface { animation: none; background: var(--sc-surface-2); }
   /* The caret stays put rather than blinking — it still marks the write head. */
-  .sc-msg__text--streaming::after { animation: none; }
+  .sc-msg__text--streaming:not(:has(> *))::after,
+  .sc-msg__text--streaming > :last-child:not(ul, ol, pre, table)::after,
+  .sc-msg__text--streaming > :last-child:is(ul, ol) > li:last-child::after { animation: none; }
   .sc-media__viewport :is(img, video, audio) { transition: none; }
 }
 
@@ -502,7 +504,7 @@
 .sc-table th { font-weight: 600; font-size: var(--sc-fs-meta); color: var(--sc-text-muted); }
 .sc-table tbody tr:last-child td { border-bottom: none; }
 .sc-table--compact th, .sc-table--compact td { padding: var(--sc-sp-4) var(--sc-sp-8); font-size: var(--sc-fs-meta); }
-.sc-th-btn { background: none; border: none; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+.sc-th-btn { background: none; border: none; padding: 0; font: inherit; color: inherit; white-space: nowrap; cursor: pointer; }
 .sc-table__more { margin-top: var(--sc-sp-8); }
 
 /* stats */
@@ -521,7 +523,15 @@
 .sc-kv__row dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
 
 /* chart */
+.sc-chart { container-type: inline-size; }
 .sc-chart svg { width: 100%; height: auto; display: block; }
+/* The narrow layout takes over where the wide one would shrink its labels below
+   a readable size. Both are rendered, so nothing is measured or drawn twice. */
+.sc-chart__plot--narrow { display: none !important; }
+@container (max-width: 600px) {
+  .sc-chart__plot--wide { display: none !important; }
+  .sc-chart__plot--narrow { display: block !important; }
+}
 .sc-chart__grid { stroke: var(--sc-border); stroke-width: 1; }
 .sc-chart__axis { stroke: var(--sc-border); stroke-width: 1; }
 /* The one exempt font-size in the file: this is painted inside the chart's SVG
@@ -854,11 +864,17 @@
   font-size: var(--sc-fs-micro);
 }
 .sc-msgmeta__facts { font-variant-numeric: tabular-nums; }
+/* Holds the meta row's place under a turn still being written, so the turn does
+   not grow when it is saved and the row appears. */
+.sc-msgmeta--reserve { visibility: hidden; min-height: 25px; }
 
-/* Streaming cursor: a block that sits after the last character of the answer.
-   Uses ::after on the prose container so it needs no extra DOM node and cannot
-   be swallowed by the markdown render. */
-.sc-msg__text--streaming::after {
+/* Streaming cursor: a bar after the last character of the answer, on the same
+   line as it. It sits on the last block rather than the container, because a
+   caret after a closing paragraph would open a line of its own, and the turn
+   would shrink by that line when the answer is saved. */
+.sc-msg__text--streaming:not(:has(> *))::after,
+.sc-msg__text--streaming > :last-child:not(ul, ol, pre, table)::after,
+.sc-msg__text--streaming > :last-child:is(ul, ol) > li:last-child::after {
   content: "";
   display: inline-block;
   width: 2px;
@@ -867,7 +883,9 @@
   vertical-align: -0.15em;
   background: var(--sc-accent);
 }
-.sc-msg__text--paused::after { animation: sc-caret 1s step-end infinite; }
+.sc-msg__text--paused:not(:has(> *))::after,
+.sc-msg__text--paused > :last-child:not(ul, ol, pre, table)::after,
+.sc-msg__text--paused > :last-child:is(ul, ol) > li:last-child::after { animation: sc-caret 1s step-end infinite; }
 @keyframes sc-caret { 50% { opacity: 0; } }
 
 .sc-msg { margin-bottom: var(--sc-sp-24); }
@@ -893,6 +911,29 @@
   .sc-cardstream > .sc-card::after { animation: none; background: var(--sc-accent); opacity: 0.4; }
 }
 .sc-msg--user { display: flex; justify-content: flex-end; }
+.sc-bubblerow { display: flex; align-items: center; justify-content: flex-end; gap: var(--sc-sp-6); width: 100%; min-width: 0; }
+.sc-bubble__edit {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--sc-radius-sm);
+  background: transparent;
+  color: var(--sc-text-muted);
+  cursor: pointer;
+}
+.sc-bubble__edit:hover:not(:disabled) { background: var(--sc-surface-2); color: var(--sc-text); }
+.sc-bubble__edit:disabled { visibility: hidden; }
+@media (hover: hover) and (pointer: fine) {
+  .sc-bubble__edit { opacity: 0; transition: opacity var(--sc-dur-1) var(--sc-ease-out); }
+  .sc-bubblerow:hover .sc-bubble__edit, .sc-bubble__edit:focus-visible { opacity: 1; }
+}
+@media (pointer: coarse) {
+  .sc-bubble__edit { width: 44px; height: 44px; }
+}
 .sc-bubble {
   max-width: min(76%, 620px);
   padding: var(--sc-sp-8) var(--sc-sp-12);
@@ -1317,13 +1358,11 @@
   vertical-align: middle;
   color: var(--sc-text);
 }
+/* With a label the orb sits beside its words, with no capsule around them: the
+   motion already says the agent is working, so the frame would only add noise. */
 .sc-orb[data-pill] {
   gap: 7px;
   height: 30px;
-  padding: 0 11px 0 5px;
-  border-radius: var(--sc-radius-pill);
-  background: var(--sc-bg);
-  border: 1px solid var(--sc-border);
 }
 .sc-orb__label {
   font-size: var(--sc-fs-micro);
@@ -2503,6 +2542,7 @@
   justify-content: center;
   width: 30px;
   height: 30px;
+  padding: 0;
   border: 0;
   border-radius: var(--sc-radius-sm);
   background: var(--sc-accent);
@@ -2965,7 +3005,9 @@
 /* Movement that started life outside the opt-in blocks. Colour and opacity keep
    their transitions under reduced motion; only travel stops. */
 @media (prefers-reduced-motion: reduce) {
-  .sc-msg__text--paused::after,
+  .sc-msg__text--paused:not(:has(> *))::after,
+  .sc-msg__text--paused > :last-child:not(ul, ol, pre, table)::after,
+  .sc-msg__text--paused > :last-child:is(ul, ol) > li:last-child::after,
   .sc-toast { animation: none; }
   .sc-think__chevron,
   .sc-todo__chevron { transition: none; }

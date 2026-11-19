@@ -255,7 +255,7 @@ export default function DefiExperiencePage() {
 
   return (
     <div className={styles.page}>
-      <ExperienceBar current="defi" product="SupWallet" />
+      <ExperienceBar current="defi" />
       <section className={styles.app} aria-label="SupWallet agent chat">
         <aside className={styles.sidebar}>
           <div className={styles.sidebarBrand}><span className={styles.walletMark}><WalletMark /></span><div><strong>SupWallet</strong><span>Policy agent</span></div></div>
@@ -337,7 +337,6 @@ export default function DefiExperiencePage() {
               <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Ask SupWallet" aria-label="Ask SupWallet" />
               <button type="submit" disabled={!draft.trim() || controlsLocked} aria-label="Send message"><PlayIcon /></button>
             </form>
-            <p>Local mock API · no signing or broadcast</p>
           </footer>
         </section>
       </section>

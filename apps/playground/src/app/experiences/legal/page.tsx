@@ -82,7 +82,7 @@ const PROVIDERS = [
 ] as const;
 
 const STAGE_COPY: Record<DemoStage, string> = {
-  ready: "Ready for review",
+  ready: "",
   uploading: "Reading source document",
   analyzing: "Testing clauses against counsel policy",
   flagged: "Three findings located",
@@ -244,7 +244,7 @@ export default function LegalExperience() {
 
   return (
     <div className={styles.page}>
-      <ExperienceBar current="legal" product="Counsel Workspace" />
+      <ExperienceBar current="legal" />
 
       <header className={styles.matterToolbar}>
         <div className={styles.matterField}>
@@ -314,7 +314,7 @@ export default function LegalExperience() {
               <p>Run the local demo to locate negotiation risks in the agreement.</p>
             </div>
           )}
-          <footer className={styles.findingsFooter}>{findingsVisible ? "3 findings" : "Awaiting review"}</footer>
+          {findingsVisible ? <footer className={styles.findingsFooter}>3 findings</footer> : null}
         </aside>
 
         <section className={styles.documentPane} aria-label="Source document">

@@ -103,7 +103,6 @@
   transition: background-color 480ms var(--ease-in-out), color 480ms var(--ease-in-out), transform var(--dur-1) var(--ease-out);
 }
 .primary:hover { transform: translateY(-1px); }
-.primary[aria-current="page"] { text-decoration: underline; text-underline-offset: 4px; }
 
 .bar :focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 .menu :focus-visible { outline-color: var(--violet-strong); outline-offset: -2px; }

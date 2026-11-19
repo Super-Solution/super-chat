@@ -193,13 +193,13 @@ export default function AgentUiPanel() {
           </div>
 
           <div>
-            <div className="dev__spec-label">Orb — inline and as a status pill</div>
+            <div className="dev__spec-label">Orb — inline, beside a label</div>
             <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 8 }}>
               <Orb variant="S1" />
               <Orb variant="C1" />
               <Orb variant="G1" />
-              <Orb variant="S3" pill label="Working…" />
-              <Orb variant="B3" pill label="Generating…" />
+              <Orb variant="S3" pill label="Working" />
+              <Orb variant="B3" pill label="Generating" />
             </div>
           </div>
         </div>

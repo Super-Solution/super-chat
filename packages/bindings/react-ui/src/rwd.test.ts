@@ -240,7 +240,7 @@ describe("design rules", () => {
 
   it("keeps movement out of the reduced-motion path", () => {
     const reduce = blocksMatching(RULES, /prefers-reduced-motion:\s*reduce/).join("\n");
-    expect(reduce).toMatch(/\.sc-msg__text--paused::after/);
+    expect(reduce).toMatch(/\.sc-msg__text--paused[^{,]*::after/);
     expect(reduce).toMatch(/\.sc-toast/);
     const optIn = blocksMatching(RULES, /prefers-reduced-motion:\s*no-preference/).join("\n");
     for (const sel of [".sc-ai__menu", ".sc-surface-pending", "scroll-behavior: smooth"]) {

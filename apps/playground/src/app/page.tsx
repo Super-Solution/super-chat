@@ -230,7 +230,7 @@ export default function Home() {
           <div className={styles.foot}>
             <strong className={styles.footLine}>The library for every answer.</strong>
             <div className={styles.footCols}>
-              <div><span className={styles.mono}>superchat</span><small>Apache-2.0 · v0.2.2</small><small>Sample data on this site is synthetic.</small></div>
+              <div><span className={styles.mono}>superchat</span><small>Apache-2.0 · v0.2.3</small><small>Sample data on this site is synthetic.</small></div>
               <div><strong>Library</strong><a href="#cards">Cards</a><a href="#materials">Materials</a><a href="#backend">Backend</a><a href="#flavors">Flavors</a></div>
               <div><strong>Build</strong><Link href="/install">Install</Link><Link href="/docs">Guide</Link><Link href={playgroundPath("/cards")}>Playground</Link><a href={`${REPO_URL}/blob/main/CHANGELOG.md`}>Changelog</a></div>
               <div><strong>Project</strong><a href={REPO_URL}>GitHub</a><a href="https://www.npmjs.com/package/@supersolutions/super-chat-core">npm</a><a href={`${REPO_URL}/blob/main/LICENSE`}>License</a></div>
