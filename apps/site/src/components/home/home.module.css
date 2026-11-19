@@ -262,14 +262,39 @@
   .packages { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; }
   .packages li { padding-block: 10px; }
   .facts { margin-top: 8px; }
+  .closeInner { padding-block: clamp(72px, 12vh, 140px); }
 }
 
+/* On a phone each section also fits one screen. The hero splits into two screens:
+   the pitch, then the live demo. */
+@media (max-width: 999px) {
+  .stage { padding-top: 64px; }
+  .hero { gap: 0; padding-block: 0; }
+  .heroCopy { box-sizing: border-box; min-height: calc(100svh - 64px); align-content: center; padding-block: 24px 40px; }
+  .heroDemo { box-sizing: border-box; display: grid; min-height: 100svh; align-content: center; padding-block: 24px 40px; }
+  .block { box-sizing: border-box; min-height: 100svh; align-content: center; gap: 18px; padding-block: 40px 36px; }
+  .head { gap: 12px; }
+  .head .lede { display: none; }
+  .question { padding: 10px 16px; font-size: 18px; }
+  .answer { max-width: none; font-size: clamp(30px, 8.6vw, 38px); }
+  .lede { font-size: 16px; line-height: 1.5; }
+  .two { gap: 16px; }
+  .stack { gap: 14px; }
+  .h3 { font-size: 22px; }
+  .segments { flex-wrap: nowrap; gap: 6px; }
+  .segments button { min-height: 44px; padding: 0 12px; font-size: 14px; }
+  .budget { height: 48px; }
+  .note { display: none; }
+  .rows li { min-height: 38px; }
+  .rows span { display: none; }
+  .packages li { padding-block: 6px; }
+  .packages span { display: none; }
+}
 @media (pointer: coarse) {
   .footerLinks a { display: inline-flex; align-items: center; min-height: 44px; }
 }
 @media (max-width: 620px) {
-  .rows li { grid-template-columns: 14px minmax(0, 1fr) 64px; padding-block: 8px; }
-  .rows span { grid-column: 2 / 4; grid-row: 2; }
+  .rows li { grid-template-columns: 14px minmax(0, 1fr) 64px; }
 }
 @media (prefers-reduced-motion: no-preference) {
   @supports ((animation-timeline: view()) and (animation-range: entry)) {

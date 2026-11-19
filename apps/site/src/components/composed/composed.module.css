@@ -50,6 +50,9 @@
 @media (min-width: 1000px) and (min-height: 640px) {
   .canvas { height: calc(100svh - 300px); min-height: 360px; max-height: 640px; overflow-y: auto; overscroll-behavior: contain; }
 }
+@media (max-width: 999px) {
+  .canvas { min-height: 0; height: calc(100svh - 380px); max-height: none; }
+}
 @media (prefers-reduced-motion: reduce) {
   .request { transition: none; }
 }

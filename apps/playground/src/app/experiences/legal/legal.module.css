@@ -327,7 +327,7 @@
   position: relative;
   min-height: 48px;
   display: grid;
-  grid-template-columns: minmax(330px, 1fr) minmax(180px, auto) minmax(300px, 420px);
+  grid-template-columns: minmax(180px, 1fr) minmax(300px, 420px);
   align-items: center;
   gap: 18px;
   padding: 6px 12px 6px 18px;
@@ -335,8 +335,6 @@
   background: #fbfaf8;
 }
 
-.statusBar p { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 11px; }
-.statusBar p i { width: 8px; height: 8px; border-radius: 50%; background: #18884c; }
 .runStatus { display: flex; align-items: center; justify-content: flex-end; gap: 12px; color: #656661; font-size: 11px; text-align: right; }
 .runStatus b { color: var(--legal-accent); font-weight: 650; }
 .runDock { position: relative; z-index: 12; justify-self: end; width: min(100%, 420px); height: 44px; }
@@ -398,7 +396,7 @@
   .emptyBrief { min-height: 230px; padding-top: 48px; }
   .documentCanvas { overflow: visible; }
   .paper { min-height: 720px; }
-  .statusBar { grid-template-columns: 1fr minmax(280px, 360px); }
+  .statusBar { grid-template-columns: minmax(280px, 360px); justify-content: end; }
   .runStatus { display: none; }
 }
 

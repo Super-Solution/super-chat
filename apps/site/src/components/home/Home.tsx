@@ -148,9 +148,7 @@ export function Home() {
           <div className={styles.two}>
             <div className={styles.stack}>
               <InstallCommand command={CREATE_APP} />
-              <p className={styles.lede}>
-                Start with a working Super Chat interface and a scripted demo agent. You don&apos;t need an API key to try it.
-              </p>
+              <p className={styles.lede}>Creates a working Super Chat interface with a scripted demo agent.</p>
               <Link className={styles.textLink} href="/install">See every install option</Link>
             </div>
             <div className={styles.stack}>
