@@ -1,6 +1,6 @@
 {
   "name": "@supersolutions/super-chat-plugin",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Plugin host for super-chat: install a super-protocol ChatPlugin into the card registry and render its cards in React.",
   "license": "Apache-2.0",
   "author": "SUPER SOLUTION LABS INC",
