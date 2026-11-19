@@ -1,32 +1,22 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { CodeBlock } from "@supersolutions/super-chat-ui";
-import { REPO_URL } from "@/components/SiteNav";
-import { Mark } from "../Mark";
-import { ASKS, DIALECTS, FAMILIES, INSTALL_ALL, INSTALL_UI, OUTCOMES, PACKAGES, PROXY_CODE, TOKEN_BUDGET, TRACE } from "./content";
+import { SiteHeader } from "../SiteHeader";
+import { ASKS, INSTALL_ALL, INSTALL_UI, OUTCOMES, PACKAGES, PROXY_CODE, TOKEN_BUDGET, TRACE } from "./content";
 import { HeroScene, useHeroScene } from "./HeroScene";
-import { BubbleArt, InstallCommand, LiveCard } from "./parts";
+import { BubbleArt, InstallCommand, LiveCard, SiteFooter } from "./parts";
 import styles from "./home.module.css";
 
+// Runs a real client in the browser, so it loads after the hero and never on the server.
+const ComposedDemo = dynamic(() => import("../composed/ComposedDemo").then((mod) => mod.ComposedDemo), {
+  ssr: false,
+  loading: () => <div className={styles.demoSlot} />,
+});
+
 const HEADROOM_COLOR = "var(--trace-empty)";
-
-function useThemeToggle() {
-  const [theme, setTheme] = useState<"light" | "dark" | null>(null);
-
-  useEffect(() => {
-    if (theme) document.documentElement.setAttribute("data-theme", theme);
-    return () => document.documentElement.removeAttribute("data-theme");
-  }, [theme]);
-
-  const toggle = () => {
-    const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const isDark = theme ? theme === "dark" : systemDark;
-    setTheme(isDark ? "light" : "dark");
-  };
-  return toggle;
-}
 
 function Segments<T extends { id: string; label: string }>({ items, value, onChange, label }: { items: T[]; value: string; onChange: (id: string) => void; label: string }) {
   return (
@@ -42,8 +32,6 @@ function Segments<T extends { id: string; label: string }>({ items, value, onCha
 
 export function Home() {
   const scene = useHeroScene();
-  const toggleTheme = useThemeToggle();
-  const [kind, setKind] = useState("comparison");
   const [outcomeId, setOutcomeId] = useState("valid");
   const [askId, setAskId] = useState("confirm");
 
@@ -56,33 +44,7 @@ export function Home() {
   return (
     <div id="top" className={`schat-scope schat-page ${styles.page}`}>
       <a className={styles.skip} href="#main">Skip to content</a>
-      <header className={`${styles.topbar} ${styles.chrome}`} data-wait={waiting}>
-        <div className={styles.wrap}>
-          <div className={styles.nav}>
-            <a className={styles.brand} href="#top">
-              <Mark size={36} play />
-              Super Chat
-            </a>
-            <nav className={styles.navLinks} aria-label="Primary">
-              <a href="#cards">Cards</a>
-              <a href="#questions">Questions</a>
-              <a href="#providers">Providers</a>
-              <a href="#install">Install</a>
-              <Link href="/docs">Docs</Link>
-            </nav>
-            <div className={styles.navEnd}>
-              <button className={styles.iconButton} type="button" onClick={toggleTheme} aria-label="Switch color theme">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <circle cx="12" cy="12" r="4" />
-                  <path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4" />
-                </svg>
-              </button>
-              <a className={styles.navGithub} href={REPO_URL}>GitHub</a>
-              <Link className={`${styles.solid} ${styles.solidSmall}`} href="/playground">Playground</Link>
-            </div>
-          </div>
-        </div>
-      </header>
+      <SiteHeader overlay themeable waiting={waiting} className={styles.chrome} />
 
       <main id="main" tabIndex={-1}>
         <section className={`${styles.stage} ${styles.chrome} ${styles.field}`} data-wait={waiting}>
@@ -105,28 +67,14 @@ export function Home() {
           </div>
         </section>
 
-        <section id="cards" className={`${styles.wrap} ${styles.block}`}>
-          <p className={styles.question}>What else can it show?</p>
-          <h2 className={styles.answer}>23 card kinds, from a ticket table to an approval.</h2>
-          <div className={styles.two}>
-            <div>
-              {FAMILIES.map((family) => (
-                <div className={styles.family} key={family.name}>
-                  <h3>{family.name}</h3>
-                  <div className={styles.kinds}>
-                    {family.kinds.map((id) => (
-                      <button key={id} className={styles.kind} type="button" aria-pressed={id === kind} onClick={() => setKind(id)}>
-                        {id}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className={`${styles.slot} ${styles.sticky}`} aria-live="polite">
-              <LiveCard kind={kind} instance="explorer" />
-            </div>
-          </div>
+        <section id="composed" className={`${styles.wrap} ${styles.block}`}>
+          <p className={styles.question}>What if one card can&apos;t answer it?</p>
+          <h2 className={styles.answer}>It composes an interface for the question.</h2>
+          <p className={styles.lede}>
+            The agent combines tables, charts, text, inputs and approvals into a response built for this request. The 23
+            built-in cards are some of the parts it can use.
+          </p>
+          <ComposedDemo />
         </section>
 
         <section className={`${styles.field} ${styles.fieldInk}`}>
@@ -170,21 +118,8 @@ export function Home() {
           <p className={styles.question}>Will it work with the model we already use?</p>
           <h2 className={styles.answer}>One runtime for OpenAI, Anthropic and compatible endpoints.</h2>
           <p className={styles.lede}>
-            Super Chat writes each provider&apos;s request format separately. These are the fields that break a request when
-            formats get mixed up.
+            Super Chat writes each provider&apos;s request format for you, including tools, images and output limits.
           </p>
-          <div className={styles.tableBox}>
-            <table>
-              <thead>
-                <tr><th scope="col">Field</th><th scope="col">OpenAI Responses</th><th scope="col">Chat Completions</th><th scope="col">Anthropic Messages</th></tr>
-              </thead>
-              <tbody>
-                {DIALECTS.map((row) => (
-                  <tr key={row.field}><td>{row.field}</td><td><code>{row.responses}</code></td><td><code>{row.chat}</code></td><td><code>{row.anthropic}</code></td></tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
           <div className={`${styles.two} ${styles.center}`}>
             <div className={styles.stack}>
               <h3 className={styles.h3}>Your API key stays on your server.</h3>
@@ -259,15 +194,7 @@ export function Home() {
         </section>
       </main>
 
-      <footer className={`${styles.wrap} ${styles.footer}`}>
-        <span>Super Chat is part of <a href="https://github.com/Super-Solution">Super Solution Lab</a>. Sample data on this page is synthetic.</span>
-        <nav className={styles.footerLinks} aria-label="Footer">
-          <Link href="/docs">Docs</Link>
-          <a href={REPO_URL}>GitHub</a>
-          <a href="https://www.npmjs.com/package/@supersolutions/super-chat-core">npm</a>
-          <a href={`${REPO_URL}/blob/main/LICENSE`}>License</a>
-        </nav>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

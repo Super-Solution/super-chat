@@ -12,7 +12,8 @@ import { SiteNav, type SiteSection } from "./SiteNav";
 // the overview, so it is not listed here.
 const PANELS = [
   { href: "/cards", label: "Agent cards", hint: "23 kinds + their specs" },
-  { href: "/agent-ui", label: "Agent surfaces", hint: "Thinking, orbs, composer" },
+  { href: "/surfaces", label: "Surfaces", hint: "Agent-built interfaces" },
+  { href: "/agent-ui", label: "Agent parts", hint: "Thinking, orbs, composer" },
   { href: "/dev-ani", label: "Animations", hint: "Every motion, catalogued & replayable" },
   { href: "/skills", label: "Skills", hint: "Modes, matching, live scoring" },
   { href: "/tools", label: "Tools & presets", hint: "Schemas, capability gating" },

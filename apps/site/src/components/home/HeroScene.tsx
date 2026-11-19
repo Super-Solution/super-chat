@@ -125,7 +125,6 @@ export function HeroScene({ scene }: { scene: ReturnType<typeof useHeroScene> })
           ) : null}
         </div>
       </div>
-      <p className={styles.sceneNote}>Sample data, rendered by the real card components.</p>
     </div>
   );
 }
