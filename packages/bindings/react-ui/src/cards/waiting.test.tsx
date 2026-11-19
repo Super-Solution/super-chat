@@ -30,12 +30,11 @@ describe.each(Object.keys(SPECS))("%s card", (kind) => {
   it("shows that it is waiting for the person while unanswered", () => {
     const html = render(card);
     expect(html).toContain('data-waiting=""');
-    expect(html).toContain('<span class="sc-turnchip">Your turn</span>');
+    expect(html).not.toContain("Your turn");
   });
 
   it("drops the waiting state once answered", () => {
     const html = render(card, true);
     expect(html).not.toContain("data-waiting");
-    expect(html).not.toContain("sc-turnchip");
   });
 });

@@ -235,7 +235,7 @@ describe("design rules", () => {
       .map((m) => (m[1] ?? "").trim())
       .filter((sel) => !sel.startsWith(":root") && !sel.startsWith("@media"));
     expect(users.length).toBeGreaterThan(0);
-    for (const sel of users) expect(sel).toMatch(/sc-turnchip|data-waiting/);
+    for (const sel of users) expect(sel).toMatch(/data-waiting/);
   });
 
   it("keeps movement out of the reduced-motion path", () => {
@@ -243,7 +243,7 @@ describe("design rules", () => {
     expect(reduce).toMatch(/\.sc-msg__text--paused::after/);
     expect(reduce).toMatch(/\.sc-toast/);
     const optIn = blocksMatching(RULES, /prefers-reduced-motion:\s*no-preference/).join("\n");
-    for (const sel of [".sc-turnchip", ".sc-ai__menu", ".sc-surface-pending", "scroll-behavior: smooth"]) {
+    for (const sel of [".sc-ai__menu", ".sc-surface-pending", "scroll-behavior: smooth"]) {
       expect(optIn, `${sel} must opt in to motion`).toContain(sel);
     }
   });

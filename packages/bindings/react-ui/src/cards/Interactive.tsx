@@ -36,7 +36,6 @@ export function ChoiceCardView({ spec, card, respond, answered }: CardRendererPr
 
   return (
     <div className="sc-card sc-card--interactive" data-waiting={done ? undefined : ""}>
-      {done ? null : <span className="sc-turnchip">Your turn</span>}
       {spec.title ? <div className="sc-card__title">{spec.title}</div> : null}
       {spec.prompt ? <p className="sc-card__prompt">{spec.prompt}</p> : null}
 
@@ -147,7 +146,6 @@ export function FormCardView({ spec, card, respond, answered }: CardRendererProp
         respond?.({ cardId: card.id, callId: card.callId, kind: "form", type: "submit", value: coerced });
       }}
     >
-      {done ? null : <span className="sc-turnchip">Your turn</span>}
       {spec.title ? <div className="sc-card__title">{spec.title}</div> : null}
       {spec.description ? <p className="sc-card__prompt">{spec.description}</p> : null}
 
@@ -237,7 +235,6 @@ export function ConfirmCardView({ spec, card, respond, answered }: CardRendererP
 
   return (
     <div className={`sc-card sc-card--interactive${spec.danger ? " sc-card--danger" : ""}`} data-waiting={done ? undefined : ""}>
-      {done ? null : <span className="sc-turnchip">Your turn</span>}
       <div className="sc-card__title">{spec.title}</div>
       {spec.description ? <p className="sc-card__prompt">{spec.description}</p> : null}
 

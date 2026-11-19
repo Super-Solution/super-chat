@@ -459,30 +459,11 @@
   accent-color: var(--sc-accent);
 }
 
-/* Whose turn is it. An open question carries the chip and the turn border until
-   it is answered; the chip goes at once and the border drops to line-strong. The
-   chip appears and then holds still: a pulsing chip would read as the agent
-   working, which is the opposite of what it says. */
+/* An open question keeps the turn border until it is answered, then drops to line-strong. */
 .sc-card--interactive { border-color: var(--sc-line-strong); }
 .sc-card--interactive[data-waiting] { border-color: var(--sc-turn-line); }
 .sc-card--interactive.sc-card--danger[data-waiting] { border-color: var(--sc-negative); }
-.sc-turnchip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sc-sp-4);
-  width: fit-content;
-  margin-bottom: var(--sc-sp-8);
-  padding: var(--sc-sp-2) var(--sc-sp-8);
-  border-radius: var(--sc-radius-pill);
-  background: var(--sc-turn);
-  color: var(--sc-on-turn);
-  font-size: var(--sc-fs-micro);
-  font-weight: 600;
-  line-height: 16px;
-}
-.sc-turnchip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 @media (prefers-reduced-motion: no-preference) {
-  .sc-turnchip { animation: sc-rise var(--sc-dur-2) var(--sc-ease-out); }
   .sc-btn:active:not(:disabled) { transform: translateY(1px); }
 }
 .sc-card--danger { border-color: color-mix(in srgb, var(--sc-negative) 45%, var(--sc-border)); }

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Removed
+
+- The "Your turn" chip on unanswered cards. The waiting border still marks them until they are answered.
+
 ## 0.2.0
 
 ### Added

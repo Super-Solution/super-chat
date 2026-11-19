@@ -48,7 +48,6 @@ export function EditReviewCardView({ spec, card, respond, answered }: CardRender
 
   return (
     <div className="sc-card sc-card--interactive sc-editreview" data-waiting={done ? undefined : ""}>
-      {done ? null : <span className="sc-turnchip">Your turn</span>}
       <div className="sc-card__head">
         <div className="sc-card__title">
           {spec.title}
