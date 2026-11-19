@@ -45,95 +45,162 @@ html, body {
 
 /* ── dev shell ────────────────────────────────────────────────────────────── */
 
-.dev { display: grid; grid-template-columns: 232px minmax(0, 1fr); height: 100dvh; overflow: hidden; }
+/* An app frame: a grouped rail that folds down to icons, ⌘K to jump anywhere,
+   and each panel settles in when you arrive. */
+.dev { --rail: 236px; display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); height: 100dvh; overflow: hidden; transition: grid-template-columns var(--sc-dur-2) var(--sc-ease-out); }
+.dev[data-collapsed] { --rail: 64px; }
 .dev--experience { grid-template-columns: minmax(0, 1fr); }
 .dev--experience .dev__main { height: 100dvh; }
 
 .dev__nav {
   display: flex;
   flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 10px;
+  overflow-x: hidden;
+  overflow-y: auto;
   border-right: 1px solid var(--sc-border);
   background: var(--sc-surface);
-  overflow-y: auto;
-  padding: 16px 12px;
-  gap: 4px;
 }
-.dev__brand { font-weight: 600; font-size: 14px; padding: 0 8px 14px; letter-spacing: -0.01em; }
-.dev__brand span { display: block; font-weight: 400; font-size: 11px; color: var(--sc-text-muted); margin-top: 2px; }
+.dev__navtop { display: flex; }
+.dev__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--sc-border);
+  border-radius: 9px;
+  background: var(--sc-bg);
+  color: var(--sc-text-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color var(--sc-dur-1) var(--sc-ease-out), color var(--sc-dur-1) var(--sc-ease-out);
+}
+.dev__search:hover { border-color: var(--sc-line-strong); color: var(--sc-text); }
+.dev__search svg { flex: none; }
+.dev__search-label { flex: 1; overflow: hidden; text-align: left; white-space: nowrap; text-overflow: ellipsis; }
+.dev__search kbd { padding: 1px 6px; border: 1px solid var(--sc-border); border-radius: 5px; font: 500 11px/16px var(--sc-mono); }
+
+.dev__groups { display: grid; gap: 2px; }
+.dev__group { display: grid; gap: 2px; margin-top: 14px; }
+.dev__group-label { padding: 0 10px 4px; color: var(--sc-text-muted); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
 
 .dev__link {
-  display: block;
-  padding: 7px 9px;
-  border-radius: 7px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 9px;
+  color: var(--sc-text-muted);
+  font-size: 13px;
+  font-weight: 500;
   text-decoration: none;
-  color: var(--sc-text);
-  border: 1px solid transparent;
+  white-space: nowrap;
+  transition: background-color var(--sc-dur-1) var(--sc-ease-out), color var(--sc-dur-1) var(--sc-ease-out);
 }
-.dev__link:hover { background: var(--sc-surface-2); }
-.dev__link--on { background: var(--sc-surface-2); border-color: var(--sc-border); }
-.dev__link--on .dev__link-label { color: var(--sc-accent); }
-.dev__link-label { display: block; font-size: 13px; font-weight: 500; }
-.dev__link-hint { display: block; font-size: 11px; color: var(--sc-text-muted); margin-top: 1px; line-height: 1.35; }
+.dev__link:hover { background: var(--sc-surface-2); color: var(--sc-text); }
+.dev__link[aria-current="page"] { background: color-mix(in srgb, var(--sc-accent) 12%, var(--sc-surface)); color: var(--sc-text); }
+.dev__link[aria-current="page"] .dev__icon { color: var(--sc-accent); }
+.dev__link[aria-current="page"]::before { content: ""; position: absolute; top: 9px; bottom: 9px; left: 0; width: 3px; border-radius: 2px; background: var(--sc-accent); }
+.dev__icon { flex: none; }
+.dev__link-label { overflow: hidden; text-overflow: ellipsis; }
 
-.dev__foot { margin-top: auto; padding: 14px 8px 0; display: grid; gap: 3px; }
-.dev__foot code { font-size: 10px; color: var(--sc-text-muted); }
+.dev__collapse {
+  display: inline-grid;
+  place-items: center;
+  align-self: flex-start;
+  width: 36px;
+  height: 36px;
+  margin-top: auto;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--sc-text-muted);
+  cursor: pointer;
+}
+.dev__collapse:hover { background: var(--sc-surface-2); color: var(--sc-text); }
+
+/* Folded to icons: labels and group names step aside, the icons stay put. */
+.dev[data-collapsed] .dev__link-label,
+.dev[data-collapsed] .dev__search-label,
+.dev[data-collapsed] .dev__search kbd { display: none; }
+.dev[data-collapsed] .dev__group-label { visibility: hidden; height: 6px; padding: 0; }
+.dev[data-collapsed] .dev__link,
+.dev[data-collapsed] .dev__search { justify-content: center; padding: 0; }
 
 .dev__main { overflow-y: auto; min-width: 0; }
 /* The panel content box is the outermost query container the kit's components
    get in this app. Panels render cards and composers outside a Thread, and
-   those measure the nearest container above them — without one they would
-   stay at desktop sizing however narrow the window gets. */
-.dev__page { container-type: inline-size; padding: 26px 30px 80px; max-width: 1080px; }
+   those measure the nearest container above them. */
+.dev__page { container-type: inline-size; padding: 28px 32px 80px; max-width: 1120px; }
 
-.dev__head { margin-bottom: 22px; }
-.dev__title { font-size: 19px; margin: 0 0 6px; letter-spacing: -0.015em; }
-.dev__lede { margin: 0; font-size: 13px; line-height: 1.6; color: var(--sc-text-muted); max-width: 68ch; }
+/* Each panel settles in when you arrive. */
+@keyframes dev-panel-in { from { opacity: 0; translate: 0 10px; } }
+@media (prefers-reduced-motion: no-preference) {
+  .dev__main > * { animation: dev-panel-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+}
+
+.dev__head { margin-bottom: 24px; }
+.dev__title { margin: 0 0 6px; font-size: 24px; font-weight: 650; letter-spacing: -0.02em; }
+.dev__lede { max-width: 68ch; margin: 0; color: var(--sc-text-muted); font-size: 14px; line-height: 1.6; }
 
 .dev__section { margin-top: 34px; }
-.dev__section-title { font-size: 13px; font-weight: 600; margin: 0 0 4px; }
-.dev__section-note { font-size: 12px; color: var(--sc-text-muted); margin: 0 0 14px; line-height: 1.55; max-width: 68ch; }
+.dev__section-title { font-size: 14px; font-weight: 600; margin: 0 0 4px; }
+.dev__section-note { font-size: 13px; color: var(--sc-text-muted); margin: 0 0 14px; line-height: 1.55; max-width: 68ch; }
 
 .dev__split { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: 16px; align-items: start; margin-bottom: 20px; }
 .dev__spec { min-width: 0; }
 .dev__spec-label { font-size: 11px; font-family: var(--sc-mono); color: var(--sc-text-muted); margin-bottom: 5px; }
 .dev__code { margin: 0; max-height: 340px; overflow: auto; font-size: 11px; }
 /* Cards here are rendered outside a Thread, so this is the query container
-   they size their own padding against. Without it they keep desktop padding
-   at any width — a card cannot measure itself. */
+   they size their own padding against. */
 .dev__preview { container-type: inline-size; min-width: 0; }
 .dev__preview > .sc-card:first-child { margin-top: 0; }
 
-/* Below the sidebar's width the nav becomes a scrolling strip along the top
-   rather than disappearing. Hiding it outright — which is what this rule used
-   to do — left a phone on whichever panel it happened to land on with no way
-   to reach any other one. P2 is "readable, not invested in", but a shell with
-   no navigation is not a lower tier of working, it is broken.
+/* ⌘K */
+.dev__palette {
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(520px, 80dvh);
+  margin: 12vh auto auto;
+  padding: 0;
+  border: 1px solid var(--sc-border);
+  border-radius: 14px;
+  background: var(--sc-surface);
+  color: var(--sc-text);
+  box-shadow: 0 24px 64px rgba(17, 17, 19, 0.28);
+}
+.dev__palette::backdrop { background: rgba(17, 17, 19, 0.36); }
+.dev__palette-box { display: grid; grid-template-rows: auto minmax(0, 1fr); max-height: inherit; }
+.dev__palette-input { width: 100%; padding: 16px 18px; border: 0; border-bottom: 1px solid var(--sc-border); background: transparent; color: inherit; font: inherit; font-size: 15px; outline: none; }
+.dev__palette-list { margin: 0; padding: 6px; overflow-y: auto; list-style: none; }
+.dev__palette-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 9px; font-size: 14px; cursor: pointer; }
+.dev__palette-list li[aria-selected="true"] { background: color-mix(in srgb, var(--sc-accent) 12%, var(--sc-surface)); }
+.dev__palette-list small { color: var(--sc-text-muted); font-size: 12px; }
+.dev__palette-empty { color: var(--sc-text-muted); cursor: default; }
+@keyframes dev-palette-in { from { opacity: 0; translate: 0 -8px; scale: 0.98; } }
+@media (prefers-reduced-motion: no-preference) {
+  .dev__palette[open] { animation: dev-palette-in 180ms var(--sc-ease-out); }
+}
 
-   A strip, not a drawer: a drawer needs open state, a trigger, focus
-   management and an escape route, which is real work for a panel set nobody
-   is meant to browse on a phone. Horizontal scroll costs none of that. */
+/* Phone: the rail becomes a strip of icons and labels along the top, with the
+   search first, so every panel stays one tap away. */
 @media (max-width: 900px) {
-  .dev { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
-  .dev__nav {
-    flex-direction: row;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    border-right: 0;
-    border-bottom: 1px solid var(--sc-border);
-    scrollbar-width: none;
-  }
+  .dev, .dev[data-collapsed] { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .dev__nav { flex-direction: row; align-items: center; gap: 6px; padding: 8px 12px; overflow-x: auto; overflow-y: hidden; border-right: 0; border-bottom: 1px solid var(--sc-border); scrollbar-width: none; }
   .dev__nav::-webkit-scrollbar { display: none; }
-  .dev__nav nav { display: flex; gap: 6px; }
-  .dev__brand { padding: 0 10px 0 0; white-space: nowrap; }
-  /* The panel title already says where you are, so the per-link hints and the
-     package footnotes are the first things to go. */
-  .dev__brand span,
-  .dev__foot,
-  .dev__link-hint { display: none; }
-  .dev__link { flex: none; white-space: nowrap; padding: 7px 10px; }
+  .dev__groups, .dev__group { display: flex; gap: 4px; margin: 0; }
+  .dev__group-label, .dev__collapse, .dev__search-label, .dev__search kbd { display: none; }
+  .dev__search { width: 40px; justify-content: center; padding: 0; }
+  .dev[data-collapsed] .dev__link-label { display: inline; }
+  .dev__link { flex: none; min-height: 40px; }
+  .dev__link[aria-current="page"]::before { top: auto; right: 10px; bottom: 2px; left: 10px; width: auto; height: 2px; }
+  .dev__page { padding: 20px 16px 64px; }
   .dev__split { grid-template-columns: minmax(0, 1fr); }
 }
 

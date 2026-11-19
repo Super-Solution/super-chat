@@ -8,6 +8,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
+  SURFACE_CARD_KIND,
   SURFACE_EVENT_METADATA_KEY,
   estimateTokens,
   hasTurnOrder,
@@ -319,22 +320,25 @@ function UserBubble({ message, text }: { message: Message; text: string }) {
   if (!text && !editing) return null;
   if (!editing) {
     return (
-      <div className="sc-bubble" style={{ position: "relative" }}>
-        {text}
+      <div className="sc-bubblerow">
+        {/* Beside the bubble, not in it: the message reads as written, and the
+            control shows on hover or focus (always, on touch). */}
         <button
           type="button"
-          className="sc-btn sc-btn--ghost sc-btn--sm"
-          style={{ marginLeft: 6 }}
+          className="sc-bubble__edit"
           disabled={isRunning}
           aria-label="Edit message"
-          title="Edit — the original stays as a switchable branch"
+          title="Edit. The original stays as a branch you can switch back to."
           onClick={() => {
             setDraft(text);
             setEditing(true);
           }}
         >
-          ✎
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+            <path d="M10.6 2.6a1.5 1.5 0 0 1 2.1 0l.7.7a1.5 1.5 0 0 1 0 2.1L6 12.8 2.5 13.5l.7-3.5 7.4-7.4Z" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+          </svg>
         </button>
+        <div className="sc-bubble">{text}</div>
       </div>
     );
   }
@@ -625,6 +629,18 @@ function PartialCard({ callId, spec }: { callId: string; spec: CardSpec }) {
   );
 }
 
+/**
+ * A surface from its first streamed part to its finished card, as one element.
+ * Swapping a preview for the real card would draw the whole interface twice; a
+ * surface keeps its state in the client, so it can stay mounted throughout.
+ */
+function StreamedSurface({ callId, card, spec }: { callId: string; card?: Card; spec?: CardSpec }) {
+  const shown = useFrameThrottled(spec, !card);
+  const preview = useMemo<Card | undefined>(() => (shown ? { id: `partial:${callId}`, callId, spec: shown } : undefined), [callId, shown]);
+  const current = card ?? preview;
+  return current ? <CardRenderer card={current} partial={!card} /> : null;
+}
+
 /** The live turn: streamed text, cards as they arrive, and any blocking card. */
 export function LiveTurn() {
   const run = useRun();
@@ -678,7 +694,13 @@ export function LiveTurn() {
     // Validated card > streaming preview > shaped skeleton. The preview holds
     // its place past `tool-call` until the real card replaces it, so the slot
     // never drops back to a skeleton in between.
-    const content = correlated.length
+    const surface = correlated.find((card) => (card.spec as { kind?: string }).kind === SURFACE_CARD_KIND);
+    const content = surface || (!correlated.length && preview?.partialCard?.kind === SURFACE_CARD_KIND)
+      ? [
+          <StreamedSurface key={`surface:${callId}`} callId={callId} card={surface} spec={preview?.partialCard} />,
+          ...correlated.filter((card) => card !== surface).map(renderLiveCard),
+        ]
+      : correlated.length
       ? correlated.map(renderLiveCard)
       : preview?.partialCard
         ? <PartialCard key={`partial:${callId}`} callId={callId} spec={preview.partialCard} />
@@ -712,7 +734,7 @@ export function LiveTurn() {
       {run.job ? (
         <div className="sc-jobchip">
           <span className="sc-spinner" aria-hidden /> Background job <code className="sc-mono">{run.job.handle.id.slice(0, 18)}…</code>{" "}
-          <span className="sc-pill">{run.job.status}</span>
+          <span className="sc-muted">{run.job.status}</span>
         </div>
       ) : null}
       {/* Live: the stream stays open and scrolls itself, then collapses to its
@@ -735,6 +757,8 @@ export function LiveTurn() {
           <Orb variant="S1" pill label={statusLine(run)} />
         </div>
       ) : null}
+      {/* The saved turn shows a meta row; holding its place now keeps the turn from growing when it is saved. */}
+      {text || flow.some(Boolean) ? <div className="sc-msgmeta sc-msgmeta--reserve" aria-hidden /> : null}
     </div>
   );
 }

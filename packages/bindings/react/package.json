@@ -1,6 +1,6 @@
 {
   "name": "@supersolutions/super-chat-react",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "React bindings for superchat: hooks over the framework-agnostic AgentClient (thread state, run control, card actions, context inspection).",
   "license": "Apache-2.0",
   "author": "SUPER SOLUTION LABS INC",

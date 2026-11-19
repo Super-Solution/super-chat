@@ -61,7 +61,6 @@ function Inspector({ demo, panel }: { demo: SurfaceDemo; panel: boolean }) {
         <h2 className={styles.blockTitle}>Surface state{live ? `, revision ${live.revision}` : ""}</h2>
         <pre className={styles.state} data-testid="surface-state">{live ? JSON.stringify(state, null, 2) : "Nothing built yet."}</pre>
       </section>
-      <p className={styles.note}>Scripted transport, synthetic figures. The runtime, validation and approvals are the real ones.</p>
     </aside>
   );
 }

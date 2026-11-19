@@ -90,12 +90,19 @@ const EXPERIENCES: { id: ExperienceId; label: string; href: string }[] = [
   { id: "defi", label: "SupWallet", href: "/experiences/defi" },
 ];
 
-export function ExperienceBar({ current, product }: { current: ExperienceId; product: string }) {
+export function ExperienceBar({ current }: { current: ExperienceId }) {
   return (
     <header className={styles.bar}>
-      <Link className={styles.brand} href="/" aria-label="SuperChat experience gallery">
-        <span className={styles.mark} aria-hidden="true"><i /><i /><i /></span>
-        <span>superchat</span>
+      <Link className={styles.brand} href="/" aria-label="Super Chat home">
+        {/* The Super Chat mark: one speech bubble cut into three layers on a 28 degree shear. */}
+        <svg className={styles.logo} viewBox="2 -58 104 174" height={26} aria-hidden="true">
+          <g transform="skewY(-28)">
+            <path fill="currentColor" d="M21 0H87Q100 0 100 13V23Q100 26 97 26H11Q8 26 8 23V13Q8 0 21 0Z" />
+            <path fill="#8469ff" d="M11 33H97Q100 33 100 36V56Q100 59 97 59H11Q8 59 8 56V36Q8 33 11 33Z" />
+            <path fill="currentColor" d="M11 66H97Q100 66 100 69V79Q100 92 87 92H44L8 116V69Q8 66 11 66Z" />
+          </g>
+        </svg>
+        <span>Super Chat</span>
       </Link>
       <nav className={styles.switcher} aria-label="Experience demos">
         {EXPERIENCES.map((experience) => (
@@ -110,7 +117,6 @@ export function ExperienceBar({ current, product }: { current: ExperienceId; pro
         ))}
       </nav>
       <div className={styles.context}>
-        <span className={styles.product}>{product}</span>
         <Link className={styles.byok} href={playgroundPath("/run")}>Open playground</Link>
       </div>
     </header>

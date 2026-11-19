@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.3
+
+### Fixed
+
+- A turn no longer jumps when it is saved. The streaming caret sits at the end of the last line instead of on a line of its own, and the meta row's place is held while the turn is written.
+- A surface streamed into the thread stays one element from its first part to its finished card, so it is not drawn twice.
+- Charts stay legible in narrow containers. A narrow layout with fewer ticks replaces the scaled-down wide one below 600px, and one axis uses one unit, such as 50K and 150K instead of 50,000 and 150K.
+- A table header no longer wraps or clips its label. The agent composer's send button no longer clips its arrow.
+
+### Changed
+
+- The edit control sits beside the user's message instead of inside it. It shows on hover or focus with a mouse, and stays visible on touch.
+- A labelled orb (`pill`) shows the orb and its words without a capsule around them.
+
 ## 0.2.2
 
 ### Fixed

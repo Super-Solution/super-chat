@@ -24,4 +24,7 @@
   .main { border-right: 0; border-bottom: 1px solid var(--sc-border); }
   .thread { height: min(78dvh, 720px); flex: none; }
   .side { overflow-y: visible; }
+  /* The title takes its own line; the three controls share the next one. */
+  .barTitle { flex-basis: 100%; }
+  .placement { margin-right: auto; }
 }

@@ -188,10 +188,6 @@
 
 .heroDemo { min-width: 0; }
 
-.demoSlot { min-height: 480px; }
-.segments { display: flex; flex-wrap: wrap; gap: 8px; }
-.segments button { min-height: 48px; padding: 0 18px; border: 1.5px solid currentColor; border-radius: var(--radius-sm); background: transparent; color: inherit; font: 600 15px/20px var(--font-sans); cursor: pointer; }
-.segments button[aria-pressed="true"] { border-color: var(--q-bg); background: var(--q-bg); color: var(--q-fg); }
 
 .h3 { margin: 0; font-family: var(--font-display); font-size: clamp(30px, 3.6vw, 46px); font-weight: 800; line-height: 1.04; letter-spacing: -0.015em; }
 
@@ -281,8 +277,6 @@
   .two { gap: 16px; }
   .stack { gap: 14px; }
   .h3 { font-size: 22px; }
-  .segments { flex-wrap: nowrap; gap: 6px; }
-  .segments button { min-height: 44px; padding: 0 12px; font-size: 14px; }
   .budget { height: 48px; }
   .note { display: none; }
   .rows li { min-height: 38px; }
@@ -307,6 +301,20 @@
       animation-fill-mode: backwards;
       animation-timeline: view();
       animation-range: entry 0% entry 80%;
+    }
+    /* Decorative, so browsers without view timelines simply show everything in place. */
+    @keyframes rise-in { from { opacity: 0; translate: 0 28px; } }
+    @keyframes fill-in { from { scale: 0 1; } }
+    .slot, .rows li, .packages li, .closeInner > * {
+      animation: rise-in linear backwards;
+      animation-timeline: view();
+      animation-range: entry 0% entry 70%;
+    }
+    .budget i {
+      transform-origin: left;
+      animation: fill-in linear backwards;
+      animation-timeline: view();
+      animation-range: entry 10% cover 40%;
     }
   }
 }

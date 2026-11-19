@@ -1,6 +1,6 @@
 {
   "name": "@supersolutions/super-chat-router",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Super Router binding for super-chat: an HTTP InferenceGateway and a text Provider that routes through any InferenceGateway.",
   "license": "Apache-2.0",
   "author": "SUPER SOLUTION LABS INC",

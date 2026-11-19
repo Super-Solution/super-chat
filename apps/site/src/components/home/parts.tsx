@@ -2,35 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import type { CardAction, CardSpec } from "@supersolutions/super-chat-core";
-import { BUILTIN_RENDERERS, CardRenderer, CardRendererProvider } from "@supersolutions/super-chat-ui";
-import { CARD_SAMPLES } from "@/agent/card-samples";
 import { REPO_URL } from "@/components/SiteNav";
 import { MARK_LAYERS, MARK_VIEWBOX } from "../Mark";
 import styles from "./home.module.css";
-
-/** Renders a real kit card, from a sample when no spec is given. */
-export function LiveCard({
-  kind,
-  spec,
-  instance,
-  expired,
-  onRespond,
-}: {
-  kind: string;
-  spec?: CardSpec;
-  instance: string;
-  expired?: boolean;
-  onRespond?: (action: Omit<CardAction, "at">) => void;
-}) {
-  const id = `home_${kind}_${instance}`;
-  const card = { id, callId: id, spec: spec ?? CARD_SAMPLES[kind], ...(expired ? { expired: true } : {}) };
-  return (
-    <CardRendererProvider renderers={BUILTIN_RENDERERS}>
-      <CardRenderer key={id} card={card} respond={onRespond ?? (() => undefined)} />
-    </CardRendererProvider>
-  );
-}
 
 export function InstallCommand({ command }: { command: string }) {
   const [state, setState] = useState<"idle" | "copied" | "failed">("idle");

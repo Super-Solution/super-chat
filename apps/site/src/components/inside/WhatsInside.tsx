@@ -124,7 +124,6 @@ export function WhatsInside() {
                 <Link href="/playground/surfaces">Open the full demo</Link>
                 <span>Apache-2.0</span>
               </p>
-              <p className={home.note}>This thread is the real kit, answering from a script with sample figures.</p>
             </div>
             <LiveThread />
           </div>

@@ -70,7 +70,6 @@ function PresenceCard() {
       <div>
         <strong>Quiet company</strong>
         <p>I’ll stay here. You don’t have to answer or make anything better.</p>
-        <span><i aria-hidden="true" /> Here for the next minute</span>
       </div>
     </section>
   );
@@ -194,7 +193,7 @@ export default function CompanionExperience() {
 
   return (
     <main className={styles.page} data-experience="companion">
-      <ExperienceBar current="companion" product="Milo Companion" />
+      <ExperienceBar current="companion" />
       <section className={styles.app} aria-label="Milo companion chat">
         <aside className={styles.sidebar}>
           <div className={styles.sidebarBrand}><MiloAvatar /><div><strong>Milo</strong><span>your quiet companion</span></div></div>
@@ -263,7 +262,6 @@ export default function CompanionExperience() {
               <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Message Milo" aria-label="Message Milo" />
               <button type="submit" disabled={!draft.trim()} aria-label="Send message"><SendIcon /></button>
             </form>
-            <p>Demo only. Nothing is saved.</p>
           </footer>
         </section>
       </section>
