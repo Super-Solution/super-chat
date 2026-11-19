@@ -1,6 +1,6 @@
 {
   "name": "@supersolutions/super-chat-core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Provider-agnostic agent core: content model, skills, context assembly, tools, runtime, and hand-rolled provider adapters.",
   "license": "Apache-2.0",
   "author": "SUPER SOLUTION LABS INC",

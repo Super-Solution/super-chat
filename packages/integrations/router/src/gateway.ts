@@ -6,7 +6,6 @@ import {
   type InferenceResult,
   type StreamEvent,
 } from "@supersolutions/super-protocol";
-import type { NextInferenceRequest } from "./protocol-next.js";
 
 export type SuperRouterGatewayConfig = {
   /** Origin of the Super Router server, e.g. "https://router.example.com". */
@@ -16,8 +15,7 @@ export type SuperRouterGatewayConfig = {
   fetch?: typeof fetch;
 };
 
-const body = (plain: InferenceRequest, stream: boolean) => {
-  const request = plain as unknown as NextInferenceRequest;
+const body = (request: InferenceRequest, stream: boolean) => {
   return JSON.stringify({
     service: request.service,
     ...(request.service_version ? { service_version: request.service_version } : {}),
