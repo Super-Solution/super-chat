@@ -5,7 +5,7 @@ import { CodeBlock } from "@supersolutions/super-chat-ui";
 import { SiteHeader } from "../SiteHeader";
 import { CREATE_APP, INSTALL_ALL, PACKAGES, PROXY_CODE, TOKEN_BUDGET, TRACE } from "./content";
 import { BubbleArt, InstallCommand, SiteFooter } from "./parts";
-import { Showcase } from "./Showcase";
+import { Showcase } from "@/components/showcase/Showcase";
 import styles from "./home.module.css";
 
 const HEADROOM_COLOR = "var(--trace-empty)";

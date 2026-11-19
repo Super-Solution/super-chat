@@ -1,0 +1,114 @@
+/* The playground's front page: the product animation, then one tile per panel.
+   Each tile's drawing moves on hover or focus, and only when motion is allowed. */
+
+.stage {
+  margin-bottom: 36px;
+  padding: 18px;
+  border-radius: 20px;
+  background: #6c4af2;
+  color: #ffffff;
+}
+
+.group { margin-top: 28px; }
+.groupTitle { margin: 0 0 12px; color: var(--sc-text-muted); font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+
+.tile {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid var(--sc-border);
+  border-radius: 14px;
+  background: var(--sc-surface);
+  color: var(--sc-text);
+  text-decoration: none;
+  transition: border-color var(--sc-dur-1) var(--sc-ease-out), translate var(--sc-dur-2) var(--sc-ease-out), box-shadow var(--sc-dur-2) var(--sc-ease-out);
+}
+.tile:hover, .tile:focus-visible { border-color: var(--sc-line-strong); box-shadow: 0 12px 28px rgba(17, 17, 19, 0.1); }
+.tile strong { font-size: 14px; }
+.tile span { color: var(--sc-text-muted); font-size: 13px; line-height: 1.45; }
+
+.art { display: grid; place-items: center; height: 96px; margin-bottom: 8px; overflow: hidden; border-radius: 10px; background: var(--sc-surface-2); }
+.art i, .art b { display: block; }
+
+/* Agent cards: a stack that fans out. */
+.cards { position: relative; width: 84px; height: 60px; }
+.cards i { position: absolute; inset: 0; border: 1px solid var(--sc-border); border-radius: 8px; background: var(--sc-surface); transition: rotate 320ms cubic-bezier(0.2, 0.8, 0.2, 1), translate 320ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.cards i:nth-child(1) { rotate: -4deg; }
+.cards i:nth-child(3) { rotate: 4deg; border-top: 10px solid var(--sc-accent); }
+
+/* Surfaces: parts gather into one interface. */
+.surface { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 96px; }
+.surface i { height: 22px; border-radius: 5px; background: var(--sc-surface); border: 1px solid var(--sc-border); transition: translate 360ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.surface i:nth-child(1) { grid-column: span 2; background: var(--sc-accent); border-color: transparent; }
+.surface i:nth-child(4) { grid-column: span 2; }
+.surface i:nth-child(1) { translate: -14px -10px; }
+.surface i:nth-child(2) { translate: -18px 6px; }
+.surface i:nth-child(3) { translate: 16px -6px; }
+.surface i:nth-child(4) { translate: 12px 12px; }
+
+.orb { color: var(--sc-accent); }
+
+.wave { width: 120px; height: 40px; }
+.wave path { fill: none; stroke: var(--sc-accent); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 140; stroke-dashoffset: 0; }
+
+.doc { position: relative; display: grid; gap: 7px; width: 96px; padding: 10px; border-radius: 6px; background: var(--sc-surface); }
+.doc i { height: 5px; border-radius: 3px; background: var(--sc-border); }
+.doc i:nth-child(3) { width: 60%; }
+.doc b { position: absolute; top: 8px; left: 8px; width: 40%; height: 9px; border-radius: 3px; background: color-mix(in srgb, var(--sc-accent) 30%, transparent); transition: translate 420ms cubic-bezier(0.2, 0.8, 0.2, 1), width 420ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+.bars { display: grid; gap: 7px; width: 100px; }
+.bars i { height: 7px; border-radius: 4px; background: var(--sc-border); }
+.bars i::after { content: ""; display: block; width: var(--w); height: 100%; border-radius: inherit; background: var(--sc-accent); transform-origin: left; transition: scale 480ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+.toggles { display: grid; gap: 7px; }
+.toggles i { position: relative; width: 34px; height: 18px; border-radius: 9px; background: var(--sc-border); transition: background-color 240ms var(--sc-ease-out); }
+.toggles i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 12px; height: 12px; border-radius: 50%; background: var(--sc-surface); transition: translate 240ms var(--sc-ease-out); }
+.toggles i:nth-child(2) { background: var(--sc-accent); }
+.toggles i:nth-child(2)::after { translate: 16px 0; }
+
+.wire { display: flex; align-items: center; gap: 0; width: 110px; }
+.wire i { flex: none; width: 22px; height: 22px; border-radius: 6px; background: var(--sc-surface); border: 1px solid var(--sc-border); }
+.wire b { position: relative; flex: 1; height: 2px; background: var(--sc-border); }
+.wire b::after { content: ""; position: absolute; top: -3px; left: 0; width: 8px; height: 8px; border-radius: 2px; background: var(--sc-accent); }
+
+.state { display: flex; align-items: center; gap: 10px; }
+.state i { width: 30px; height: 30px; border-radius: 7px; background: var(--sc-surface); border: 1px solid var(--sc-border); }
+.state i:last-child { background: var(--sc-accent); border-color: transparent; }
+.state b { position: relative; width: 28px; height: 2px; background: var(--sc-line-strong); }
+.state b::after { content: ""; position: absolute; top: -3px; left: 0; width: 8px; height: 8px; border-radius: 2px; background: var(--sc-accent); }
+
+.run { display: grid; gap: 5px; width: 104px; }
+.run i { height: 9px; border-radius: 3px; background: var(--sc-surface); border: 1px solid var(--sc-border); }
+.run i:nth-child(odd) { width: 70%; }
+
+@keyframes tile-in { from { opacity: 0; translate: 0 12px; } }
+@keyframes draw { from { stroke-dashoffset: 140; } }
+@keyframes packet { to { left: calc(100% - 8px); } }
+@keyframes row-in { from { opacity: 0; translate: -10px 0; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  .tile { animation: tile-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(var(--n, 0) * 40ms); }
+  .tile:hover, .tile:focus-visible { translate: 0 -2px; }
+
+  .tile:is(:hover, :focus-visible) .cards i:nth-child(1) { rotate: -14deg; translate: -14px 2px; }
+  .tile:is(:hover, :focus-visible) .cards i:nth-child(3) { rotate: 14deg; translate: 14px 2px; }
+  .tile:is(:hover, :focus-visible) .surface i { translate: 0 0; }
+  .tile:is(:hover, :focus-visible) .wave path { animation: draw 900ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .tile:is(:hover, :focus-visible) .doc b { translate: 0 12px; width: 70%; }
+  .bars i::after { scale: 0.3 1; }
+  .tile:is(:hover, :focus-visible) .bars i::after { scale: 1 1; }
+  .tile:is(:hover, :focus-visible) .toggles i:nth-child(1), .tile:is(:hover, :focus-visible) .toggles i:nth-child(3) { background: var(--sc-accent); }
+  .tile:is(:hover, :focus-visible) .toggles i:nth-child(1)::after, .tile:is(:hover, :focus-visible) .toggles i:nth-child(3)::after { translate: 16px 0; }
+  .tile:is(:hover, :focus-visible) .wire b::after { animation: packet 700ms cubic-bezier(0.6, 0, 0.4, 1) infinite alternate; }
+  .tile:is(:hover, :focus-visible) .state b::after { animation: packet 600ms ease-in-out infinite alternate; }
+  .tile:is(:hover, :focus-visible) .run i { animation: row-in 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .tile:is(:hover, :focus-visible) .run i:nth-child(2) { animation-delay: 70ms; }
+  .tile:is(:hover, :focus-visible) .run i:nth-child(3) { animation-delay: 140ms; }
+  .tile:is(:hover, :focus-visible) .run i:nth-child(4) { animation-delay: 210ms; }
+}
+
+@media (max-width: 900px) {
+  .stage { padding: 12px; border-radius: 16px; }
+  .tiles { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+}
