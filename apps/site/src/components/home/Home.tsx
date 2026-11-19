@@ -167,7 +167,7 @@ export function Home() {
           <BubbleArt className={styles.closeArt} top="#ffffff" middle="#111113" bottom="#ffffff" onView />
           <div className={`${styles.wrap} ${styles.closeInner}`}>
             <h2>See three products built on it.</h2>
-            <p>The playground runs a legal workspace, a companion and a DeFi assistant in your browser. You don&apos;t need an API key.</p>
+            <p>The playground runs a legal workspace, a companion and a DeFi assistant in your browser.</p>
             <Link className={styles.solid} href="/playground">Open the playground</Link>
           </div>
         </section>

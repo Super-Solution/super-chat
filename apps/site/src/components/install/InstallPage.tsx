@@ -45,7 +45,7 @@ export function InstallPage() {
 
         <section className={styles.block} aria-label="Create an app">
           <Command command={CREATE} />
-          <p>Start with a working Super Chat interface and a scripted demo agent. You don&apos;t need an API key to try it.</p>
+          <p>Creates a working Super Chat interface with a scripted demo agent.</p>
           <p>API keys stay on your server. The browser only talks to your app&apos;s own routes.</p>
         </section>
 

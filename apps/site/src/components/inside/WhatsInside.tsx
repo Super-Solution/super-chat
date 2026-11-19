@@ -196,7 +196,7 @@ export function WhatsInside() {
           <BubbleArt className={home.closeArt} top="#ffffff" middle="#111113" bottom="#ffffff" onView />
           <div className={`${home.wrap} ${home.closeInner}`}>
             <h2>Try the agent before you build one.</h2>
-            <p>The playground runs in your browser. You don&apos;t need an API key.</p>
+            <p>The playground runs in your browser.</p>
             <div className={styles.closeActions}>
               <Link className={home.solid} href="/playground">Open the playground</Link>
               <a className={styles.closeLink} href={REPO_URL}>Read the source</a>
