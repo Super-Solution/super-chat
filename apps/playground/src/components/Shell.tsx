@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { playgroundPath } from "@/agent/deployment";
-import { SiteNav } from "./SiteNav";
+import { SiteNav, type SiteSection } from "./SiteNav";
 
 // Panels, not pages of an app. Each one isolates a single capability so a
 // developer evaluating the framework can see what is available without reading
@@ -22,7 +22,14 @@ const PANELS = [
   { href: "/run", label: "Run & events", hint: "Live chat + event stream" },
 ];
 
-export function Shell({ children }: { children: ReactNode }) {
+export function Shell({
+  children,
+  renderNav = (active) => <SiteNav active={active} />,
+}: {
+  children: ReactNode;
+  /** Lets the public site supply its own top bar. */
+  renderNav?: (active?: SiteSection) => ReactNode;
+}) {
   const pathname = usePathname();
   const panels = PANELS.map((panel) => ({ ...panel, href: playgroundPath(panel.href) }));
 
@@ -42,7 +49,7 @@ export function Shell({ children }: { children: ReactNode }) {
   if (section) {
     return (
       <div className="site">
-        <SiteNav active={section === "home" ? undefined : section} />
+        {renderNav(section === "home" ? undefined : section)}
         <main className="site__main">{children}</main>
       </div>
     );
@@ -50,7 +57,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div className="site">
-      <SiteNav active="playground" />
+      {renderNav("playground")}
       <div className="dev">
         <aside className="dev__nav">
           <div className="dev__brand">
