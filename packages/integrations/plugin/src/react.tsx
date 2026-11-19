@@ -2,9 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CardRendererMap, CardRendererProps } from "@supersolutions/super-chat-ui";
-import type { CardMount, CardMountContext, ChatPlugin } from "@supersolutions/super-protocol";
+import type { CardMount, CardMountContext, ChatPlugin, HostTheme, ThemeToken } from "@supersolutions/super-protocol";
 import { MountController } from "./controller.js";
-import type { HostCardContext, HostTheme, ThemeToken } from "./protocol-next.js";
 
 function currentTheme(): "light" | "dark" {
   if (typeof document === "undefined") return "light";
@@ -62,7 +61,7 @@ export function PluginCard({ mount, props }: { mount: CardMount; props: CardRend
   const { spec, card, partial, answered, respond } = props;
   const context = (): CardMountContext => ({
     theme: currentTheme(),
-    ...(ref.current ? ({ hostTheme: readChatTheme(ref.current) } satisfies Partial<HostCardContext>) : {}),
+    ...(ref.current ? ({ hostTheme: readChatTheme(ref.current) } satisfies Partial<CardMountContext>) : {}),
     ...(partial ? { partial: true } : {}),
     ...(respond && !answered
       ? { respond: (action) => respond({ ...action, kind: spec.kind, cardId: card.id, ...(card.callId ? { callId: card.callId } : {}) }) }

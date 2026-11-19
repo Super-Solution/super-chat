@@ -1,6 +1,6 @@
 {
   "name": "@supersolutions/super-chat-plugin",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Plugin host for super-chat: install a super-protocol ChatPlugin into the card registry and render its cards in React.",
   "license": "Apache-2.0",
   "author": "SUPER SOLUTION LABS INC",
@@ -50,7 +50,7 @@
   "dependencies": {
     "@supersolutions/super-chat-core": "workspace:*",
     "@supersolutions/super-chat-ui": "workspace:*",
-    "@supersolutions/super-protocol": "0.1.0"
+    "@supersolutions/super-protocol": "0.2.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.2",
