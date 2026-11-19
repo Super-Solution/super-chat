@@ -1,0 +1,8 @@
+.lead { display: grid; gap: 16px; }
+.intro { margin: 0; font-size: clamp(20px, 2.4vw, 26px); line-height: 1.3; }
+.block { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; min-width: 0; }
+.block p { margin: 0; max-width: 68ch; }
+.option { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; min-width: 0; padding-top: 20px; border-top: 1px solid #e2e2dc; }
+.option h3 { margin: 0; font-size: 20px; line-height: 1.3; font-weight: 600; }
+.block .licence { max-width: none; padding: 14px 16px; border: 1px solid #d0d0c9; border-radius: 6px; background: #ffffff; font-size: 15px; line-height: 1.6; }
+.licence code { font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-size: 0.95em; }
