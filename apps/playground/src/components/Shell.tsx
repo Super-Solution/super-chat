@@ -177,6 +177,11 @@ export function Shell({
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [palette, setPalette] = useState(false);
+  // ⌘K on Apple devices, Ctrl K everywhere else; the key handler accepts both.
+  const [shortcut, setShortcut] = useState("⌘K");
+  useEffect(() => {
+    if (!/Mac|iPhone|iPad/.test(navigator.userAgent)) setShortcut("Ctrl K");
+  }, []);
 
   useEffect(() => {
     try {
@@ -248,7 +253,7 @@ export function Shell({
             <button type="button" className="dev__search" onClick={() => setPalette(true)} aria-label="Go to a panel">
               <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true"><circle cx="9" cy="9" r="5.5" /><path d="M13.2 13.2 17 17" /></svg>
               <span className="dev__search-label">Go to a panel</span>
-              <kbd>⌘K</kbd>
+              <kbd>{shortcut}</kbd>
             </button>
           </div>
           <nav className="dev__groups">
