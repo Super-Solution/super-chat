@@ -61,7 +61,6 @@ export function Home() {
               <div className={styles.heroActions}>
                 <Link className={styles.solid} href="/playground">Try it without an API key</Link>
                 <InstallCommand command={CREATE_APP} />
-                <p className={styles.heroNote}>Creates a working app with a demo agent. You don&apos;t need an API key.</p>
               </div>
             </div>
             <HeroScene scene={scene} />
