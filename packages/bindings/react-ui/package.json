@@ -1,6 +1,6 @@
 {
   "name": "@supersolutions/super-chat-ui",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Card renderers and chat primitives for superchat. Bring your own styling; ships a self-contained CSS baseline.",
   "license": "Apache-2.0",
   "author": "SUPER SOLUTION LABS INC",

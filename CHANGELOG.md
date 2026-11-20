@@ -1,6 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
+
+Requires `@supersolutions/super-protocol` 0.3.0 (the plugin and router packages pin it).
+
+### Changed
+
+- Approval cards speak to the person approving. Before a tool that asks first runs, the card says what will happen in a sentence, lists any details worth checking, and ends with one question above buttons named for the action. It no longer shows tool names, package names or raw JSON. A tool can word its own card with the new optional `approval(input)` on `ToolDefinition`, and plugin tools can pass the same; without it the card uses the description's first sentence, the input's plain fields, "Allow this?", and Allow / Not now. `approvalCard()` builds it. A confirm card may now have no detail rows when its `description` already says everything.
+- A card that can't be drawn shows its own `alt` text, or a line naming it by its title, instead of its error, its kind or its JSON. The details go to the console. This covers plugin cards that fail to mount (`PluginCardFallback`, `onCardError` on `pluginRenderers`), renderers that throw, and kinds with no registered renderer. The expired-card line no longer names the kind.
 
 ### Added
 

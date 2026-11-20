@@ -2,19 +2,24 @@
 //
 // The envelope (`ref:<target>?<name>=<value>&...`) is defined once by super-protocol
 // (docs/CARD-REFS.md, `parseCardRef`), and what the params mean is up to the card kind.
-// This is the host's copy of the parser: the published protocol does not carry it yet, and the
-// host must read links without a card kind's vocabulary anyway. The limits and every message
-// match the protocol's conformance data, so a link one accepts the other accepts.
+// This is the host's copy of the parser: core has no dependencies, and the host must read links
+// without a card kind's vocabulary anyway. It matches `parseCardRef` in super-protocol 0.3.0
+// exactly, limits and messages included; the plugin package's `card-ref-agreement.test.ts`
+// checks that against the published protocol, so a link one accepts the other accepts.
 
 export const CARD_REF_SCHEME = "ref";
 
 export const CARD_REF_LIMITS = Object.freeze({
   /** The whole link, in UTF-16 code units. */
   length: 512,
+  /** The target (the card's id). */
+  target: 128,
   /** Distinct param names. */
   names: 16,
   /** Values of one param name (`key=a&key=b`). */
   values: 32,
+  /** One param name. */
+  name: 32,
   /** One decoded value, in UTF-16 code units. */
   value: 256,
 });

@@ -1,12 +1,8 @@
 import type { CardRef, CardRefEvent, CardRefResult } from "@supersolutions/super-chat-core";
 import type { CardMount, CardMountContext, CardMountHandle } from "@supersolutions/super-protocol";
 
-/**
- * What a card handle may add: super-protocol 0.3.0 gives `CardMountHandle` a `ref()`, and a
- * plugin built against it answers references. Declared here so a host on 0.2.0 types can
- * still forward to it; a handle without one simply does not answer.
- */
-type RefHandle = CardMountHandle & { ref?(ref: CardRef | null, event: CardRefEvent): CardRefResult };
+/** A card handle that may answer references (`ref()` is optional in super-protocol 0.3.0); one without it does not answer. */
+type RefHandle = CardMountHandle;
 
 /**
  * Owns the lifecycle of one mounted card, independent of any UI framework:
