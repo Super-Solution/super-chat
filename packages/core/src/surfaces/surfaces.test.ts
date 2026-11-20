@@ -543,7 +543,7 @@ describe("enforced confirmation on surface actions", () => {
     const decide = vi.fn(async (callId: string, card: Card) => ({ cardId: card.id, callId, kind: "confirm", type: "confirm" as const, value: { confirmed: true }, at: 0 }));
     const events = await drain(runSurfaceToolAction({ ...base, tool: guarded(execute), onUserDecision: decide }));
     expect(decide).toHaveBeenCalledOnce();
-    expect(decide.mock.calls[0]![1].spec).toMatchObject({ kind: "confirm", title: "Allow pay?" });
+    expect(decide.mock.calls[0]![1].spec).toMatchObject({ kind: "confirm", title: "Allow this?" });
     expect(execute).toHaveBeenCalledOnce();
     expect(events.map((e) => e.type)).toContain("awaiting-user");
   });

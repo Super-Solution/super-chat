@@ -17,6 +17,7 @@ import { AgentError, toAgentError } from "../errors.js";
 import { makeCard } from "../cards/registry.js";
 import { CARD_KEY, isCardCarrier, withCard, type Card, type CardSpec } from "../cards/types.js";
 import type { SurfaceLedger } from "../surfaces/ledger.js";
+import { approvalCard } from "../tools/approval.js";
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from "../tools/types.js";
 
 export type ToolCallRequest = { callId: string; name: string; input: unknown };
@@ -43,31 +44,6 @@ export function compactError(e: unknown): { error: string; kind?: string } {
   return { error: message.slice(0, MAX_ERROR_CHARS) || "Tool failed with no message." };
 }
 
-const PREVIEW_CHARS = 200;
-const PREVIEW_FIELDS = 8;
-
-const preview = (value: unknown): string => {
-  const text = typeof value === "string" ? value : (JSON.stringify(value) ?? String(value));
-  return text.length > PREVIEW_CHARS ? `${text.slice(0, PREVIEW_CHARS)}…` : text;
-};
-
-/** The generic approval: what will run, and exactly what it was given. */
-function approvalCard(tool: ToolDefinition, input: unknown): CardSpec {
-  const fields =
-    typeof input === "object" && input !== null && !Array.isArray(input)
-      ? Object.entries(input).slice(0, PREVIEW_FIELDS).map(([label, value]) => ({ label, value: preview(value), mono: true }))
-      : input === undefined || input === null
-        ? []
-        : [{ label: "Input", value: preview(input), mono: true }];
-  return {
-    kind: "confirm",
-    title: `Allow ${tool.name}?`,
-    description: preview(tool.description),
-    summary: fields.length ? fields : [{ label: "Tool", value: tool.name, mono: true }],
-    confirmLabel: "Allow",
-    cancelLabel: "Decline",
-  };
-}
 
 /**
  * Why a `side: "confirm"` tool may not start, or `undefined` when it may. Anything

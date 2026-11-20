@@ -91,7 +91,15 @@ export function useCardRenderers(): CardRendererMap {
  * of them would otherwise blank the whole thread. Here the rest of the
  * conversation keeps rendering and the failure is stated inline.
  */
-export class CardBoundary extends Component<{ children: ReactNode; label?: string }, { failed: boolean }> {
+export class CardBoundary extends Component<{
+  children: ReactNode;
+  /** Names the card for the reader, such as "The revenue table". Never pass the card's kind. */
+  label?: string;
+  /** The card's kind, for the console message only. */
+  kind?: string;
+  /** The card's spec, whose own `alt` text or title the fallback shows. */
+  spec?: unknown;
+}, { failed: boolean }> {
   override state = { failed: false };
 
   static getDerivedStateFromError() {
@@ -100,19 +108,51 @@ export class CardBoundary extends Component<{ children: ReactNode; label?: strin
 
   // The error is for the developer. The reader only learns that this card is missing.
   override componentDidCatch(error: unknown) {
-    console.error(`[super-chat] ${this.props.label ?? "A card"} failed to render.`, error);
+    const name = this.props.label ?? (this.props.kind ? `The "${this.props.kind}" card` : "A card");
+    console.error(`[super-chat] ${name} failed to render.`, error);
   }
 
   override render() {
-    if (this.state.failed) {
-      return (
-        <div className="sc-card sc-card--fallback" role="note">
-          <strong>{this.props.label ?? "This card"} couldn’t load.</strong>
-        </div>
-      );
-    }
+    if (this.state.failed) return <CardFallback spec={this.props.spec} {...(this.props.label ? { label: this.props.label } : {})} />;
     return this.props.children;
   }
+}
+
+const textField = (spec: unknown, key: "alt" | "title"): string | undefined => {
+  const value = spec && typeof spec === "object" ? (spec as Record<string, unknown>)[key] : undefined;
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+};
+
+/**
+ * What the reader sees in place of a card that cannot be drawn: the card's own `alt`
+ * text when it has one, else a line naming it by its title. Never its kind, an error or
+ * its JSON. Matches the plugin host's `PluginCardFallback`.
+ */
+function CardFallback({ spec, label }: { spec?: unknown; label?: string }) {
+  const alt = textField(spec, "alt");
+  const title = textField(spec, "title");
+  if (alt) {
+    return (
+      <figure className="sc-card sc-card--fallback">
+        {title ? <figcaption className="sc-card__title">{title}</figcaption> : null}
+        <p className="sc-card__alt">{alt}</p>
+        <p className="sc-muted sc-card__footnote">Shown as text because this card couldn’t load.</p>
+      </figure>
+    );
+  }
+  return (
+    <div className="sc-card sc-card--fallback" role="note">
+      <strong>{label ? `${label} couldn’t load.` : title ? `“${title}” couldn’t load.` : "This card couldn’t load."}</strong>
+    </div>
+  );
+}
+
+/** A finished card this host has no renderer for: a plain fallback for the reader, the details for the developer. */
+function UnrenderedCard({ kind, spec }: { kind: string; spec: unknown }) {
+  useEffect(() => {
+    console.warn(`[super-chat] No renderer is registered for card kind "${kind}". Register one with CardRendererProvider.`, spec);
+  }, [kind, spec]);
+  return <CardFallback spec={spec} />;
 }
 
 /**
@@ -206,7 +246,7 @@ export function CardRenderer({
         <div className="sc-muted">
           {kind === SURFACE_CARD_KIND
             ? "This interface expired from saved history. Ask the agent to rebuild it."
-            : `This ${kind} result expired from saved history. Ask again to refresh it.`}
+            : "This result expired from saved history. Ask again to refresh it."}
         </div>
       </div>
     );
@@ -214,31 +254,22 @@ export function CardRenderer({
 
   const Renderer = renderers[kind];
   if (!Renderer) {
-    // The raw-JSON fallback is for a finished card; a half-received one stays
-    // a skeleton's business.
+    // The fallback is for a finished card; a half-received one stays a skeleton's business.
     if (partial) return null;
-    return (
-      <div className="sc-card sc-card--muted">
-        <div className="sc-card__head">
-          <span className="sc-pill sc-pill--warning">unrendered</span>
-          <span className="sc-muted">No renderer registered for card kind “{kind}”.</span>
-        </div>
-        <pre className="sc-pre">{JSON.stringify(card.spec, null, 2)}</pre>
-      </div>
-    );
+    return <UnrenderedCard kind={kind} spec={card.spec} />;
   }
 
   if (partial) {
     // No `respond`: nothing on a card that is still arriving may be acted on.
     return (
-      <CardBoundary label={`The ${kind} card`}>
+      <CardBoundary kind={kind} spec={card.spec}>
         <Renderer spec={card.spec as never} card={card} partial />
       </CardBoundary>
     );
   }
 
   return (
-    <CardBoundary label={`The ${kind} card`}>
+    <CardBoundary kind={kind} spec={card.spec}>
       <Renderer spec={card.spec as never} card={card} respond={respond} answered={answered} />
     </CardBoundary>
   );

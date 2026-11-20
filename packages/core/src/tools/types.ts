@@ -73,6 +73,25 @@ export type ToolResult = ToolResultExtras & {
   failure?: "execution-error" | "denied" | "invalid-input" | "timeout" | "not-found";
 };
 
+/**
+ * How an approval card reads, in the words of the person approving. The card shows
+ * `description`, then any `summary` rows, then `title` as the question above the buttons.
+ */
+export type ToolApproval = {
+  /** The one question the buttons answer, such as "Rename the report?". */
+  title?: string;
+  /** What will happen, in a sentence or two, such as "Your report will be titled “Q3 review”.". */
+  description?: string;
+  /** Exact details worth checking: amounts, targets, anything irreversible. Omit when the sentence says it all. */
+  summary?: { label: string; value: string }[];
+  /** The verb on the approve button, such as "Rename". Defaults to "Allow". */
+  confirmLabel?: string;
+  /** Defaults to "Not now". */
+  cancelLabel?: string;
+  /** Marks an action that is hard to undo. */
+  danger?: boolean;
+};
+
 export type ToolDefinition = {
   name: string;
   description: string;
@@ -98,6 +117,12 @@ export type ToolDefinition = {
    * saying so is asked about twice, which is the safe way for that to go wrong.
    */
   confirmation?: "runtime" | "tool";
+  /**
+   * The approval card's wording, written for the person approving the action. Without
+   * it the card shows the first sentence of `description` and the input's plain fields.
+   * Never shown to the model.
+   */
+  approval?: (input: unknown) => ToolApproval | undefined;
   /** Ask the provider to enforce the schema (OpenAI strict mode). */
   strict?: boolean;
   /** Default card renderer key when the result carries no explicit card. */

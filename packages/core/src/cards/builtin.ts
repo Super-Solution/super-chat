@@ -1004,7 +1004,7 @@ export const confirmCard: CardKindDefinition = {
   kind: "confirm",
   interactive: true,
   summary:
-    "Get explicit approval before a consequential action. `summary` must state exactly what will happen — amounts, targets, and anything irreversible.",
+    "Get explicit approval before a consequential action. `description` says what will happen in plain words, `summary` lists exact amounts, targets, and anything irreversible, and `title` is the one question the buttons answer.",
   estimateTokens: tokensOf,
   schema: {
     type: "object",
@@ -1036,7 +1036,9 @@ export const confirmCard: CardKindDefinition = {
     if (failed(s)) return s;
     const o = s as Record<string, unknown>;
     if (typeof o["title"] !== "string") return { ok: false, error: "confirm.title is required." };
-    const summary = check.arrayField(o, "summary", "confirm");
+    // A card whose sentence already says everything needs no detail rows; one with no sentence needs at least one.
+    const hasDescription = typeof o["description"] === "string" && o["description"].trim() !== "";
+    const summary = check.arrayField(o, "summary", "confirm", hasDescription ? 0 : 1);
     if (failed(summary)) return summary;
     return ok;
   },
