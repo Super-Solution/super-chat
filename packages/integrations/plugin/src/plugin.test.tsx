@@ -3,7 +3,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { CardRegistry, BUILTIN_CARDS, ToolRegistry, executeToolCall, type ToolDefinition } from "@supersolutions/super-chat-core";
 import { EDITOR_CARD_KIND, editorCardKind, type CardMountHandle, type ChatPlugin } from "@supersolutions/super-protocol";
-import { MountController, PluginInstallError, installChatPlugin, pluginRenderers } from "./index.js";
+import { MountController, PluginCardFallback, PluginInstallError, installChatPlugin, pluginRenderers } from "./index.js";
 
 const manifest = {
   manifestVersion: 0 as const,
@@ -86,6 +86,28 @@ describe("pluginRenderers", () => {
     const spec = { kind: EDITOR_CARD_KIND, service: { baseUrl: "https://e.example.com", documentId: "d" } };
     const html = renderToString(createElement(Renderer, { spec, card: { id: "c", spec } }));
     expect(html).toContain('class="sc-plugin-card"');
+  });
+  it("still accepts a plain plugin list, and takes an error handler", () => {
+    const onCardError = vi.fn();
+    const renderers = pluginRenderers([plugin()], { onCardError });
+    expect(Object.keys(renderers)).toEqual([EDITOR_CARD_KIND]);
+  });
+});
+
+describe("PluginCardFallback", () => {
+  it("shows the card's own text description, never the error", () => {
+    const html = renderToString(
+      createElement(PluginCardFallback, { spec: { kind: "super.plot", title: "Weekly signups", alt: "Signups rose from 120 to 310 over six weeks." } }),
+    );
+    expect(html).toContain("Weekly signups");
+    expect(html).toContain("Signups rose from 120 to 310 over six weeks.");
+    expect(html).not.toContain("sc-card--error");
+    expect(html).not.toContain('role="alert"');
+    expect(html).not.toMatch(/Error|mount|spec\./);
+  });
+  it("says the card is missing when there is no description", () => {
+    expect(renderToString(createElement(PluginCardFallback, { spec: { kind: "x.card", alt: "  " } }))).toContain("This card couldn’t load.");
+    expect(renderToString(createElement(PluginCardFallback, { spec: { kind: "x.card", title: "Map" } }))).toContain("“Map” couldn’t load.");
   });
 });
 

@@ -471,6 +471,11 @@
 .sc-card--danger { border-color: color-mix(in srgb, var(--sc-negative) 45%, var(--sc-border)); }
 .sc-card--muted { background: transparent; border-style: dashed; }
 .sc-card--error { border-color: color-mix(in srgb, var(--sc-negative) 45%, var(--sc-border)); color: var(--sc-negative); }
+/* A card that could not load. It is part of the answer, not an alarm: the reader gets
+   the card's own text description when there is one, in the answer's normal voice. */
+.sc-card--fallback { margin-inline: 0; background: transparent; border-style: dashed; }
+.sc-card--fallback > strong { font-weight: 500; font-size: var(--sc-fs-ui); color: var(--sc-text-muted); }
+.sc-card__alt { margin: 0; font-size: var(--sc-fs-ui); line-height: 1.55; color: var(--sc-text); }
 
 .sc-card__title { font-weight: 600; font-size: var(--sc-fs-ui); margin-bottom: var(--sc-sp-10); }
 .sc-card__head { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-sp-10); margin-bottom: var(--sc-sp-8); }
