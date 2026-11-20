@@ -99,9 +99,34 @@ describe('side: "confirm" is enforced', () => {
     expect(outcome.failure).toBeUndefined();
     expect(requestCard).toHaveBeenCalledWith("c1", expect.objectContaining({
       kind: "confirm",
-      title: "Allow transfer?",
-      summary: expect.arrayContaining([expect.objectContaining({ label: "amount", value: "5" })]),
+      title: "Allow this?",
+      summary: [{ label: "Amount", value: "5" }, { label: "To", value: "acct" }],
     }));
+    expect(JSON.stringify((requestCard.mock.calls[0] as unknown[])[1])).not.toContain("transfer");
+  });
+
+  it("uses the tool's own approval wording, and falls back when that hook throws", async () => {
+    const worded = guarded({
+      approval: (input) => ({
+        title: "Send this payment?",
+        summary: [{ label: "Amount", value: `$${(input as { amount: number }).amount}.00` }],
+        confirmLabel: "Send",
+        danger: true,
+      }),
+    });
+    const requestCard = vi.fn(async () => yes);
+    await executeToolCall(call, { tools: [worded], vars: {}, requestCard });
+    expect((requestCard.mock.calls[0] as unknown[])[1]).toMatchObject({
+      title: "Send this payment?",
+      summary: [{ label: "Amount", value: "$5.00" }],
+      confirmLabel: "Send",
+      danger: true,
+    });
+
+    const broken = guarded({ approval: () => { throw new Error("bad copy"); } });
+    const outcome = await executeToolCall(call, { tools: [broken], vars: {}, requestCard });
+    expect((requestCard.mock.calls[1] as unknown[])[1]).toMatchObject({ title: "Allow this?" });
+    expect(outcome.failure).toBeUndefined();
   });
 
   it("produces a card the confirm kind accepts, even with no input", async () => {

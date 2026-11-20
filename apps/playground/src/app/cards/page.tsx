@@ -94,12 +94,12 @@ export default function CardsPanel() {
         <section className="dev__section">
           <h2 className="dev__section-title">Failure modes are visible, not silent</h2>
           <p className="dev__section-note">
-            An unknown kind renders a labelled fallback with its payload, and a card whose data was trimmed out of
-            persisted history says so. Both beat the alternative, which is a card that quietly disappears.
+            A card this host can’t draw shows a plain line and its own alt text or title, and the kind and payload go to
+            the console. A card whose data was trimmed out of saved history says so. Both beat a card that quietly
+            disappears, and neither shows the person a kind name, an error or JSON.
           </p>
           <CardRenderer card={{ id: "unknown", spec: { kind: "sankey", nodes: [] } as CardSpec }} />
-          <CardRenderer card={{ id: "expired", spec: { kind: "table" } as CardSpec, expired: true }} />
-        </section>
+          <CardRenderer card={{ id: "expired", spec: { kind: "table" } as CardSpec, expired: true }} />        </section>
       </div>
     </CardRendererProvider>
   );

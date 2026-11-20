@@ -315,9 +315,11 @@ export type FormCard = {
 
 export type ConfirmCard = {
   kind: "confirm";
+  /** The one question the buttons answer, such as "Rename the report?". Shown last, above the buttons. */
   title: string;
-  /** The consequential summary — what will actually happen. */
+  /** The consequential details — amounts, targets, anything irreversible. May be empty when `description` already says all of it. */
   summary: { label: string; value: string | number; tone?: CardTone; mono?: boolean }[];
+  /** What will happen, in a sentence or two. Shown first. */
   description?: string;
   confirmLabel?: string;
   cancelLabel?: string;

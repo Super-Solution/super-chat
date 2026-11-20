@@ -201,8 +201,57 @@ describe("plugin tools", () => {
       expect((await run(def, ask)).output).toEqual({ ran: "a" });
       // Once: the plugin host asks, and the runtime's own check must not ask again.
       expect(ask).toHaveBeenCalledOnce();
-      expect((ask.mock.calls[0] as unknown[])[0]).toMatchObject({ kind: "confirm", title: "Allow a?" });
+      expect((ask.mock.calls[0] as unknown[])[0]).toMatchObject({ kind: "confirm", title: "Allow this?", danger: true });
       expect(t.run.mock.calls[0]).toEqual([{ a: 1 }, { confirmed: true }]);
+    });
+    it("shows the plugin's own approval wording", async () => {
+      const t = tool("editor_set_title", {
+        authority: "act",
+        confirm: true,
+        description: "Set the document title shown in the header, exports and revision history.",
+        approval: (input: { title: string }) => ({
+          description: `Your report will be titled “${input.title}”. The new title shows in the header, in exports, and in the revision history.`,
+          title: "Rename the report?",
+          confirmLabel: "Rename",
+          danger: false,
+        }),
+      });
+      const def = install(withTools([t])).tools.get("editor_set_title")!;
+      const ask = vi.fn(async (_spec: unknown) => ({ confirmed: true }));
+      await executeToolCall({ callId: "c1", name: "editor_set_title", input: { documentId: "launch-report", title: "Launch readiness report" } }, { tools: [def], vars: {}, requestCard: (_id, spec) => ask(spec) });
+      expect(ask.mock.calls[0]![0]).toEqual({
+        kind: "confirm",
+        title: "Rename the report?",
+        description: "Your report will be titled “Launch readiness report”. The new title shows in the header, in exports, and in the revision history.",
+        summary: [],
+        confirmLabel: "Rename",
+        cancelLabel: "Not now",
+      });
+      expect(t.run).toHaveBeenCalledOnce();
+    });
+    it("words the approval for the person, without the plugin, tool name or raw input", async () => {
+      const t = tool("editor_set_title", {
+        authority: "draft",
+        confirm: true,
+        description: "Set the document title shown in the header, exports and revision history. Returns the new revision.",
+      });
+      const def = install(withTools([t])).tools.get("editor_set_title")!;
+      const ask = vi.fn(async (_spec: unknown) => ({ confirmed: true }));
+      await executeToolCall({ callId: "c1", name: "editor_set_title", input: { documentId: "launch-report", title: "Launch readiness report" } }, { tools: [def], vars: {}, requestCard: (_id, spec) => ask(spec) });
+      const spec = (ask.mock.calls[0] as unknown[])[0] as { title: string; description: string; summary: { label: string; value: string }[] };
+      expect(spec).toEqual({
+        kind: "confirm",
+        title: "Allow this?",
+        description: "Set the document title shown in the header, exports and revision history.",
+        summary: [
+          { label: "Document", value: "launch-report" },
+          { label: "Title", value: "Launch readiness report" },
+        ],
+        confirmLabel: "Allow",
+        cancelLabel: "Not now",
+      });
+      const shown = [spec.title, spec.description, ...spec.summary.flatMap((row: { label: string; value: string }) => [row.label, row.value])].join("\n");
+      expect(shown).not.toMatch(/editor_set_title|super-editor-chat-plugin|[{}"]/);
     });
     it.each([
       ["declines", { cancelled: true, reason: "The user declined." }],

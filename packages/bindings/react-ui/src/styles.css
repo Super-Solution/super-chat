@@ -522,6 +522,13 @@
 .sc-stat__hint { font-size: var(--sc-fs-micro); margin-top: var(--sc-sp-2); }
 
 /* key/value */
+/* confirm: a sentence about what will happen, the details, then the question */
+.sc-confirm__what { margin: 0 0 var(--sc-sp-12); font-size: var(--sc-fs-ui); line-height: 1.55; color: var(--sc-text-muted); text-wrap: pretty; }
+.sc-confirm__question { margin: 0; font-size: var(--sc-fs-ui); line-height: 1.45; color: var(--sc-text); text-wrap: balance; }
+/* After the detail rows the question needs the same air the sentence has. */
+.sc-confirm__details + .sc-confirm__question { margin-top: var(--sc-sp-16); }
+.sc-confirm .sc-card__actions { margin-top: var(--sc-sp-12); }
+
 .sc-kv { margin: 0; display: grid; gap: var(--sc-sp-6); }
 .sc-kv__row { display: flex; justify-content: space-between; gap: var(--sc-sp-16); font-size: var(--sc-fs-ui); }
 .sc-kv__row dt { color: var(--sc-text-muted); }

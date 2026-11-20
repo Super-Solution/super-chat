@@ -1,8 +1,12 @@
-import type { CardRegistry, ToolDefinition, ToolExecutionContext, ToolRegistry, ToolResult, ToolSide } from "@supersolutions/super-chat-core";
+import { approvalCard, type CardRegistry, type ToolDefinition, type ToolExecutionContext, type ToolRegistry, type ToolResult, type ToolSide } from "@supersolutions/super-chat-core";
 import { PLUGIN_TOOL_PRESETS, pluginToolAuthority as declaredAuthority, validateChatPlugin, type ChatPlugin, type PluginTool, type PluginToolAuthority } from "@supersolutions/super-protocol";
 
-/** A tool as a plugin declared it. These two fields are untrusted until they are checked here. */
-type DeclaredPluginTool = Omit<PluginTool, "authority" | "confirm"> & { authority?: unknown; confirm?: unknown };
+/**
+ * A tool as a plugin declared it. `authority` and `confirm` are untrusted until they are
+ * checked here. `approval` is the plugin's own wording for its approval card; the core
+ * keeps only its plain-text fields, so a malformed one falls back to the generic card.
+ */
+type DeclaredPluginTool = Omit<PluginTool, "authority" | "confirm"> & { authority?: unknown; confirm?: unknown; approval?: unknown };
 const pluginToolAuthority = (tool: DeclaredPluginTool) => declaredAuthority(tool as Pick<PluginTool, "authority">);
 
 export class PluginInstallError extends Error {
@@ -47,12 +51,7 @@ function refusalOf(tool: DeclaredPluginTool, declared: ReadonlySet<string>): Ref
   return null;
 }
 
-const previewOf = (input: unknown): string => {
-  const text = JSON.stringify(input) ?? "";
-  return text.length > 400 ? `${text.slice(0, 400)}…` : text;
-};
-
-function toToolDefinition(tool: DeclaredPluginTool, authority: PluginToolAuthority, pluginName: string): ToolDefinition {
+function toToolDefinition(tool: DeclaredPluginTool, authority: PluginToolAuthority): ToolDefinition {
   const confirm = tool.confirm === true;
   const side: ToolSide = confirm ? "confirm" : authority === "read" ? "read" : "write";
   return {
@@ -60,21 +59,15 @@ function toToolDefinition(tool: DeclaredPluginTool, authority: PluginToolAuthori
     description: tool.description,
     inputSchema: tool.inputSchema,
     side,
-    // The approval below names the plugin and passes `confirmed` on to it.
+    // The approval below passes `confirmed` on to the plugin. Its wording is for the
+    // person approving: the plugin and tool names stay in the run trace.
     ...(confirm ? { confirmation: "tool" as const } : {}),
     execute: async (input: unknown, ctx: ToolExecutionContext): Promise<ToolResult> => {
       if (confirm) {
         if (!ctx.requestCard) return { output: { error: `"${tool.name}" needs the user's approval and this host cannot ask for it.` }, failure: "denied" };
-        const answer = (await ctx.requestCard({
-          kind: "confirm",
-          title: `Allow ${tool.name}?`,
-          description: tool.description,
-          danger: authority === "act",
-          summary: [
-            { label: "Plugin", value: pluginName },
-            { label: "Input", value: previewOf(input), mono: true },
-          ],
-        })) as { confirmed?: unknown } | undefined;
+        const wording = typeof tool.approval === "function" ? (tool.approval as ToolDefinition["approval"]) : undefined;
+        const card = approvalCard({ description: tool.description, ...(wording ? { approval: wording } : {}) }, input, { danger: authority === "act" });
+        const answer = (await ctx.requestCard(card)) as { confirmed?: unknown } | undefined;
         if (answer?.confirmed !== true) return { output: { error: "The user declined." }, failure: "denied" };
       }
       const output = await tool.run(input, { ...(ctx.signal ? { signal: ctx.signal } : {}), ...(confirm ? { confirmed: true } : {}) });
@@ -128,7 +121,7 @@ export function installChatPlugin(registry: CardRegistry, plugin: ChatPlugin, op
   if (issues.length) throw new PluginInstallError(name, issues);
 
   for (const def of plugin.cardKinds ?? []) registry.register(def);
-  for (const { tool, authority } of accepted) options.tools!.register(toToolDefinition(tool, authority, name), PLUGIN_TOOL_PRESETS[authority]);
+  for (const { tool, authority } of accepted) options.tools!.register(toToolDefinition(tool, authority), PLUGIN_TOOL_PRESETS[authority]);
 
   return {
     cardKinds: (plugin.cardKinds ?? []).map((def) => def.kind),

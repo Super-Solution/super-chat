@@ -118,6 +118,7 @@ export * from "./surfaces/index.js";
 
 // tools
 export * from "./tools/types.js";
+export { approvalCard, humanizeFieldName } from "./tools/approval.js";
 export { ToolRegistry } from "./tools/registry.js";
 export { repairToolArguments, normalizeToolName, type RepairResult } from "./tools/repair.js";
 export { PartialJsonParser, parsePartialJson } from "./tools/partial-json.js";

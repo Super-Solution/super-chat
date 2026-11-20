@@ -352,8 +352,8 @@ export const CARD_SAMPLES: Record<string, CardSpec> = {
 
   confirm: {
     kind: "confirm",
-    title: "Send the termination notice",
-    description: "This dispatches the letter to the counterparty's notice address on record.",
+    title: "Send the termination notice?",
+    description: "The letter goes to Vertex Systems' notice address on record, and the contract ends 60 days from today.",
     summary: [
       { label: "Recipient", value: "Vertex Systems Ltd" },
       { label: "Effective", value: "60 days from today" },
@@ -361,6 +361,7 @@ export const CARD_SAMPLES: Record<string, CardSpec> = {
       { label: "Reference", value: "MSA-2026-0417", mono: true },
     ],
     confirmLabel: "Send notice",
+    cancelLabel: "Not now",
     danger: true,
   },
 };

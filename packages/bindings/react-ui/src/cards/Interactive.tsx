@@ -234,18 +234,22 @@ export function ConfirmCardView({ spec, card, respond, answered }: CardRendererP
   };
 
   return (
-    <div className={`sc-card sc-card--interactive${spec.danger ? " sc-card--danger" : ""}`} data-waiting={done ? undefined : ""}>
-      <div className="sc-card__title">{spec.title}</div>
-      {spec.description ? <p className="sc-card__prompt">{spec.description}</p> : null}
+    <div className={`sc-card sc-card--interactive sc-confirm${spec.danger ? " sc-card--danger" : ""}`} data-waiting={done ? undefined : ""}>
+      {/* What will happen first, then the one question the buttons answer. */}
+      {spec.description ? <p className="sc-confirm__what">{spec.description}</p> : null}
 
-      <dl className="sc-kv">
-        {spec.summary.map((row, i) => (
-          <div key={i} className="sc-kv__row">
-            <dt>{row.label}</dt>
-            <dd className={`${row.mono ? "sc-mono" : ""}${toneClass(row.tone)}`}>{formatValue(row.value)}</dd>
-          </div>
-        ))}
-      </dl>
+      {spec.summary?.length ? (
+        <dl className="sc-kv sc-confirm__details">
+          {spec.summary.map((row, i) => (
+            <div key={i} className="sc-kv__row">
+              <dt>{row.label}</dt>
+              <dd className={`${row.mono ? "sc-mono" : ""}${toneClass(row.tone)}`}>{formatValue(row.value)}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+
+      <p className="sc-confirm__question">{spec.title}</p>
 
       {!done ? (
         <div className="sc-card__actions">
