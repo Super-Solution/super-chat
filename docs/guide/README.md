@@ -15,6 +15,7 @@ This guide is the other axis: one page per subsystem, in the order you meet them
 | 2 | [Context assembly](context.md) | A budgeted context you can read a trace out of |
 | 3 | [Connecting Router, Chart and Editor](integrations.md) | An agent served through Super Router that uses Chart and Editor |
 | 4 | [Surfaces](surfaces.md) | An agent that assembles working interfaces |
+| 5 | [Run the agent on your server](server-run.md) | The same client and UI following a turn that runs on your server |
 
 Still being written: requests & transports, skills, tools, cards, React. Until
 they land, the package READMEs ([core](../../packages/core/README.md),

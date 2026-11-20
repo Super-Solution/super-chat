@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- A turn can run on your server while the same client and UI follow it. `AgentClientConfig.runner` (`TurnRunner`) replaces the in-process loop with a function that starts the turn elsewhere and yields its `RunEvent`s; `serverRunConfig({ runner })` builds a config with no provider, tools or context builder in this process. The runner is told what started the turn (`TurnContext.kind`) and whether the person asked for a stop (`stopRequested`), so opening another thread leaves a server-run turn running where pressing stop cancels it. `client.resume()` follows a turn that is already running, for a reload or a turn the server started. See [Run the agent on your server](docs/guide/server-run.md).
+- `run-snapshot`, a `RunEvent` that replaces what a consumer holds for a run with the parts and cards so far. For joining a run part-way, or recovering a stream that dropped when the missed events cannot be replayed. `runAgent` never emits it.
+
+### Fixed
+
+- A turn left behind by a thread switch no longer clears the next turn's abort controller when it unwinds late, which could leave `stop()` unable to stop the new turn.
+
 ## 0.3.0
 
 Requires `@supersolutions/super-protocol` 0.3.0 (the plugin and router packages pin it).

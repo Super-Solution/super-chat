@@ -10,6 +10,8 @@ Part of the [superchat](../../README.md) monorepo.
 ## What's in here
 
 - `client.ts` — `AgentClient`.
+- `server-run.ts` — `serverRunConfig`, for a client whose turns run on a server and are followed
+  through a `runner`. See [Run the agent on your server](../../docs/guide/server-run.md).
 - `store.ts` — the subscribe/notify primitive that framework bindings select over.
 
 Framework bindings live in their own packages, for example

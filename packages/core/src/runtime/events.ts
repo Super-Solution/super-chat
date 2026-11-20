@@ -35,6 +35,16 @@ import type { ToolLoadingHint } from "../tools/types.js";
 
 export type RunEvent =
   | { type: "run-start"; runId: string; mode: RunMode }
+  /**
+   * Everything the run has produced so far, replacing what the consumer holds.
+   *
+   * For a consumer that joins a run part-way, or lost part of its stream: a
+   * turn that runs on a server, followed over a connection that dropped, where
+   * replaying every event is not possible. `runAgent` never emits it. The run
+   * is live after it — a card still waiting on the person is announced again
+   * with `awaiting-user`.
+   */
+  | { type: "run-snapshot"; parts: ContentPart[]; cards: Card[]; usage?: Usage; steps?: number }
   /** Emitted before the first provider call — the whole "why did it send that" answer. */
   | { type: "context-built"; trace: ContextTrace; system: string; toolNames: string[] }
   | { type: "step-start"; step: number }
@@ -138,6 +148,26 @@ export function reduceRunEvent(state: RunState, event: RunEvent): RunState {
   switch (event.type) {
     case "run-start":
       return { ...state, runId: event.runId, mode: event.mode, status: "running" };
+    case "run-snapshot":
+      // REPLACE, not merge: the sender cannot know what this consumer missed,
+      // so anything kept from before could be shown twice. What is live-only
+      // (argument previews, a card's wait) is dropped; the stream re-announces
+      // whatever still applies.
+      return {
+        ...state,
+        status: "running",
+        parts: event.parts,
+        cards: event.cards,
+        pendingCard: undefined,
+        pendingTools: Object.fromEntries(
+          event.parts.flatMap((p) =>
+            p.type === "tool-call" && p.status === "running" ? [[p.callId, { callId: p.callId, name: p.name }]] : [],
+          ),
+        ),
+        partialTools: {},
+        ...(event.usage ? { usage: event.usage } : {}),
+        ...(event.steps != null ? { steps: event.steps } : {}),
+      };
     case "context-built":
       return { ...state, trace: event.trace, toolNames: event.toolNames };
     case "step-start":
