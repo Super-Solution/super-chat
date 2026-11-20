@@ -86,6 +86,7 @@ export * from "./documents/index.js";
 export * from "./cards/types.js";
 export { stripCardPayload } from "./cards/types.js";
 export { CardRegistry, makeCard, check, type CardKindDefinition, type CardValidation } from "./cards/registry.js";
+export * from "./cards/card-ref.js";
 export {
   BUILTIN_CARDS,
   tableCard,

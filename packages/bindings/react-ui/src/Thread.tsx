@@ -36,6 +36,7 @@ import type { TurnMeta } from "@supersolutions/super-chat-client";
 import { CardRenderer, CardSkeleton, useInteractiveKinds } from "./renderer-registry.js";
 import { AttachIcon, Chevron, FileIcon, ImageIcon, StatusMark } from "./cards/icons.js";
 import { newMarkdownStream, renderMarkdown, renderMarkdownStream } from "@supersolutions/super-chat-ui-core";
+import { ProseHtml } from "./card-refs.js";
 import { useDocumentQuotes } from "./quotes.js";
 import {
   applyPick,
@@ -152,8 +153,8 @@ function MessageMeta({ meta, onRegenerate }: { meta?: TurnMeta; onRegenerate?: (
 
 /** A finished block of prose. Memoised for identity: see HANDOFF, bug 8. */
 function SettledText({ text }: { text: string }) {
-  const inner = useMemo(() => ({ __html: renderMarkdown(text) }), [text]);
-  return <div className="sc-prose sc-msg__text" dangerouslySetInnerHTML={inner} />;
+  const html = useMemo(() => renderMarkdown(text), [text]);
+  return <ProseHtml className="sc-prose sc-msg__text" html={html} />;
 }
 
 /** A press on a surface, shown as what it was rather than as words the person typed. */
@@ -278,7 +279,7 @@ export function MessageView({
           {interactive.map((c) => (
             <CardRenderer key={c.id} card={c} respond={respond} answered />
           ))}
-          {text ? <div className="sc-prose sc-msg__text" dangerouslySetInnerHTML={{ __html: html }} /> : null}
+          {text ? <ProseHtml className="sc-prose sc-msg__text" html={html} /> : null}
         </>
       )}
       {!text && !cards.length && !calls.length ? <div className="sc-muted">(no response)</div> : null}
@@ -719,10 +720,10 @@ export function LiveTurn() {
       if (segment.type === "card") return renderLiveCard(segment.card);
       if (segment !== lastText) return <SettledText key={segment.key} text={segment.text} />;
       return (
-        <div
+        <ProseHtml
           key={segment.key}
           className={`sc-prose sc-msg__text${run.status === "running" ? ` sc-msg__text--streaming sc-msg__text--${streamPhase}` : ""}`}
-          dangerouslySetInnerHTML={{ __html: html }}
+          html={html}
         />
       );
     }),

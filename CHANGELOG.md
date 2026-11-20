@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Words in an answer can point at a card. A `[text](ref:<card id>?…)` link renders as a phrase that, inside a `CardRefProvider`, highlights what it means when hovered or focused, and reveals it when chosen (click, Enter, Space or tap). Escape dismisses it. Without a provider it stays plain text, and a reference nothing can answer turns into text with the reason as its tooltip. `pluginCardRefHost` routes references to mounted plugin cards through their `ref()` handler, so any card kind that implements it works, not only Chart. `ProseHtml` makes the spans live wherever rendered Markdown is shown; `parseCardRef` reads the link. The format is defined in super-protocol (`docs/CARD-REFS.md`).
+
 ## 0.2.3
 
 ### Fixed
