@@ -91,19 +91,23 @@ export function useCardRenderers(): CardRendererMap {
  * of them would otherwise blank the whole thread. Here the rest of the
  * conversation keeps rendering and the failure is stated inline.
  */
-export class CardBoundary extends Component<{ children: ReactNode; label?: string }, { failed: boolean; message?: string }> {
-  override state = { failed: false, message: undefined as string | undefined };
+export class CardBoundary extends Component<{ children: ReactNode; label?: string }, { failed: boolean }> {
+  override state = { failed: false };
 
-  static getDerivedStateFromError(error: unknown) {
-    return { failed: true, message: error instanceof Error ? error.message : String(error) };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  // The error is for the developer. The reader only learns that this card is missing.
+  override componentDidCatch(error: unknown) {
+    console.error(`[super-chat] ${this.props.label ?? "A card"} failed to render.`, error);
   }
 
   override render() {
     if (this.state.failed) {
       return (
-        <div className="sc-card sc-card--error" role="alert">
-          <strong>{this.props.label ?? "This card"} couldn’t render.</strong>
-          {this.state.message ? <div className="sc-muted sc-mono">{this.state.message}</div> : null}
+        <div className="sc-card sc-card--fallback" role="note">
+          <strong>{this.props.label ?? "This card"} couldn’t load.</strong>
         </div>
       );
     }
