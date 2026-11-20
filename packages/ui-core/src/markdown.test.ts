@@ -270,3 +270,36 @@ describe("renderMarkdownWithAnchors", () => {
     expect(stripped).toBe(renderMarkdown(src));
   });
 });
+
+describe("card references", () => {
+  it("renders a ref link as a span the host can wire, never as a link", () => {
+    expect(renderMarkdown("the [support level](ref:btc?key=support) held")).toBe(
+      '<p>the <span class="sc-ref" data-ref="ref:btc?key=support">support level</span> held</p>',
+    );
+  });
+
+  it("keeps the escaped query intact and the text emphasised", () => {
+    const html = renderMarkdown("[**zone**](ref:btc?from=1&to=2)");
+    expect(html).toContain('data-ref="ref:btc?from=1&amp;to=2"');
+    expect(html).toContain("<strong>zone</strong>");
+    expect(html).not.toContain("<a ");
+  });
+
+  it("does not let a destination close the attribute or open a tag", () => {
+    for (const evil of ['[x](ref:a" onmouseover="1)', "[x](ref:a<script>)", "[x](ref:a b)", "[x](ref:)", "[x](REF:a)"]) {
+      const html = renderMarkdown(evil);
+      expect(html, evil).not.toContain('data-ref="ref:a"');
+      expect(html, evil).not.toContain("<script");
+      expect(html, evil).not.toMatch(/<[^>]*onmouseover=/);
+    }
+  });
+
+  it("leaves a ref inside code literal", () => {
+    expect(renderMarkdown("`[x](ref:a)`")).toBe("<p><code>[x](ref:a)</code></p>");
+  });
+
+  it("does not touch ordinary and unsafe links", () => {
+    expect(renderMarkdown("[a](https://example.com)")).toContain('<a href="https://example.com"');
+    expect(renderMarkdown("[a](javascript:alert(1))")).not.toContain("<a ");
+  });
+});

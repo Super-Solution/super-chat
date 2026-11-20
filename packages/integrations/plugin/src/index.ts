@@ -8,3 +8,4 @@ export {
   type PluginCardErrorHandler,
   type PluginRenderersOptions,
 } from "./react.js";
+export { pluginCardRefHost } from "./refs.js";

@@ -46,6 +46,9 @@ function expectStreamsLikeScratch(src: string, stream: MarkdownStream = newMarkd
 // Every construct where text further down changes how text above renders, or
 // where a line means something different once it is complete.
 const ADVERSARIAL = [
+  // Card references: a link whose destination changes meaning while it is typed.
+  "see [support](ref:btc?key=support) and [zone](ref:btc?from=1&to=2&low=3&high=4) now",
+  "- [a](ref:c1) *b*\n- [c](ref:c2?key=x%20y&key=z)\n\ntail",
   // Setext underlines and their look-alikes.
   "Title\n===\n\nnext para",
   "Title\n---\n\npara",

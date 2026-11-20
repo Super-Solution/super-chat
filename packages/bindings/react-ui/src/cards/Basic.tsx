@@ -17,6 +17,7 @@ import type {
 } from "@supersolutions/super-chat-core";
 import type { CardRendererProps } from "../renderer-registry.js";
 import { CodeBlock } from "../agent/CodeBlock.js";
+import { ProseHtml } from "../card-refs.js";
 import {
   deltaTone,
   formatValue,
@@ -323,7 +324,7 @@ export function MarkdownCardView({ spec, partial }: CardRendererProps<MarkdownCa
   return (
     <div className="sc-card">
       {spec.title ? <div className="sc-card__title">{spec.title}</div> : null}
-      <div className="sc-prose" dangerouslySetInnerHTML={{ __html: html }} />
+      <ProseHtml className="sc-prose" html={html} />
       {partial ? null : <CardActions getText={() => spec.body} filename="note.md" mimeType="text/markdown" />}
     </div>
   );
