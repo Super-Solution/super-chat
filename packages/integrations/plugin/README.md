@@ -14,6 +14,13 @@ const report = installChatPlugin(cards, plugin, { tools });
 An invalid plugin, or a card kind or tool name that is already registered, throws and installs nothing. A mount
 that throws is contained to its own card.
 
+When a card fails to mount or update, the reader sees the card's `alt` text (and `title`) in its place, or a
+one-line note when the spec has no `alt`. The error goes to `console.error`, or to your own handler:
+
+```ts
+pluginRenderers([plugin], { onCardError: (error, { kind, cardId }) => report(error, { kind, cardId }) });
+```
+
 ## Tool authority
 
 | Declared `authority` | Presets that offer the tool |

@@ -53,11 +53,58 @@ function watchTheme(onChange: () => void): () => void {
   };
 }
 
+/** Called when a plugin card fails to mount, update or unmount. */
+export type PluginCardErrorHandler = (error: unknown, card: { kind: string; cardId: string }) => void;
+
+const logCardError: PluginCardErrorHandler = (error, card) => {
+  console.error(`[super-chat] Plugin card "${card.kind}" (${card.cardId}) failed to render.`, error);
+};
+
+const textField = (spec: unknown, key: "alt" | "title"): string | undefined => {
+  const value = spec && typeof spec === "object" ? (spec as Record<string, unknown>)[key] : undefined;
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+};
+
+/**
+ * What the reader sees when a plugin card cannot render. The error itself goes to the
+ * developer through `onCardError`; the reader gets the card's own `alt` text when the spec
+ * has one (`super.plot` requires it), never a stack trace or a validator message.
+ */
+export function PluginCardFallback({ spec }: { spec: unknown }) {
+  const alt = textField(spec, "alt");
+  const title = textField(spec, "title");
+  if (alt) {
+    return (
+      <figure className="sc-card sc-card--fallback">
+        {title ? <figcaption className="sc-card__title">{title}</figcaption> : null}
+        <p className="sc-card__alt">{alt}</p>
+        <p className="sc-muted sc-card__footnote">Shown as text because this card couldn’t load.</p>
+      </figure>
+    );
+  }
+  return (
+    <div className="sc-card sc-card--fallback" role="note">
+      <strong>{title ? `“${title}” couldn’t load.` : "This card couldn’t load."}</strong>
+    </div>
+  );
+}
+
 /** Renders one plugin card by mounting the plugin's framework-neutral `CardMount` into a div. */
-export function PluginCard({ mount, props }: { mount: CardMount; props: CardRendererProps }) {
+export function PluginCard({ mount, props, onCardError = logCardError }: { mount: CardMount; props: CardRendererProps; onCardError?: PluginCardErrorHandler }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [error, setError] = useState<string>();
-  const controller = useMemo(() => new MountController(mount, (e) => setError(e instanceof Error ? e.message : String(e))), [mount]);
+  const [failed, setFailed] = useState(false);
+  // Read on error, so the controller can live as long as the mount.
+  const report = useRef({ onCardError, kind: String(props.spec.kind), cardId: props.card.id });
+  report.current = { onCardError, kind: String(props.spec.kind), cardId: props.card.id };
+  const controller = useMemo(
+    () =>
+      new MountController(mount, (error) => {
+        setFailed(true);
+        const { onCardError: handle, kind, cardId } = report.current;
+        handle(error, { kind, cardId });
+      }),
+    [mount],
+  );
   const { spec, card, partial, answered, respond } = props;
   const context = (): CardMountContext => ({
     theme: currentTheme(),
@@ -84,23 +131,21 @@ export function PluginCard({ mount, props }: { mount: CardMount; props: CardRend
   latest.current = context;
   useEffect(() => watchTheme(() => controller.update(spec, latest.current())), [controller, spec]);
 
-  if (error) {
-    return (
-      <div className="sc-card sc-card--error" role="alert">
-        <strong>This card couldn’t render.</strong>
-        <div className="sc-muted sc-mono">{error}</div>
-      </div>
-    );
-  }
+  if (failed) return <PluginCardFallback spec={spec} />;
   return <div ref={ref} className="sc-plugin-card" />;
 }
 
+export type PluginRenderersOptions = {
+  /** Receives every plugin card failure. Defaults to `console.error`; readers never see the error. */
+  onCardError?: PluginCardErrorHandler;
+};
+
 /** Builds the renderer map for `CardRendererProvider` from the plugins' card mounts. */
-export function pluginRenderers(plugins: readonly ChatPlugin[]): CardRendererMap {
+export function pluginRenderers(plugins: readonly ChatPlugin[], options: PluginRenderersOptions = {}): CardRendererMap {
   const map: CardRendererMap = {};
   for (const plugin of plugins) {
     for (const [kind, mount] of Object.entries(plugin.mounts ?? {})) {
-      const Renderer = (props: CardRendererProps) => <PluginCard mount={mount} props={props} />;
+      const Renderer = (props: CardRendererProps) => <PluginCard mount={mount} props={props} {...(options.onCardError ? { onCardError: options.onCardError } : {})} />;
       Renderer.displayName = `PluginCard(${kind})`;
       map[kind] = Renderer as CardRendererMap[string];
     }
