@@ -477,7 +477,7 @@ proxy streaming are all exercised with no key and no network.
 
 ## Status
 
-v0.2.3. Working and tested; API not frozen.
+v0.3.0. Working and tested; API not frozen.
 
 **Built:** OpenAI adapter (Responses + Chat Completions + background jobs) and
 Anthropic adapter (`/v1/messages`, thinking-signature replay), transport layer
