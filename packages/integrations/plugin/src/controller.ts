@@ -1,4 +1,12 @@
+import type { CardRef, CardRefEvent, CardRefResult } from "@supersolutions/super-chat-core";
 import type { CardMount, CardMountContext, CardMountHandle } from "@supersolutions/super-protocol";
+
+/**
+ * What a card handle may add: super-protocol 0.3.0 gives `CardMountHandle` a `ref()`, and a
+ * plugin built against it answers references. Declared here so a host on 0.2.0 types can
+ * still forward to it; a handle without one simply does not answer.
+ */
+type RefHandle = CardMountHandle & { ref?(ref: CardRef | null, event: CardRefEvent): CardRefResult };
 
 /**
  * Owns the lifecycle of one mounted card, independent of any UI framework:
@@ -6,7 +14,7 @@ import type { CardMount, CardMountContext, CardMountHandle } from "@supersolutio
  * contained and reported, so one broken plugin cannot take down the thread.
  */
 export class MountController {
-  private handle: CardMountHandle | undefined;
+  private handle: RefHandle | undefined;
 
   constructor(
     private mount: CardMount,
@@ -28,6 +36,23 @@ export class MountController {
       this.handle.update(spec, context);
     } catch (error) {
       this.onError(error);
+    }
+  }
+
+  /**
+   * Asks the mounted card to show, clear or reveal what a reference points at. A card that
+   * does not implement `ref()`, or one that throws, answers as unavailable: the text then reads
+   * as text, which is the right failure for a sentence about a card.
+   */
+  ref(ref: CardRef | null, event: CardRefEvent): CardRefResult {
+    const handle = this.handle;
+    if (!handle) return { ok: false, code: "ref_no_card", reason: "this card is not shown." };
+    if (!handle.ref) return { ok: false, code: "ref_unsupported", reason: "this card does not take references." };
+    try {
+      return handle.ref(ref, event);
+    } catch (error) {
+      this.onError(error);
+      return { ok: false, code: "ref_failed", reason: "this card could not show that." };
     }
   }
 

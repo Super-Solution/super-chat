@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { CardRendererMap, CardRendererProps } from "@supersolutions/super-chat-ui";
 import type { CardMount, CardMountContext, ChatPlugin, HostTheme, ThemeToken } from "@supersolutions/super-protocol";
 import { MountController } from "./controller.js";
+import { registerCardRefTarget } from "./refs.js";
 
 function currentTheme(): "light" | "dark" {
   if (typeof document === "undefined") return "light";
@@ -59,6 +60,9 @@ export function PluginCard({ mount, props }: { mount: CardMount; props: CardRend
   const [error, setError] = useState<string>();
   const controller = useMemo(() => new MountController(mount, (e) => setError(e instanceof Error ? e.message : String(e))), [mount]);
   const { spec, card, partial, answered, respond } = props;
+  // A reference names a card by its spec's `id`, or failing that the envelope's.
+  const specId = (spec as { id?: unknown }).id;
+  const refId = typeof specId === "string" ? specId : "";
   const context = (): CardMountContext => ({
     theme: currentTheme(),
     ...(ref.current ? ({ hostTheme: readChatTheme(ref.current) } satisfies Partial<CardMountContext>) : {}),
@@ -74,6 +78,8 @@ export function PluginCard({ mount, props }: { mount: CardMount; props: CardRend
     // The mount is created once per controller; later changes go through update().
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [controller]);
+
+  useEffect(() => registerCardRefTarget([refId, card.id], controller), [controller, refId, card.id]);
 
   useEffect(() => {
     controller.update(spec, context());

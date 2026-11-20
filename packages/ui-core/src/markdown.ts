@@ -90,7 +90,14 @@ const escapeHtml = (s: string) =>
 // contain one level of balanced parentheses (`…/wiki/Foo_(bar)`), as CommonMark
 // allows; the two alternatives cannot match the same character, so there is no
 // backtracking blow-up on a hostile string.
-const LINK = /\[([^\]]+)\]\((https?:\/\/(?:[^()\s]|\([^()\s]*\))+)\)/g;
+//
+// The other destination is a card reference, `ref:<card>?key=value&…` (super-protocol
+// docs/CARD-REFS.md). It is not a link: it becomes a span the host wires to a card, and it
+// stays plain text where no host does. The character set is the envelope's own, plus the `;`
+// that escaping gives `&`, so nothing in it can close an attribute or open a tag. The limits
+// are the parser's to enforce (a ref that breaks them degrades where it is used), not this
+// regex's; the bound here only keeps a hostile string from costing a long scan.
+const LINK = /\[([^\]]+)\]\((https?:\/\/(?:[^()\s]|\([^()\s]*\))+|ref:[A-Za-z0-9._:~%=&;?-]{1,3000})\)/g;
 
 /** Strike-through, strong, emphasis. Runs on already-escaped text. */
 const emphasize = (s: string) =>
@@ -113,11 +120,11 @@ function inline(raw: string): string {
   // Links are lifted out the same way, BEFORE emphasis. Otherwise the emphasis rules
   // run over the destination too, and `…/a*b*c` becomes `href="…/a<em>b</em>c"`: the
   // link silently points somewhere else. Only the link's text is emphasised.
-  const links: { text: string; url: string }[] = [];
+  const links: { text: string; url: string; ref: boolean }[] = [];
   s = s.replace(LINK, (_all, text: string, url: string) => {
     // A backtick pair inside a URL is part of the URL, not a code span.
     const literal = url.replace(/\0(\d+)\0/g, (_m, i: string) => spanSource[Number(i)]!);
-    links.push({ text, url: literal });
+    links.push({ text, url: literal, ref: literal.startsWith("ref:") });
     return `\0L${links.length - 1}\0`;
   });
 
@@ -125,6 +132,7 @@ function inline(raw: string): string {
     /\0L(\d+)\0/g,
     (_all, i: string) => {
       const link = links[Number(i)]!;
+      if (link.ref) return `<span class="sc-ref" data-ref="${link.url}">${emphasize(link.text)}</span>`;
       return `<a href="${link.url}" target="_blank" rel="noopener noreferrer">${emphasize(link.text)}</a>`;
     },
   );

@@ -52,6 +52,8 @@ export {
 export { AgentSurface, SurfaceCardView, type AgentSurfaceProps } from "./surfaces/AgentSurface.js";
 export { ContextInspector } from "./ContextInspector.js";
 export { ToastProvider, ConnectionBanner, useToast, type Toast } from "./Toast.js";
+export { CardRefProvider, ProseHtml, useCardRefHost } from "./card-refs.js";
+export type { CardRef, CardRefEvent, CardRefHost, CardRefResult } from "@supersolutions/super-chat-core";
 export { DocumentQuoteProvider, useDocumentQuotes, type QuoteBus } from "./quotes.js";
 
 export {
