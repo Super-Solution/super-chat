@@ -112,7 +112,44 @@ export type TurnMeta = {
   origin?: "surface-action";
 };
 
+/** What started a turn. */
+export type TurnKind = "send" | "regenerate" | "edit" | "surface-event" | "resume";
+
+/** What a `TurnRunner` is told about the turn beyond its messages and `RunConfig`. */
+export type TurnContext = {
+  /** The thread the turn belongs to, as this client knows it. */
+  readonly threadId: string;
+  readonly kind: TurnKind;
+  /**
+   * True once the person asked for this turn to stop (`stop()`, `clear()`).
+   *
+   * `config.signal` aborts in that case and also when the client only stops
+   * FOLLOWING the turn, because another thread was opened. A turn that runs
+   * somewhere else should be cancelled there in the first case and left
+   * running in the second, and the signal alone cannot tell them apart.
+   */
+  readonly stopRequested: boolean;
+};
+
+/**
+ * Where a turn runs.
+ *
+ * The default is core's `runAgent`: the loop runs in this process. A host whose
+ * agent loop runs on a server passes its own, which starts the turn there and
+ * yields what the server reports as `RunEvent`s. Everything above the client —
+ * the store, the hooks, the renderers — is the same either way.
+ *
+ * From `config` a runner outside this process uses three things: `signal`
+ * (stop reading; see `TurnContext.stopRequested` for whether to cancel),
+ * `onUserDecision` (await it after yielding `awaiting-user` to get the person's
+ * answer, pass the answer on, then yield `user-responded`) and `forceSkillIds`.
+ * A throw is shown as the turn's error.
+ */
+export type TurnRunner = (messages: Message[], config: RunConfig, turn: TurnContext) => AsyncIterable<RunEvent>;
+
 export type AgentClientConfig = {
+  /** Where turns run. Default: in this process, with the fields below. See `TurnRunner`. */
+  runner?: TurnRunner;
   provider: Provider;
   model: string;
   contextBuilder: ContextBuilder;
@@ -169,12 +206,14 @@ const SURFACE_CONTEXT_CHARS = 4_000;
 type QueuedSurfaceAction = { spec: SurfaceSpec; component: SurfaceComponent; action: Exclude<SurfaceAction, { type: "set" }> };
 
 /** A card waiting on the user, with the resolver that unblocks the run. */
-type PendingDecision = { card: Card; resolve: (action: CardAction) => void };
+type PendingDecision = { card: Card; resolve: (action: CardAction) => void; reject: (reason: unknown) => void };
 
 export class AgentClient {
   readonly store: Store<ThreadState>;
   private config: AgentClientConfig;
   private controller: AbortController | null = null;
+  /** Whether the person asked the CURRENT turn to stop. One object per turn, so a turn left behind keeps its own answer. */
+  private turnStop: { requested: boolean } = { requested: false };
   private pending = new Map<string, PendingDecision>();
   /** Meta of the last snapshot saved, so createdAt/title survive re-saves. */
   private threadMeta: ThreadMeta | undefined;
@@ -307,7 +346,22 @@ export class AgentClient {
     this.appendMessage(message, undefined, { attachments: [] });
     // Persist the user turn before running — a reload mid-run keeps it.
     this.persist();
-    await this.run([...this.store.get().messages], opts);
+    await this.run([...this.store.get().messages], opts, "send");
+  }
+
+  /**
+   * Follow a turn that is already running somewhere else: a turn on a server
+   * after this page reloaded, or one the server started by itself.
+   *
+   * Needs a `runner`, which is called with `kind: "resume"` and yields that
+   * turn's events — usually a `run-snapshot` first. Yielding nothing means
+   * there was nothing to follow, and the thread is left as it was. The thread
+   * reads as running until the runner returns, so call this when the host has
+   * reason to think a turn is live, not on every mount.
+   */
+  async resume(): Promise<void> {
+    if (!this.config.runner || this.isRunning) return;
+    await this.run([...this.store.get().messages], {}, "resume");
   }
 
   /**
@@ -323,7 +377,7 @@ export class AgentClient {
       if (m.role === "user") {
         this.flushSurfaceWrites();
         this.store.set((s) => onPath({ ...s, headId: m.id, messages: pathTo(s.tree, m.id) }));
-        await this.run([...this.store.get().messages], opts);
+        await this.run([...this.store.get().messages], opts, "regenerate");
         return;
       }
     }
@@ -341,7 +395,7 @@ export class AgentClient {
     this.appendMessage(userMessage(input), original.parentId ?? null);
     this.store.set(onPath);
     this.persist();
-    await this.run([...this.store.get().messages], opts);
+    await this.run([...this.store.get().messages], opts, "edit");
   }
 
   /**
@@ -361,12 +415,22 @@ export class AgentClient {
     this.persist();
   }
 
-  private async run(messages: Message[], opts: { forceSkillIds?: string[] }): Promise<void> {
+  private async run(messages: Message[], opts: { forceSkillIds?: string[] }, kind: TurnKind): Promise<void> {
     const gen = this.generation;
     this.flushSurfaceWrites();
     const surfaces = new SurfaceLedger(this.store.get().surfaces);
     this.surfaceLedger = surfaces;
-    this.controller = new AbortController();
+    const controller = new AbortController();
+    this.controller = controller;
+    const stop = { requested: false };
+    this.turnStop = stop;
+    const turn: TurnContext = {
+      threadId: this.store.get().id,
+      kind,
+      get stopRequested() {
+        return stop.requested;
+      },
+    };
     const mode = this.config.mode ?? "stream";
     this.turnStartedAt = Date.now();
     this.store.set((s) => ({
@@ -403,7 +467,7 @@ export class AgentClient {
       providerOptions: this.config.providerOptions,
       meter: this.config.meter,
       meteringMetadata: this.config.meteringMetadata,
-      signal: this.controller.signal,
+      signal: controller.signal,
       forceSkillIds: opts.forceSkillIds,
       onHostTool: this.config.onHostTool,
       surfaces,
@@ -411,16 +475,19 @@ export class AgentClient {
       onUserDecision: this.awaitDecision,
     };
 
+    const runner: TurnRunner = this.config.runner ?? runAgent;
     try {
-      for await (const event of runAgent(messages, runConfig)) {
+      for await (const event of runner(messages, runConfig, turn)) {
         if (gen !== this.generation) return; // thread switched under us — drop the rest
         this.apply(event);
       }
     } catch (e) {
       if (gen === this.generation) this.store.set((s) => ({ ...s, status: "error", error: e }));
     } finally {
-      this.controller = null;
-      this.surfaceLedger = null;
+      // Only what is still this turn's: a turn left behind can unwind after the
+      // next one has started, and must not take that one's controller with it.
+      if (this.controller === controller) this.controller = null;
+      if (this.surfaceLedger === surfaces) this.surfaceLedger = null;
       if (gen === this.generation) {
         this.commitRun();
         this.drainSurfaceQueue();
@@ -429,8 +496,8 @@ export class AgentClient {
   }
 
   private awaitDecision = (callId: string, card: Card): Promise<CardAction> =>
-    new Promise<CardAction>((resolve) => {
-      this.pending.set(callId, { card, resolve });
+    new Promise<CardAction>((resolve, reject) => {
+      this.pending.set(callId, { card, resolve, reject });
     });
 
   private apply(event: RunEvent): void {
@@ -455,6 +522,11 @@ export class AgentClient {
       if (event.type === "error") next.error = event.error;
       if (event.type === "card" && isSurfaceSpec(event.card.spec)) {
         next.surfaces = { ...s.surfaces, [event.card.spec.surfaceId]: event.card.spec };
+      }
+      if (event.type === "run-snapshot") {
+        for (const { spec } of event.cards) {
+          if (isSurfaceSpec(spec)) next.surfaces = { ...next.surfaces, [spec.surfaceId]: spec };
+        }
       }
       return next;
     });
@@ -559,7 +631,7 @@ export class AgentClient {
     if (!stored) return false;
     this.saveSurfacesNow();
     this.generation += 1; // invalidate any in-flight run before replacing state
-    this.stop();
+    this.halt(false);
     this.surfaceQueue = [];
     this.threadMeta = stored.meta;
     const tree = linkLinear(stored.messages);
@@ -584,7 +656,7 @@ export class AgentClient {
   newThread(): void {
     this.saveSurfacesNow();
     this.generation += 1;
-    this.stop();
+    this.halt(false);
     this.surfaceQueue = [];
     this.threadMeta = undefined;
     this.store.set((s) => ({
@@ -617,7 +689,19 @@ export class AgentClient {
   }
 
   stop(): void {
+    this.halt(true);
+  }
+
+  /**
+   * End the current turn here. `byPerson` is false when the client is only
+   * moving to another thread: a runner outside this process reads that from
+   * `TurnContext.stopRequested` and leaves its turn running.
+   */
+  private halt(byPerson: boolean): void {
     if (!this.isRunning) return;
+    if (byPerson) this.turnStop.requested = true;
+    // A turn that was only left keeps its answer for good: nothing pressed later reaches it.
+    else this.turnStop = { requested: false };
     // Mark the request immediately. Aborting is not the same as having stopped:
     // a tool that ignores its signal runs to completion, and the UI has to be
     // able to say "stopping" instead of looking inert.
@@ -630,9 +714,13 @@ export class AgentClient {
       void this.config.provider.cancelJob(job.handle).catch(() => {});
       void this.config.jobStore?.remove(job.handle.id);
     }
-    // Release any suspended tool so the run can unwind instead of hanging.
+    // Release any suspended tool so the run can unwind instead of hanging. A
+    // runner outside this process would pass a "cancel" on as the person's
+    // answer, and leaving a thread is not an answer: its wait is aborted instead.
+    const left = !byPerson && this.config.runner !== undefined;
     for (const [callId, entry] of this.pending) {
-      entry.resolve({ cardId: entry.card.id, callId, kind: "cancel", type: "cancel", at: Date.now() });
+      if (left) entry.reject(Object.assign(new Error("The client stopped following this turn."), { name: "AbortError" }));
+      else entry.resolve({ cardId: entry.card.id, callId, kind: "cancel", type: "cancel", at: Date.now() });
     }
     this.pending.clear();
     // Stop means stop: what was waiting behind this run does not start after it.
@@ -806,7 +894,7 @@ export class AgentClient {
     this.noteSurfaceActivity(surfaceId, component.id, "running", "Sent to the agent.");
     this.appendMessage({ ...userMessage(text), metadata: { [SURFACE_EVENT_METADATA_KEY]: record } });
     this.persist();
-    await this.run([...this.store.get().messages], {});
+    await this.run([...this.store.get().messages], {}, "surface-event");
     const failed = this.store.get().status === "error";
     return this.noteSurfaceActivity(surfaceId, component.id, failed ? "failed" : "done", failed ? "The agent could not respond." : "Sent to the agent.");
   }

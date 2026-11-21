@@ -91,6 +91,8 @@ export function useThread() {
       regenerate: () => client.regenerate(),
       editMessage: (id: string, input: Parameters<AgentClient["send"]>[0]) => client.editMessage(id, input),
       stop: () => client.stop(),
+      /** Follow a turn that is already running on a server. Does nothing on a client without a `runner`. */
+      resume: () => client.resume(),
       clear: () => client.clear(),
       isRunning: status === "running" || status === "awaiting-user",
     }),
