@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1
+
+### Fixed
+
+- A card shown in the side panel opens there again when the thread is reloaded. The committed message now keeps `placement: "panel"` on the card's `artifact` part (`ContentPart` gains an optional `placement`), and `MessageView` restores it, so a saved turn no longer draws its panel card in the chat. Turns saved by 0.4.0 have no placement and stay inline.
+
 ## 0.4.0
 
 Requires `@supersolutions/super-protocol` 0.4.0 (the plugin and router packages pin it).

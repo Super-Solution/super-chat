@@ -64,6 +64,22 @@ describe("a turn that runs on a server", () => {
     expect(s.messages[1]!.metadata?.turn).toMatchObject({ model: "server", usage: { totalTokens: 7 } });
   });
 
+  it("commits a panel card's placement with it, so a reload opens it beside the chat again", async () => {
+    const runner: TurnRunner = async function* () {
+      yield start;
+      yield { type: "card", card: { id: "card_p", callId: "call_p", placement: "panel", spec: { kind: "x.board", title: "BTC weekly" } } };
+      yield { type: "card", card: { id: "card_i", callId: "call_i", spec: { kind: "x.board", title: "Inline" } } };
+      yield finish;
+    };
+    const client = new AgentClient(serverRunConfig({ runner }));
+    await client.send("chart BTC");
+    const artifacts = (client.store.get().messages[1]?.parts ?? []).filter((p) => p.type === "artifact");
+    expect(artifacts).toEqual([
+      { type: "artifact", id: "card_p", kind: "card:x.board", data: { kind: "x.board", title: "BTC weekly" }, callId: "call_p", placement: "panel" },
+      { type: "artifact", id: "card_i", kind: "card:x.board", data: { kind: "x.board", title: "Inline" }, callId: "call_i" },
+    ]);
+  });
+
   it("tells the runner what started the turn", async () => {
     const kinds: string[] = [];
     const runner: TurnRunner = async function* (_messages, _config, turn) {
