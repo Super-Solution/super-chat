@@ -75,6 +75,7 @@ function partsOf(message: Message) {
         spec: p.data as Card["spec"],
         ...(p.action ? { action: p.action as Card["action"] } : {}),
         ...(p.callId ? { callId: p.callId } : {}),
+        ...(p.placement === "panel" ? { placement: "panel" as const } : {}),
         ...(expired ? { expired: true } : {}),
       });
       continue;

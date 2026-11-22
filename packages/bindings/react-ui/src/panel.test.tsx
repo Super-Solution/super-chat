@@ -1,8 +1,11 @@
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import type { Card } from "@supersolutions/super-chat-core";
+import type { Card, Message } from "@supersolutions/super-chat-core";
 import { ChatPanel, ChatPanelProvider } from "./panel.js";
+import { MessageView } from "./Thread.js";
+import { AgentClient, serverRunConfig } from "@supersolutions/super-chat-client";
+import { AgentProvider } from "@supersolutions/super-chat-react";
 import { CardRenderer, CardRendererProvider, type CardRendererProps } from "./renderer-registry.js";
 
 const text = (html: string) => html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -26,6 +29,27 @@ describe("panel cards in the chat", () => {
     expect(html).toContain("sc-panel-line");
     expect(text(html)).toBe("BTC weekly Opened beside the chat Open");
     expect(html).not.toContain("data-probe");
+  });
+
+  it("come back to the panel when a saved turn is shown again", () => {
+    const saved: Message = {
+      id: "m1",
+      role: "assistant",
+      parts: [
+        { type: "artifact", id: "p1", kind: "card:x.board", data: { kind: "x.board", title: "BTC weekly" }, placement: "panel" },
+        { type: "artifact", id: "i1", kind: "card:x.board", data: { kind: "x.board", title: "Inline board" } },
+      ],
+    };
+    const client = new AgentClient(serverRunConfig({ runner: async function* () {} }));
+    const html = render(
+      <AgentProvider client={client}>
+        <ChatPanelProvider>
+          <MessageView message={saved} />
+        </ChatPanelProvider>
+      </AgentProvider>,
+    );
+    expect(text(html)).toContain("BTC weekly Opened beside the chat Open");
+    expect(html.match(/data-probe="[^"]+"/g)).toEqual(['data-probe="inline"']);
   });
 
   it("are drawn inline when the host has no panel", () => {

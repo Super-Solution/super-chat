@@ -566,6 +566,8 @@ export class AgentClient {
         ...(c.action ? { action: c.action } : {}),
         // Where the card belongs among the turn's text.
         ...(c.callId ? { callId: c.callId } : {}),
+        // Where it is shown: a panel card reloads into the panel, not the chat.
+        ...(c.placement === "panel" ? { placement: "panel" as const } : {}),
       }));
 
       // What the turn cost, recorded on the message. The UI has no other way to

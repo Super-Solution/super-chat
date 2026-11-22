@@ -93,6 +93,11 @@ export type ContentPart =
        * turn's text. Absent on turns saved before order was recorded.
        */
       callId?: string;
+      /**
+       * For a card shown beside the chat: `"panel"`. Absent means inline, so a reloaded thread
+       * opens the card where it was first shown. Never `"inline"`.
+       */
+      placement?: "panel";
     };
 
 export type MessageRole = "system" | "user" | "assistant" | "tool";
