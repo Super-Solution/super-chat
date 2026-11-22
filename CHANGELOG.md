@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.4.0
+
+Requires `@supersolutions/super-protocol` 0.4.0 (the plugin and router packages pin it).
 
 ### Added
 

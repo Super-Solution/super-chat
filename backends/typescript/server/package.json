@@ -1,6 +1,6 @@
 {
   "name": "@supersolutions/super-chat-server",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Server-side half of superchat ProxyTransport: a framework-agnostic Request-to-Response handler that holds provider keys behind an explicit path allowlist.",
   "license": "Apache-2.0",
   "author": "SUPER SOLUTION LABS INC",
