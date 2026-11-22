@@ -18,8 +18,9 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { BUILTIN_CARDS, CardRegistry, SURFACE_CARD_KIND, type Card, type CardAction, type CardSpec, type ToolLoadingHint } from "@supersolutions/super-chat-core";
+import { BUILTIN_CARDS, CardRegistry, SURFACE_CARD_KIND, type Card, type CardAction, type CardPlacement, type CardSpec, type ToolLoadingHint } from "@supersolutions/super-chat-core";
 import { useOptionalAgentClient } from "@supersolutions/super-chat-react";
+import { PanelCardLine, useOptionalChatPanel } from "./panel.js";
 
 export type CardRendererProps<S extends CardSpec = CardSpec> = {
   spec: S;
@@ -34,6 +35,11 @@ export type CardRendererProps<S extends CardSpec = CardSpec> = {
    * and show the rest as it lands. Never set for an interactive card.
    */
   partial?: boolean;
+  /**
+   * Where this renderer is drawing the card: `inline` in the chat (the default), `panel` in the
+   * side panel, `document` inside a document block. Use it to adapt chrome and size.
+   */
+  placement?: CardPlacement;
 };
 
 /** What a host that names no registry gets: the built-in kinds. */
@@ -226,17 +232,27 @@ export function CardRenderer({
   respond,
   answered,
   partial,
+  placement = "inline",
 }: {
   card: Card;
   respond?: CardRendererProps["respond"];
   answered?: boolean;
   partial?: boolean;
+  /** Where the card is being drawn. Default `inline`; `ChatPanel` passes `panel`. */
+  placement?: CardPlacement;
 }) {
   const renderers = useCardRenderers();
   const isInteractive = useInteractiveKinds();
+  const panel = useOptionalChatPanel();
   const kind = (card.spec as { kind?: string }).kind ?? "unknown";
 
   if (partial && isInteractive(kind)) return null;
+
+  // A card meant for the side panel leaves a line in the chat that reopens it. With no panel, or
+  // for a card that asks the user something, it is drawn here as any other card.
+  if (card.placement === "panel" && placement === "inline" && panel && !isInteractive(kind) && !card.expired && !partial) {
+    return <PanelCardLine card={card} />;
+  }
 
   if (card.expired) {
     // Large card payloads are trimmed out of persisted history. Say so — an
@@ -263,14 +279,14 @@ export function CardRenderer({
     // No `respond`: nothing on a card that is still arriving may be acted on.
     return (
       <CardBoundary kind={kind} spec={card.spec}>
-        <Renderer spec={card.spec as never} card={card} partial />
+        <Renderer spec={card.spec as never} card={card} partial placement={placement} />
       </CardBoundary>
     );
   }
 
   return (
     <CardBoundary kind={kind} spec={card.spec}>
-      <Renderer spec={card.spec as never} card={card} respond={respond} answered={answered} />
+      <Renderer spec={card.spec as never} card={card} respond={respond} answered={answered} placement={placement} />
     </CardBoundary>
   );
 }

@@ -14,10 +14,19 @@ import type { SurfaceCatalogue } from "../surfaces/catalogue.js";
 import { createSurfaceTools } from "../surfaces/tools.js";
 import type { ToolDefinition } from "./types.js";
 
+/** Where `visualize` may put a card. `document` is not the agent's to choose from a chat. */
+export type VisualizePlacement = "inline" | "panel";
+
 export type VisualizeToolOptions = {
   cards: CardRegistry;
   /** Restrict which kinds the agent may emit (a read-only chat may want no `confirm`). */
   kinds?: string[];
+  /**
+   * Where the agent may put a card. Default `["inline"]`: the tool is exactly as before. Add
+   * `"panel"` when the host shows a side panel (super-chat-ui's `ChatPanel`): the agent can then open
+   * a card beside the conversation, for a chart or a document worth room of its own.
+   */
+  placements?: readonly VisualizePlacement[];
 };
 
 /**
@@ -33,6 +42,7 @@ export type VisualizeToolOptions = {
 export function createVisualizeTool(opts: VisualizeToolOptions): ToolDefinition {
   const { cards } = opts;
   const available = opts.kinds ? cards.list().filter((k) => opts.kinds!.includes(k.kind)) : cards.list();
+  const panel = (opts.placements ?? ["inline"]).includes("panel");
   const catalogue = available
     .map((k) => `- ${k.kind}${k.interactive ? " (interactive — the user replies)" : ""}: ${k.summary}`)
     .join("\n");
@@ -52,12 +62,22 @@ export function createVisualizeTool(opts: VisualizeToolOptions): ToolDefinition 
       "- Interactive kinds (choice, form, confirm) pause for the user's answer, which is returned to you as this tool's result. Use them instead of guessing.",
       "- Use `confirm` before anything consequential or irreversible.",
       "- One card per distinct idea. Do not wrap a one-line answer in a card.",
+      ...(panel
+        ? [
+            '- `placement: "panel"` opens the card in the side panel beside the chat, with room to explore: use it for a chart the user will work with or a long document. Keep small results (a few figures, a short table) inline, the default.',
+            "- Interactive kinds are always inline.",
+          ]
+        : []),
     ].join("\n"),
     inputSchema: {
       type: "object",
       required: ["kind", "spec"],
       properties: {
         kind: { type: "string", enum: available.map((k) => k.kind), description: "Which card to render." },
+        // Before `spec`, so it streams first: a panel card is not previewed in the chat.
+        ...(panel
+          ? { placement: { type: "string", enum: ["inline", "panel"], description: "Where to show the card: in the chat (inline, default) or in the side panel." } }
+          : {}),
         spec: {
           type: "object",
           description: "The card body. Must match the schema for `kind`, and must include `kind` itself.",
@@ -95,14 +115,20 @@ export function createVisualizeTool(opts: VisualizeToolOptions): ToolDefinition 
     // `cards.partial` refuses interactive kinds and anything its own validator
     // rejects; `execute` below stays the only path to a real card.
     partialCard: (input) => {
-      const { kind, spec } = (input ?? {}) as { kind?: unknown; spec?: unknown };
+      const { kind, spec, placement } = (input ?? {}) as { kind?: unknown; spec?: unknown; placement?: unknown };
       if (typeof kind !== "string" || !isObj(spec)) return undefined;
+      // A card bound for the side panel is drawn there once it is whole, not previewed in the chat.
+      if (placement === "panel") return undefined;
       if (opts.kinds && !opts.kinds.includes(kind)) return undefined;
       return cards.partial({ ...spec, kind });
     },
     async execute(input, ctx) {
-      const { kind, spec } = (input ?? {}) as { kind?: string; spec?: Record<string, unknown> };
+      const { kind, spec, placement } = (input ?? {}) as { kind?: string; spec?: Record<string, unknown>; placement?: unknown };
       if (!kind) return { output: { ok: false, error: "`kind` is required." }, failure: "invalid-input" as const };
+      if (placement !== undefined && placement !== "inline" && !(panel && placement === "panel")) {
+        const allowed = panel ? '"inline" or "panel"' : '"inline" (this chat has no side panel)';
+        return { output: { ok: false, error: `placement must be ${allowed}.` }, failure: "invalid-input" as const };
+      }
 
       // Models routinely omit `kind` inside `spec` since they already passed it
       // at the top level. Filling it in is unambiguous, so do it rather than
@@ -120,6 +146,9 @@ export function createVisualizeTool(opts: VisualizeToolOptions): ToolDefinition 
       }
 
       const def = cards.get(kind);
+      if (placement === "panel" && def?.interactive) {
+        return { output: { ok: false, error: `${kind} asks the user something, so it is shown in the chat: send it without placement.` }, failure: "invalid-input" as const };
+      }
       if (def?.interactive && ctx.requestCard) {
         // Suspend for the user's answer. The runtime resolves this when the UI
         // reports a CardAction.
@@ -131,6 +160,7 @@ export function createVisualizeTool(opts: VisualizeToolOptions): ToolDefinition 
         return { output: { ok: true, kind, response: answer } };
       }
 
+      if (placement === "panel") return { output: { ok: true, kind, rendered: true, placement: "panel" }, card: full, placement: "panel" as const };
       return { output: { ok: true, kind, rendered: true }, card: full };
     },
   };
@@ -219,8 +249,8 @@ export function createUpdateCardTool(cards: CardRegistry): ToolDefinition {
 }
 
 /** The default built-in set, wired to the given registries. */
-export function createBuiltinTools(opts: { cards: CardRegistry; skills?: SkillRegistry; surfaces?: SurfaceCatalogue }): ToolDefinition[] {
-  const tools = [createVisualizeTool({ cards: opts.cards }), createUpdateCardTool(opts.cards)];
+export function createBuiltinTools(opts: { cards: CardRegistry; skills?: SkillRegistry; surfaces?: SurfaceCatalogue; placements?: readonly VisualizePlacement[] }): ToolDefinition[] {
+  const tools = [createVisualizeTool({ cards: opts.cards, ...(opts.placements ? { placements: opts.placements } : {}) }), createUpdateCardTool(opts.cards)];
   // Opt-in: a host that has not asked for surfaces sees the same tool list as before.
   if (opts.surfaces) tools.push(...createSurfaceTools({ catalogue: opts.surfaces }));
   if (opts.skills && opts.skills.list().some((s) => s.mode === "manual")) {

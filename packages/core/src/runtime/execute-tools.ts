@@ -62,7 +62,7 @@ const isToolResult = (v: unknown): v is ToolResult =>
   typeof v === "object" &&
   v !== null &&
   "output" in v &&
-  Object.keys(v).every((k) => ["output", "card", "failure", "cardId", "unlockTools"].includes(k));
+  Object.keys(v).every((k) => ["output", "card", "failure", "cardId", "unlockTools", "placement"].includes(k));
 
 export type ExecuteToolOptions = {
   tools: readonly ToolDefinition[];
@@ -165,8 +165,8 @@ export async function executeToolCall(call: ToolCallRequest, opts: ExecuteToolOp
     let output = result.output;
 
     if (result.card) {
-      card = makeCard(result.card, call.callId, result.cardId);
-      output = withCard(asRecord(result.output), card.spec, card.id);
+      card = makeCard(result.card, call.callId, result.cardId, result.placement === "panel" ? "panel" : undefined);
+      output = withCard(asRecord(result.output), card.spec, card.id, card.placement);
       opts.onCard?.(card);
     } else if (isCardCarrier(result.output)) {
       const embedded = result.output[CARD_KEY];

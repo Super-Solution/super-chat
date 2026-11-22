@@ -53,6 +53,11 @@ export type ToolExecutionContext = {
 
 export type ToolResultExtras = {
   /**
+   * Where the card should be shown: `inline` (the default) or `panel`, the host's side panel.
+   * Ignored without a card; an interactive card stays inline whatever is asked.
+   */
+  placement?: "inline" | "panel";
+  /**
    * Update an EXISTING card instead of minting a new one: the runtime reuses
    * this id, and the reducer's upsert replaces the old card in place.
    */

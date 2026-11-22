@@ -477,6 +477,24 @@
 .sc-card--fallback > strong { font-weight: 500; font-size: var(--sc-fs-ui); color: var(--sc-text-muted); }
 .sc-card__alt { margin: 0; font-size: var(--sc-fs-ui); line-height: 1.55; color: var(--sc-text); }
 
+/* A card shown in the side panel leaves this line in the chat. */
+.sc-panel-line { display: flex; align-items: center; gap: var(--sc-sp-10); padding: var(--sc-sp-8) var(--sc-sp-12); }
+.sc-panel-line__icon { display: inline-flex; color: var(--sc-text-muted); flex: none; }
+.sc-panel-line__text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.sc-panel-line__title { font-weight: 600; font-size: var(--sc-fs-ui); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-panel-line__note { font-size: var(--sc-fs-meta); }
+.sc-panel-line__open { flex: none; }
+.sc-panel-line--showing { border-color: var(--sc-accent-tint, var(--sc-border)); }
+.sc-panel-line--showing .sc-panel-line__icon { color: var(--sc-accent); }
+
+/* The side panel: the open card fills what the host gives it. */
+.sc-panel { display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--sc-bg); color: var(--sc-text); font-family: var(--sc-sans); container-type: inline-size; }
+.sc-panel__header { display: flex; align-items: center; gap: var(--sc-sp-8); padding: var(--sc-sp-8) var(--sc-sp-12); border-bottom: 1px solid var(--sc-border); flex: none; }
+.sc-panel__title { margin: 0; flex: 1; min-width: 0; font-size: var(--sc-fs-ui); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-panel__body { flex: 1; min-height: 0; overflow: auto; padding: var(--sc-sp-12); display: flex; flex-direction: column; }
+.sc-panel__body > .sc-card, .sc-panel__body > .sc-plugin-card { margin: 0; flex: 1; min-height: 0; }
+.sc-panel__body > .sc-plugin-card { display: flex; flex-direction: column; }
+
 .sc-card__title { font-weight: 600; font-size: var(--sc-fs-ui); margin-bottom: var(--sc-sp-10); }
 .sc-card__head { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-sp-10); margin-bottom: var(--sc-sp-8); }
 .sc-card__prompt { margin: 0 0 var(--sc-sp-12); font-size: var(--sc-fs-ui); color: var(--sc-text-muted); }
