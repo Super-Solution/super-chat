@@ -321,8 +321,11 @@ function upsertCard(cards: Card[], card: Card): Card[] {
   const next = [...cards];
   // A revision replaces the content, not the place: the card stays in the slot
   // of the call that first drew it.
-  const home = cards[i]!.callId;
-  next[i] = home ? { ...card, callId: home } : card;
+  // Nor its placement: an update that names none keeps the panel the card was opened in.
+  const prev = cards[i]!;
+  const home = prev.callId;
+  const placement = card.placement ?? prev.placement;
+  next[i] = { ...card, ...(home ? { callId: home } : {}), ...(placement ? { placement } : {}) };
   return next;
 }
 

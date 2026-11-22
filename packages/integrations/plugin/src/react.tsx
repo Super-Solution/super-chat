@@ -106,12 +106,14 @@ export function PluginCard({ mount, props, onCardError = logCardError }: { mount
       }),
     [mount],
   );
-  const { spec, card, partial, answered, respond } = props;
+  const { spec, card, partial, answered, respond, placement } = props;
   // A reference names a card by its spec's `id`, or failing that the envelope's.
   const specId = (spec as { id?: unknown }).id;
   const refId = typeof specId === "string" ? specId : "";
   const context = (): CardMountContext => ({
     theme: currentTheme(),
+    // Where the host draws it: the mount adapts (a compact card in the chat, the full tool in the panel).
+    placement: placement ?? "inline",
     ...(ref.current ? ({ hostTheme: readChatTheme(ref.current) } satisfies Partial<CardMountContext>) : {}),
     ...(partial ? { partial: true } : {}),
     ...(respond && !answered
@@ -131,14 +133,14 @@ export function PluginCard({ mount, props, onCardError = logCardError }: { mount
   useEffect(() => {
     controller.update(spec, context());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [controller, spec, partial, answered]);
+  }, [controller, spec, partial, answered, placement]);
 
   const latest = useRef(context);
   latest.current = context;
   useEffect(() => watchTheme(() => controller.update(spec, latest.current())), [controller, spec]);
 
   if (failed) return <PluginCardFallback spec={spec} />;
-  return <div ref={ref} className="sc-plugin-card" />;
+  return <div ref={ref} className="sc-plugin-card" data-placement={placement ?? "inline"} />;
 }
 
 export type PluginRenderersOptions = {

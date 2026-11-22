@@ -405,9 +405,26 @@ export type EmailCard = {
 export type CardSpec = BuiltinCard | ({ kind: string } & Record<string, unknown>);
 
 /** Envelope attached to a tool result, or returned by `visualize`. */
+/**
+ * Where a host shows a card: in the conversation (`inline`, the default), in its side panel
+ * (`panel`), or inside a document block (`document`). The same renderer draws it in every place.
+ * Structurally the same as super-protocol's `CardPlacement`; core has no dependencies, so it is
+ * repeated here. An interactive card is only ever inline.
+ */
+export type CardPlacement = "inline" | "panel" | "document";
+
+export const CARD_PLACEMENTS: readonly CardPlacement[] = ["inline", "panel", "document"];
+
+export const isCardPlacement = (value: unknown): value is CardPlacement => CARD_PLACEMENTS.includes(value as CardPlacement);
+
 export type Card = {
   id: string;
   spec: CardSpec;
+  /**
+   * Where the agent or tool asked for the card to be shown. Absent means `inline`. A host with no
+   * side panel shows a `panel` card inline; it never drops it.
+   */
+  placement?: CardPlacement;
   /** Set when the payload was dropped from persisted history. */
   expired?: boolean;
   /** Tool call this card belongs to, for correlating an action back. */
@@ -448,8 +465,9 @@ export function isCardCarrier(value: unknown): value is CardCarrier {
 }
 
 /** Attach a card to a tool result without disturbing the data the model reads. */
-export function withCard<T extends Record<string, unknown>>(data: T, spec: CardSpec, id?: string): T & CardCarrier {
-  return { ...data, [CARD_KEY]: { id: id ?? `card_${Math.random().toString(36).slice(2, 10)}`, spec } };
+export function withCard<T extends Record<string, unknown>>(data: T, spec: CardSpec, id?: string, placement?: CardPlacement): T & CardCarrier {
+  const card: Card = { id: id ?? `card_${Math.random().toString(36).slice(2, 10)}`, spec, ...(placement && placement !== "inline" ? { placement } : {}) };
+  return { ...data, [CARD_KEY]: card };
 }
 
 /**

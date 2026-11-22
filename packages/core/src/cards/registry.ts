@@ -13,7 +13,7 @@
 // that failure unrepresentable — `renderers` is derived from the same map, so a
 // kind is either fully present or absent.
 
-import type { Card, CardSpec } from "./types.js";
+import type { Card, CardPlacement, CardSpec } from "./types.js";
 import type { JSONSchema } from "../providers/types.js";
 
 export type CardValidation = { ok: true } | { ok: false; error: string; expected?: string };
@@ -148,10 +148,11 @@ export class CardRegistry {
 }
 
 let cardCounter = 0;
-export function makeCard(spec: CardSpec, callId?: string, id?: string): Card {
+export function makeCard(spec: CardSpec, callId?: string, id?: string, placement?: CardPlacement): Card {
+  const where = placement && placement !== "inline" ? { placement } : {};
   // An explicit id means "replace that card": the reducer upserts by id, so
   // reusing one turns an append into an in-place update (`updateCard`).
-  if (id) return { id, spec, ...(callId ? { callId } : {}) };
+  if (id) return { id, spec, ...(callId ? { callId } : {}), ...where };
   cardCounter += 1;
-  return { id: `card_${Date.now().toString(36)}${cardCounter.toString(36)}`, spec, ...(callId ? { callId } : {}) };
+  return { id: `card_${Date.now().toString(36)}${cardCounter.toString(36)}`, spec, ...(callId ? { callId } : {}), ...where };
 }

@@ -123,7 +123,7 @@ export { approvalCard, humanizeFieldName } from "./tools/approval.js";
 export { ToolRegistry } from "./tools/registry.js";
 export { repairToolArguments, normalizeToolName, type RepairResult } from "./tools/repair.js";
 export { PartialJsonParser, parsePartialJson } from "./tools/partial-json.js";
-export { createVisualizeTool, createLoadSkillTool, createUpdateCardTool, createBuiltinTools } from "./tools/builtin.js";
+export { createVisualizeTool, createLoadSkillTool, createUpdateCardTool, createBuiltinTools, type VisualizeToolOptions, type VisualizePlacement } from "./tools/builtin.js";
 
 // runtime
 export * from "./runtime/events.js";

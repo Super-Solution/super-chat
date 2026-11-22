@@ -200,6 +200,32 @@ describe("runAgent", () => {
     expect((card.card.spec as { kind: string }).kind).toBe("stats");
   });
 
+  it("carries a panel placement on the card event and inside the saved output", async () => {
+    const cards = new CardRegistry(BUILTIN_CARDS);
+    const h = harness(
+      [
+        respondToolCall("visualize", { kind: "markdown", placement: "panel", spec: { body: "# Notes" } }),
+        respondText("Opened beside the chat."),
+      ],
+      [createVisualizeTool({ cards, placements: ["inline", "panel"] })],
+    );
+    const events = await collect(
+      runAgent([userMessage("open it")], {
+        provider: h.provider,
+        model: "gpt-5.2",
+        contextBuilder: h.contextBuilder,
+        tools: h.registry,
+        toolResolution: { presets: ["observer"] },
+        mode: "sync",
+      }),
+    );
+    const card = events.find((e) => e.type === "card") as Extract<RunEvent, { type: "card" }>;
+    expect(card.card.placement).toBe("panel");
+    const result = events.find((e) => e.type === "tool-result") as Extract<RunEvent, { type: "tool-result" }>;
+    expect(isCardCarrier(result.output)).toBe(true);
+    expect((result.output as { $card: { placement?: string } }).$card.placement).toBe("panel");
+  });
+
   it("surfaces a card attached by any of the three supported ways", async () => {
     // A tool author should not have to know which mechanism the runtime checks.
     // `withCard` embedding was silently dropped once — hence this test.

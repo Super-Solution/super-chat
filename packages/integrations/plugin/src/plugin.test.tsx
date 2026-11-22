@@ -87,6 +87,12 @@ describe("pluginRenderers", () => {
     const html = renderToString(createElement(Renderer, { spec, card: { id: "c", spec } }));
     expect(html).toContain('class="sc-plugin-card"');
   });
+  it("tells the mount where it is drawn", () => {
+    const Renderer = pluginRenderers([plugin()])[EDITOR_CARD_KIND]! as unknown as ComponentType<Record<string, unknown>>;
+    const spec = { kind: EDITOR_CARD_KIND, service: { baseUrl: "https://e.example.com", documentId: "d" } };
+    expect(renderToString(createElement(Renderer, { spec, card: { id: "c", spec } }))).toContain('data-placement="inline"');
+    expect(renderToString(createElement(Renderer, { spec, card: { id: "c", spec }, placement: "panel" }))).toContain('data-placement="panel"');
+  });
   it("still accepts a plain plugin list, and takes an error handler", () => {
     const onCardError = vi.fn();
     const renderers = pluginRenderers([plugin()], { onCardError });
@@ -275,5 +281,13 @@ describe("plugin tools", () => {
     const plugin = withTools([]);
     plugin.manifest.capabilities.push({ id: "x.side", surface: "panel" }, { id: "x.board", surface: "canvas" });
     expect(install(plugin).report.unsupportedSurfaces).toEqual([{ id: "x.side", surface: "panel" }, { id: "x.board", surface: "canvas" }]);
+  });
+
+  it("lists the card kinds a plugin made for the side panel", () => {
+    const plugin = withTools([]);
+    plugin.manifest.capabilities.push({ id: "x.side", surface: "panel", cardKind: EDITOR_CARD_KIND });
+    const { report } = install(plugin);
+    expect(report.panelKinds).toEqual([EDITOR_CARD_KIND]);
+    expect(report.unsupportedSurfaces).toEqual([]);
   });
 });

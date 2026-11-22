@@ -14,6 +14,7 @@ theming and the full component spec live in
 - `Thread.tsx` — the main chat surface: message list, composer, live streaming turn.
 - `cards/` — one renderer per built-in card kind (table, chart, funnel, diff, confirm, …), registered in `cards/index.ts` and validated against `@supersolutions/super-chat-core`'s `BUILTIN_CARDS` (`cards/registry-sync.test.ts` keeps the two in sync).
 - `renderer-registry.tsx` — the `CardRenderer` dispatch + provider for host-supplied renderer overrides.
+- `panel.tsx` — the side panel: `ChatPanelProvider`, `ChatPanel`, `useChatPanel` and the line a panel card leaves in the thread ([guide](../../../docs/guide/panel.md)).
 - `ContextInspector.tsx` — renders a context-build trace (what was included/truncated/dropped and why).
 - `markdown.ts`, `format.ts`, `export.ts` — supporting utilities for message rendering and card export.
 - `styles.css` — the token baseline. Import it from source (`@supersolutions/super-chat-ui/styles.css`), not from `dist`.

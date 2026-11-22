@@ -40,6 +40,17 @@ export { EmailCardView, type EmailCardViewProps } from "./cards/Email.js";
 
 export { Thread, Composer, MessageView, LiveTurn } from "./Thread.js";
 export {
+  ChatPanel,
+  ChatPanelProvider,
+  PanelCardLine,
+  useChatPanel,
+  useOptionalChatPanel,
+  type ChatPanelLabels,
+  type ChatPanelProps,
+  type ChatPanelProviderProps,
+  type ChatPanelState,
+} from "./panel.js";
+export {
   SurfaceView,
   SurfaceHostProvider,
   useSurfaceCatalogue,

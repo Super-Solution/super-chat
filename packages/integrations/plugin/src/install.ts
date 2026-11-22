@@ -1,5 +1,5 @@
 import { approvalCard, type CardRegistry, type ToolDefinition, type ToolExecutionContext, type ToolRegistry, type ToolResult, type ToolSide } from "@supersolutions/super-chat-core";
-import { PLUGIN_TOOL_PRESETS, pluginToolAuthority as declaredAuthority, validateChatPlugin, type ChatPlugin, type PluginTool, type PluginToolAuthority } from "@supersolutions/super-protocol";
+import { PLUGIN_TOOL_PRESETS, panelCardKinds, pluginToolAuthority as declaredAuthority, validateChatPlugin, type ChatPlugin, type PluginTool, type PluginToolAuthority } from "@supersolutions/super-protocol";
 
 /**
  * A tool as a plugin declared it. `authority` and `confirm` are untrusted until they are
@@ -35,7 +35,12 @@ export type PluginInstallReport = {
   tools: string[];
   /** Tools the agent cannot see, and why. */
   refusedTools: RefusedPluginTool[];
-  /** Declared capabilities this host does not render: `panel` and `canvas`. */
+  /**
+   * Card kinds the plugin made for the side panel (`panel` capabilities that name one). They are
+   * drawn by their card mount in super-chat-ui's `ChatPanel`; open one there by default.
+   */
+  panelKinds: string[];
+  /** Declared capabilities this host does not render: `canvas`, and a `panel` that names no card kind. */
   unsupportedSurfaces: { id: string; surface: string }[];
 };
 
@@ -127,6 +132,9 @@ export function installChatPlugin(registry: CardRegistry, plugin: ChatPlugin, op
     cardKinds: (plugin.cardKinds ?? []).map((def) => def.kind),
     tools: accepted.map(({ tool }) => tool.name),
     refusedTools,
-    unsupportedSurfaces: plugin.manifest.capabilities.filter((c) => c.surface === "panel" || c.surface === "canvas").map((c) => ({ id: c.id, surface: c.surface })),
+    panelKinds: panelCardKinds(plugin),
+    unsupportedSurfaces: plugin.manifest.capabilities
+      .filter((c) => c.surface === "canvas" || (c.surface === "panel" && !c.cardKind))
+      .map((c) => ({ id: c.id, surface: c.surface })),
   };
 }

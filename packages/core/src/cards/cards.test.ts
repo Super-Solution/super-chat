@@ -123,6 +123,27 @@ describe("visualize tool", () => {
     expect(result.output.response).toEqual({ selected: ["p1"] });
   });
 
+  it("offers no placement until the host has a side panel", async () => {
+    expect(tool.inputSchema.properties?.["placement"]).toBeUndefined();
+    const refused = (await tool.execute!({ kind: "stats", placement: "panel", spec: { items: [{ label: "A", value: 1 }] } }, ctx)) as { output: { ok: boolean; error?: string }; failure?: string };
+    expect(refused.failure).toBe("invalid-input");
+    expect(refused.output.error).toContain("no side panel");
+  });
+
+  it("opens a card in the side panel when asked, and keeps interactive cards in the chat", async () => {
+    const paneled = createVisualizeTool({ cards, placements: ["inline", "panel"] });
+    expect(Object.keys(paneled.inputSchema.properties ?? {})).toEqual(["kind", "placement", "spec"]);
+    expect(paneled.description).toContain('placement: "panel"');
+    const opened = (await paneled.execute!({ kind: "stats", placement: "panel", spec: { items: [{ label: "A", value: 1 }] } }, ctx)) as { placement?: string; card?: unknown };
+    expect(opened.placement).toBe("panel");
+    expect(opened.card).toBeDefined();
+    const inline = (await paneled.execute!({ kind: "stats", spec: { items: [{ label: "A", value: 1 }] } }, ctx)) as { placement?: string };
+    expect(inline.placement).toBeUndefined();
+    const asked = (await paneled.execute!({ kind: "confirm", placement: "panel", spec: { title: "Go?", summary: [] } }, ctx)) as { failure?: string };
+    expect(asked.failure).toBe("invalid-input");
+    expect(paneled.partialCard?.({ kind: "stats", placement: "panel", spec: { items: [{ label: "A", value: 1 }] } })).toBeUndefined();
+  });
+
   it("advertises only the kinds it was given", () => {
     const limited = createVisualizeTool({ cards, kinds: ["table", "stats"] });
     expect(limited.inputSchema.properties?.["kind"]?.enum).toEqual(["table", "stats"]);
