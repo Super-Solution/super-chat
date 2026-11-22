@@ -1,6 +1,6 @@
 {
   "name": "@supersolutions/super-chat-client",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Framework-agnostic client for superchat: one AgentClient store per thread that drives the agent runtime. No UI framework dependency.",
   "license": "Apache-2.0",
   "author": "SUPER SOLUTION LABS INC",
