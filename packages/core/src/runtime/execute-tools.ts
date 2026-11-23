@@ -177,7 +177,7 @@ export async function executeToolCall(call: ToolCallRequest, opts: ExecuteToolOp
     return {
       callId: call.callId,
       name: call.name,
-      output,
+      output: explainMissingInput(tool, call.input, output, result.failure),
       ...(card ? { card } : {}),
       ...(result.failure ? { failure: result.failure } : {}),
       ...(result.unlockTools?.length ? { unlockTools: result.unlockTools } : {}),
@@ -188,13 +188,63 @@ export async function executeToolCall(call: ToolCallRequest, opts: ExecuteToolOp
     return {
       callId: call.callId,
       name: call.name,
-      output: compactError(err),
+      output: explainMissingInput(tool, call.input, compactError(err), err.kind === "cancelled" ? "denied" : err.kind === "timeout" ? "timeout" : "execution-error"),
       failure: err.kind === "cancelled" ? "denied" : "execution-error",
       ms: Date.now() - started,
     };
   } finally {
     settled = true;
   }
+}
+
+const NOT_ABOUT_INPUT = new Set(["denied", "timeout", "not-found"]);
+const MAX_DESCRIBED = 200;
+
+/**
+ * A failed call that never named what the tool requires gets told exactly that.
+ *
+ * Models sometimes send a call with no arguments (`{}`) for a tool whose schema
+ * lists required ones. The tool's own error then says something short and
+ * tool-specific ("No symbol given."), and a model that does not see why often
+ * sends the identical call again. When the call failed AND a top-level
+ * `required` key is absent from its input, this adds `missing` (the names) and
+ * `expected` (each one's type, enum and description from the tool's own
+ * schema) next to whatever the tool said, so the retry has something to fill.
+ *
+ * Additive on purpose: only failed outputs, never a rewrite of the tool's own
+ * error, and nothing is checked on a call that succeeded — a tool may fall
+ * back to a default for a required key (the chart in view) and that stays its
+ * decision.
+ */
+export function explainMissingInput(tool: ToolDefinition, input: unknown, output: unknown, failure?: string): unknown {
+  if (failure && NOT_ABOUT_INPUT.has(failure)) return output;
+  if (typeof output !== "object" || output === null || Array.isArray(output)) return output;
+  const out = output as Record<string, unknown>;
+  const failed = failure !== undefined || (typeof out.error === "string" && out.ok !== true);
+  if (!failed || "missing" in out || "expected" in out) return output;
+
+  const schema = tool.inputSchema as { required?: unknown; properties?: unknown } | undefined;
+  const required = Array.isArray(schema?.required) ? schema.required.filter((k): k is string => typeof k === "string") : [];
+  if (!required.length) return output;
+  const given = typeof input === "object" && input !== null && !Array.isArray(input) ? (input as Record<string, unknown>) : {};
+  const missing = required.filter((k) => given[k] === undefined || given[k] === null);
+  if (!missing.length) return output;
+
+  const props = (typeof schema?.properties === "object" && schema.properties !== null ? schema.properties : {}) as Record<string, unknown>;
+  const expected: Record<string, unknown> = {};
+  for (const key of missing) expected[key] = describeProperty(props[key]);
+  return { ...out, missing, expected };
+}
+
+function describeProperty(raw: unknown): Record<string, unknown> {
+  if (typeof raw !== "object" || raw === null) return {};
+  const p = raw as Record<string, unknown>;
+  const d: Record<string, unknown> = {};
+  for (const k of ["type", "enum", "minimum", "maximum"] as const) if (p[k] !== undefined) d[k] = p[k];
+  if (typeof p.description === "string") {
+    d.description = p.description.length > MAX_DESCRIBED ? `${p.description.slice(0, MAX_DESCRIBED)}…` : p.description;
+  }
+  return d;
 }
 
 /**
