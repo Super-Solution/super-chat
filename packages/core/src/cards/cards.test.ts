@@ -106,6 +106,24 @@ describe("visualize tool", () => {
     expect(result.failure).toBe("invalid-input");
   });
 
+  it("sends the kind's own summary when its refusal names no shape of its own", async () => {
+    const summarised = new CardRegistry([
+      {
+        kind: "pin",
+        summary: "A map pin. Spec {at:{lat,lng}, label?}.",
+        schema: { type: "object" },
+        validate: (spec) => (typeof (spec as { at?: unknown }).at === "object" ? { ok: true } : { ok: false, error: "at must be an object." }),
+      },
+      { kind: "bare", summary: "", schema: { type: "object" }, validate: () => ({ ok: false, error: "never valid." }) },
+      { kind: "own", summary: "ignored", schema: { type: "object" }, validate: () => ({ ok: false, error: "no.", expected: "own: {…}" }) },
+    ]);
+    const t = createVisualizeTool({ cards: summarised });
+    const run = async (kind: string) => ((await t.execute!({ kind, spec: { at: "x" } }, ctx)) as { output: { error: string; expected?: string } }).output;
+    expect(await run("pin")).toEqual({ ok: false, error: "at must be an object.", expected: "A map pin. Spec {at:{lat,lng}, label?}." });
+    expect((await run("bare")).expected).toBeUndefined();
+    expect((await run("own")).expected).toBe("own: {…}");
+  });
+
   it("suspends for the user on an interactive card", async () => {
     let asked: unknown;
     const result = (await tool.execute!(
