@@ -137,10 +137,13 @@ export function createVisualizeTool(opts: VisualizeToolOptions): ToolDefinition 
 
       const verdict = cards.validate(full);
       if (!verdict.ok) {
+        // A refusal that names the wrong field but not the right shape ("symbol must be an object") costs the model a
+        // guess per step. When the kind gave no `expected` of its own, send the kind's own summary: how to build it.
+        const shape = verdict.expected ?? cards.get(kind)?.summary;
         return {
           // Returned as data, not thrown: the model reads the correction and
           // retries with a valid spec on the next step.
-          output: { ok: false, error: verdict.error, ...(verdict.expected ? { expected: verdict.expected } : {}) },
+          output: { ok: false, error: verdict.error, ...(shape ? { expected: shape } : {}) },
           failure: "invalid-input" as const,
         };
       }

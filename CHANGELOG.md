@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- `visualize` refusals now carry the card kind's own `summary` as `expected` when the kind's validator gave no shape of its own. A refusal such as "symbol must be an object." named the wrong field but not the right one, so a model guessed again on the next step; it now sees how the card is built (its `summary`) at the point of failure. A kind that already returns `expected` keeps it, and a kind with an empty summary adds nothing. Additive and only on refusals.
+
 ## 0.4.2
 
 ### Added
