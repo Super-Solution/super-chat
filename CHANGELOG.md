@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- A failed tool call that left out a required argument now says so. Models sometimes send a call with no arguments for a tool whose `inputSchema` lists required ones; the tool's own error is short and specific to the tool ("No symbol given."), and a model that does not see why often sends the same call again. When a call failed (the output has an `error`, or the tool reported a failure) and a top-level `required` key is absent or null in its input, the output gains `missing` (the names) and `expected` (each one's `type`, `enum`, bounds and `description` from the tool's own schema) beside the tool's error. Additive and only on failures: a call that succeeded is never checked, so a tool may still default a required key, and an output that already carries `missing` or `expected` is left as it is. `explainMissingInput` is exported from `runtime/execute-tools`.
+
 ## 0.4.1
 
 ### Fixed

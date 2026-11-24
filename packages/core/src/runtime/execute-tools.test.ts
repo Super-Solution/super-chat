@@ -211,3 +211,74 @@ describe('side: "confirm" is enforced', () => {
     expect(outcome.failure).toBeUndefined();
   });
 });
+
+describe("a failed call that left out a required argument", () => {
+  const lookup = (execute: ToolDefinition["execute"]): ToolDefinition => ({
+    name: "lookup",
+    description: "lookup",
+    inputSchema: {
+      type: "object",
+      properties: {
+        action: { type: "string", enum: ["quote", "profile"], description: "What to read." },
+        symbol: { type: "string", description: "A ticker such as AAPL." },
+        limit: { type: "integer" },
+      },
+      required: ["action", "symbol"],
+    },
+    execute,
+  });
+
+  it("is told which required arguments are missing, with their schema, beside the tool's own error", async () => {
+    const tool = lookup(async () => ({ error: "No symbol given." }));
+    const out = await executeToolCall({ callId: "c1", name: "lookup", input: {} }, { tools: [tool], vars: {} });
+    expect(out.output).toEqual({
+      error: "No symbol given.",
+      missing: ["action", "symbol"],
+      expected: {
+        action: { type: "string", enum: ["quote", "profile"], description: "What to read." },
+        symbol: { type: "string", description: "A ticker such as AAPL." },
+      },
+    });
+  });
+
+  it("names only what is absent, and treats null as absent", async () => {
+    const tool = lookup(async () => ({ error: "Unknown action." }));
+    const out = await executeToolCall({ callId: "c1", name: "lookup", input: { symbol: null, action: "quote" } }, { tools: [tool], vars: {} });
+    expect((out.output as { missing: string[] }).missing).toEqual(["symbol"]);
+  });
+
+  it("also explains a tool that throws", async () => {
+    const tool = lookup(async () => {
+      throw new Error("symbol is required");
+    });
+    const out = await executeToolCall({ callId: "c1", name: "lookup", input: "nope" }, { tools: [tool], vars: {} });
+    expect(out.failure).toBe("execution-error");
+    expect((out.output as { missing: string[] }).missing).toEqual(["action", "symbol"]);
+  });
+
+  it("leaves a successful call alone, even without its required arguments (the tool may default them)", async () => {
+    const tool = lookup(async () => ({ price: 1 }));
+    const out = await executeToolCall({ callId: "c1", name: "lookup", input: {} }, { tools: [tool], vars: {} });
+    expect(out.output).toEqual({ price: 1 });
+  });
+
+  it("leaves a failure that is not about the input alone: timeouts, a call with everything given, a tool that already says what it expects", async () => {
+    const slow = lookup(() => new Promise(() => {}));
+    const timedOut = await executeToolCall({ callId: "c1", name: "lookup", input: {} }, { tools: [slow], vars: {}, timeoutMs: 5 });
+    expect(timedOut.output).not.toHaveProperty("missing");
+
+    const full = lookup(async () => ({ error: "Unknown symbol ZZZ." }));
+    const given = await executeToolCall({ callId: "c2", name: "lookup", input: { action: "quote", symbol: "ZZZ" } }, { tools: [full], vars: {} });
+    expect(given.output).toEqual({ error: "Unknown symbol ZZZ." });
+
+    const own = lookup(async () => ({ error: "Give a symbol.", expected: { symbol: "a ticker" } }));
+    const told = await executeToolCall({ callId: "c3", name: "lookup", input: {} }, { tools: [own], vars: {} });
+    expect(told.output).toEqual({ error: "Give a symbol.", expected: { symbol: "a ticker" } });
+  });
+
+  it("does nothing for a tool whose schema lists no required arguments", async () => {
+    const tool: ToolDefinition = { name: "free", description: "free", inputSchema: { type: "object" }, execute: async () => ({ error: "nope" }) };
+    const out = await executeToolCall({ callId: "c1", name: "free", input: {} }, { tools: [tool], vars: {} });
+    expect(out.output).toEqual({ error: "nope" });
+  });
+});
