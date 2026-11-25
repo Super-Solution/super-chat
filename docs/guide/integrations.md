@@ -67,6 +67,9 @@ price band, and a plot or a document can define its own. The link format is defi
 - **Two cards, one id** resolve to the newest, the one the sentence was written about.
 - **Screen readers:** the phrase is a focusable button, and the label a card returns on focus or activation is
   announced through a polite live region the provider renders.
+- **Citations and a chart link in one answer.** The kit's own cards (a citations card's markers) answer through
+  `builtinCardRefHost`, which `Thread` installs when no host is above it. To keep both, join them:
+  `<CardRefProvider host={chainCardRefHosts(builtinCardRefHost, pluginCardRefHost)}>`. See [Make the transcript yours](ui.md#point-words-at-a-source).
 - **Other hosts:** `CardRefHost` is a one-method interface, `ref(ref | null, event)`. Implement it to route
   references to cards you mount yourself; `ProseHtml` is what makes the spans live wherever you render rendered
   Markdown.
