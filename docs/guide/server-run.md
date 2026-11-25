@@ -92,6 +92,17 @@ yield { type: "user-responded", callId, action };
 Await `onUserDecision` once for each `awaiting-user` you yield. Give the card a `callId`; it is how
 the answer finds its way back.
 
+### When the person says no
+
+A declined approval is told to the model and the run goes on. The tool does not run; its result is
+`{ error: "The user declined." }` with `failure: "denied"`, the model reads it on the next step and
+decides what to do (usually to say what was left undone). The run does not end on its own, and the
+default stop conditions do not end it. A product that treats a "no" as the end of the turn adds
+`userDeclined` to `stopWhen`; it fires on a declined runtime approval, on a tool that asks for itself
+and returns `{ cancelled: true }`, and on a declined `visualize` card, and not on a host that
+cannot ask. A host that has no way to ask never shows a card: the result is `denied` at once, with a
+different message.
+
 ## Stop is not leave
 
 `config.signal` aborts in two different situations, and a server-run turn must treat them

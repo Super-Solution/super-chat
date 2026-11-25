@@ -129,7 +129,7 @@ export { createVisualizeTool, createLoadSkillTool, createUpdateCardTool, createB
 export * from "./runtime/events.js";
 export * from "./runtime/metering.js";
 export { runAgent, type RunConfig } from "./runtime/run.js";
-export { executeToolCall, executeToolCalls, compactError, type ToolCallRequest, type ToolCallOutcome, type ExecuteToolOptions } from "./runtime/execute-tools.js";
+export { executeToolCall, executeToolCalls, compactError, USER_DECLINED, type ToolCallRequest, type ToolCallOutcome, type ExecuteToolOptions } from "./runtime/execute-tools.js";
 export * from "./runtime/stop.js";
 export { createMemoryJobStore, createLocalJobStore, resumeJobs, reap, isTerminal, awaitJob, type JobStore, type StoredJob, type ResumeResult } from "./runtime/jobs.js";
 export { createMemoryFileStore, createLocalFileStore, type FileStore, type StoredFile } from "./runtime/files.js";

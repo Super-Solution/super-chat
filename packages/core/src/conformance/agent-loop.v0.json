@@ -1,0 +1,7830 @@
+{
+ "version": "agent-loop.v0",
+ "cases": [
+  {
+   "name": "text-only-answer",
+   "description": "One model call, no tools: the whole run is one step.",
+   "config": {
+    "tools": [
+     {
+      "name": "echo",
+      "side": "read"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "echo"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "text",
+        "text": "Hello."
+       }
+      ],
+      "finishReason": "stop",
+      "usage": {
+       "inputTokens": 10,
+       "outputTokens": 5,
+       "totalTokens": 15
+      }
+     },
+     "events": [
+      {
+       "type": "text-delta",
+       "delta": "Hello."
+      },
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 10,
+        "outputTokens": 5,
+        "totalTokens": 15
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 10,
+        "outputTokens": 5,
+        "totalTokens": 15
+       }
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 10,
+        "outputTokens": 5,
+        "totalTokens": 15
+       },
+       "steps": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "text",
+          "text": "Hello."
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "one-tool-then-answer",
+   "description": "A tool step, then an answer. Usage is added up once per model call; run-finish carries the total.",
+   "config": {
+    "tools": [
+     {
+      "name": "echo",
+      "side": "read"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "echo"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "echo",
+        "input": {
+         "value": "ping"
+        }
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 100,
+       "outputTokens": 30,
+       "totalTokens": 130
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 100,
+        "outputTokens": 30,
+        "totalTokens": 130
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 100,
+        "outputTokens": 30,
+        "totalTokens": 130
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "echo",
+       "input": {
+        "value": "ping"
+       }
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "echo",
+          "input": {
+           "value": "ping"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c1",
+       "name": "echo",
+       "input": {
+        "value": "ping"
+       }
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c1",
+      "output": {
+       "echoed": "ping"
+      },
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "echo",
+       "output": {
+        "echoed": "ping"
+       },
+       "ms": 0
+      },
+      {
+       "type": "step-start",
+       "step": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "echo",
+          "output": {
+           "echoed": "ping"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "call-model",
+       "step": 1,
+       "toolNames": [
+        "echo"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "text",
+        "text": "It said ping."
+       }
+      ],
+      "finishReason": "stop",
+      "usage": {
+       "inputTokens": 150,
+       "outputTokens": 12,
+       "totalTokens": 162
+      }
+     },
+     "events": [
+      {
+       "type": "text-delta",
+       "delta": "It said ping."
+      },
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 150,
+        "outputTokens": 12,
+        "totalTokens": 162
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 1,
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 150,
+        "outputTokens": 12,
+        "totalTokens": 162
+       }
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 250,
+        "outputTokens": 42,
+        "totalTokens": 292
+       },
+       "steps": 2
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "text",
+          "text": "It said ping."
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "parallel-tools-complete-out-of-order",
+   "description": "Results are reported in completion order; the message written back to history keeps call order.",
+   "config": {
+    "tools": [
+     {
+      "name": "a",
+      "side": "read"
+     },
+     {
+      "name": "b",
+      "side": "read"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "a",
+        "b"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "a",
+        "input": {}
+       },
+       {
+        "type": "tool-call",
+        "callId": "c2",
+        "name": "b",
+        "input": {}
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 10,
+       "outputTokens": 10,
+       "totalTokens": 20
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 10,
+        "outputTokens": 10,
+        "totalTokens": 20
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 10,
+        "outputTokens": 10,
+        "totalTokens": 20
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "a",
+       "input": {}
+      },
+      {
+       "type": "tool-call",
+       "callId": "c2",
+       "name": "b",
+       "input": {}
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "a",
+          "input": {}
+         },
+         {
+          "type": "tool-call",
+          "callId": "c2",
+          "name": "b",
+          "input": {}
+         }
+        ]
+       }
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c1",
+       "name": "a",
+       "input": {}
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c2",
+       "name": "b",
+       "input": {}
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c2",
+      "output": {
+       "v": "B"
+      },
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c2",
+       "name": "b",
+       "output": {
+        "v": "B"
+       },
+       "ms": 0
+      }
+     ],
+     "effects": []
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c1",
+      "output": {
+       "v": "A"
+      },
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "a",
+       "output": {
+        "v": "A"
+       },
+       "ms": 0
+      },
+      {
+       "type": "step-start",
+       "step": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "a",
+          "output": {
+           "v": "A"
+          }
+         },
+         {
+          "type": "tool-result",
+          "callId": "c2",
+          "name": "b",
+          "output": {
+           "v": "B"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "call-model",
+       "step": 1,
+       "toolNames": [
+        "a",
+        "b"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "text",
+        "text": "Both."
+       }
+      ],
+      "finishReason": "stop",
+      "usage": {
+       "inputTokens": 5,
+       "outputTokens": 1,
+       "totalTokens": 6
+      }
+     },
+     "events": [
+      {
+       "type": "text-delta",
+       "delta": "Both."
+      },
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 5,
+        "outputTokens": 1,
+        "totalTokens": 6
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 1,
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 5,
+        "outputTokens": 1,
+        "totalTokens": 6
+       }
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 15,
+        "outputTokens": 11,
+        "totalTokens": 26
+       },
+       "steps": 2
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "text",
+          "text": "Both."
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "unknown-tool-names-the-ones-that-exist",
+   "description": "A call to a tool that is not there never reaches the driver: the loop answers it, listing the real names.",
+   "config": {
+    "tools": [
+     {
+      "name": "echo",
+      "side": "read"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "echo"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "ecko",
+        "input": {
+         "value": 1
+        }
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "ecko",
+       "input": {
+        "value": 1
+       }
+      },
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "ecko",
+       "output": {
+        "error": "Unknown tool \"ecko\".",
+        "availableTools": [
+         "echo"
+        ]
+       },
+       "failure": "not-found",
+       "ms": 0
+      },
+      {
+       "type": "step-start",
+       "step": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "ecko",
+          "input": {
+           "value": 1
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "ecko",
+          "output": {
+           "error": "Unknown tool \"ecko\".",
+           "availableTools": [
+            "echo"
+           ]
+          },
+          "failure": "not-found"
+         }
+        ]
+       }
+      },
+      {
+       "kind": "call-model",
+       "step": 1,
+       "toolNames": [
+        "echo"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "text",
+        "text": "Sorry."
+       }
+      ],
+      "finishReason": "stop",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "text-delta",
+       "delta": "Sorry."
+      },
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 1,
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 2,
+        "outputTokens": 2,
+        "totalTokens": 4
+       },
+       "steps": 2
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "text",
+          "text": "Sorry."
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "tool-failure-goes-back-to-the-model",
+   "description": "A failed tool is a result, not a crash: the run goes on and the model sees the failure.",
+   "config": {
+    "tools": [
+     {
+      "name": "fetch",
+      "side": "read"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "fetch"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "fetch",
+        "input": {
+         "id": 7
+        }
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "fetch",
+       "input": {
+        "id": 7
+       }
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "fetch",
+          "input": {
+           "id": 7
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c1",
+       "name": "fetch",
+       "input": {
+        "id": 7
+       }
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c1",
+      "output": {
+       "error": "boom",
+       "kind": "unknown"
+      },
+      "failure": "execution-error",
+      "ms": 12
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "fetch",
+       "output": {
+        "error": "boom",
+        "kind": "unknown"
+       },
+       "failure": "execution-error",
+       "ms": 12
+      },
+      {
+       "type": "step-start",
+       "step": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "fetch",
+          "output": {
+           "error": "boom",
+           "kind": "unknown"
+          },
+          "failure": "execution-error"
+         }
+        ]
+       }
+      },
+      {
+       "kind": "call-model",
+       "step": 1,
+       "toolNames": [
+        "fetch"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "text",
+        "text": "It failed."
+       }
+      ],
+      "finishReason": "stop",
+      "usage": {
+       "inputTokens": 2,
+       "outputTokens": 2,
+       "totalTokens": 4
+      }
+     },
+     "events": [
+      {
+       "type": "text-delta",
+       "delta": "It failed."
+      },
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 2,
+        "outputTokens": 2,
+        "totalTokens": 4
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 1,
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 2,
+        "outputTokens": 2,
+        "totalTokens": 4
+       }
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 3,
+        "outputTokens": 3,
+        "totalTokens": 6
+       },
+       "steps": 2
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "text",
+          "text": "It failed."
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "step-limit-while-still-working",
+   "description": "At maxSteps with the model still calling tools, the run says it is cut short (a notice, not prose) and ends tool-calls.",
+   "config": {
+    "maxSteps": 2,
+    "tools": [
+     {
+      "name": "echo",
+      "side": "read"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "echo"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "echo",
+        "input": {}
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "echo",
+       "input": {}
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "echo",
+          "input": {}
+         }
+        ]
+       }
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c1",
+       "name": "echo",
+       "input": {}
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c1",
+      "output": {
+       "ok": 1
+      },
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "echo",
+       "output": {
+        "ok": 1
+       },
+       "ms": 0
+      },
+      {
+       "type": "step-start",
+       "step": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "echo",
+          "output": {
+           "ok": 1
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "call-model",
+       "step": 1,
+       "toolNames": [
+        "echo"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c2",
+        "name": "echo",
+        "input": {}
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 1,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c2",
+       "name": "echo",
+       "input": {}
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c2",
+          "name": "echo",
+          "input": {}
+         }
+        ]
+       }
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c2",
+       "name": "echo",
+       "input": {}
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c2",
+      "output": {
+       "ok": 2
+      },
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c2",
+       "name": "echo",
+       "output": {
+        "ok": 2
+       },
+       "ms": 0
+      },
+      {
+       "type": "message",
+       "parts": [
+        {
+         "type": "notice",
+         "code": "step-limit",
+         "steps": 2
+        }
+       ]
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 2,
+        "outputTokens": 2,
+        "totalTokens": 4
+       },
+       "steps": 2
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c2",
+          "name": "echo",
+          "output": {
+           "ok": 2
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "confirm-tool-approved",
+   "description": "A confirm tool asks first. awaiting-user, then user-responded, then the tool runs.",
+   "config": {
+    "interactive": true,
+    "tools": [
+     {
+      "name": "rename",
+      "side": "confirm"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "rename"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "rename",
+        "input": {
+         "title": "Q3"
+        }
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "rename",
+       "input": {
+        "title": "Q3"
+       }
+      },
+      {
+       "type": "awaiting-user",
+       "callId": "c1",
+       "card": {
+        "id": "approval:c1",
+        "callId": "c1",
+        "spec": {
+         "kind": "confirm",
+         "tool": "rename",
+         "input": {
+          "title": "Q3"
+         }
+        }
+       }
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "rename",
+          "input": {
+           "title": "Q3"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "ask-user",
+       "callId": "c1"
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "user-action",
+      "callId": "c1",
+      "action": {
+       "type": "confirm"
+      }
+     },
+     "events": [
+      {
+       "type": "user-responded",
+       "callId": "c1",
+       "action": {
+        "type": "confirm"
+       }
+      }
+     ],
+     "effects": [
+      {
+       "kind": "run-tool",
+       "callId": "c1",
+       "name": "rename",
+       "input": {
+        "title": "Q3"
+       }
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c1",
+      "output": {
+       "renamed": true
+      },
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "rename",
+       "output": {
+        "renamed": true
+       },
+       "ms": 0
+      },
+      {
+       "type": "step-start",
+       "step": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "rename",
+          "output": {
+           "renamed": true
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "call-model",
+       "step": 1,
+       "toolNames": [
+        "rename"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "text",
+        "text": "Renamed."
+       }
+      ],
+      "finishReason": "stop",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "text-delta",
+       "delta": "Renamed."
+      },
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 1,
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 2,
+        "outputTokens": 2,
+        "totalTokens": 4
+       },
+       "steps": 2
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "text",
+          "text": "Renamed."
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "confirm-tool-declined",
+   "description": "A declined confirm tool does not run; the model is told so and the run goes on. A person's no is a result the model reads, not the end of the run, unless the host adds userDeclined (next case).",
+   "config": {
+    "interactive": true,
+    "tools": [
+     {
+      "name": "rename",
+      "side": "confirm"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "rename"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "rename",
+        "input": {
+         "title": "Q3"
+        }
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "rename",
+       "input": {
+        "title": "Q3"
+       }
+      },
+      {
+       "type": "awaiting-user",
+       "callId": "c1",
+       "card": {
+        "id": "approval:c1",
+        "callId": "c1",
+        "spec": {
+         "kind": "confirm",
+         "tool": "rename",
+         "input": {
+          "title": "Q3"
+         }
+        }
+       }
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "rename",
+          "input": {
+           "title": "Q3"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "ask-user",
+       "callId": "c1"
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "user-action",
+      "callId": "c1",
+      "action": {
+       "type": "cancel"
+      }
+     },
+     "events": [
+      {
+       "type": "user-responded",
+       "callId": "c1",
+       "action": {
+        "type": "cancel"
+       }
+      },
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "rename",
+       "output": {
+        "error": "The user declined."
+       },
+       "failure": "denied",
+       "ms": 0
+      },
+      {
+       "type": "step-start",
+       "step": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "rename",
+          "output": {
+           "error": "The user declined."
+          },
+          "failure": "denied"
+         }
+        ]
+       }
+      },
+      {
+       "kind": "call-model",
+       "step": 1,
+       "toolNames": [
+        "rename"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "text",
+        "text": "Understood."
+       }
+      ],
+      "finishReason": "stop",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "text-delta",
+       "delta": "Understood."
+      },
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 1,
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 2,
+        "outputTokens": 2,
+        "totalTokens": 4
+       },
+       "steps": 2
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "text",
+          "text": "Understood."
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "confirm-tool-declined-with-user-declined-stop",
+   "description": "The same decline with userDeclined in stopWhen: the run ends right after the result, finishReason stop, no second model call.",
+   "config": {
+    "interactive": true,
+    "stopWhen": [
+     {
+      "kind": "userDeclined"
+     }
+    ],
+    "tools": [
+     {
+      "name": "rename",
+      "side": "confirm"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "rename"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "rename",
+        "input": {
+         "title": "Q3"
+        }
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "rename",
+       "input": {
+        "title": "Q3"
+       }
+      },
+      {
+       "type": "awaiting-user",
+       "callId": "c1",
+       "card": {
+        "id": "approval:c1",
+        "callId": "c1",
+        "spec": {
+         "kind": "confirm",
+         "tool": "rename",
+         "input": {
+          "title": "Q3"
+         }
+        }
+       }
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "rename",
+          "input": {
+           "title": "Q3"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "ask-user",
+       "callId": "c1"
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "user-action",
+      "callId": "c1",
+      "action": {
+       "type": "cancel"
+      }
+     },
+     "events": [
+      {
+       "type": "user-responded",
+       "callId": "c1",
+       "action": {
+        "type": "cancel"
+       }
+      },
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "rename",
+       "output": {
+        "error": "The user declined."
+       },
+       "failure": "denied",
+       "ms": 0
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       },
+       "steps": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "rename",
+          "output": {
+           "error": "The user declined."
+          },
+          "failure": "denied"
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "confirm-tool-with-no-way-to-ask",
+   "description": "A host that cannot ask never runs a confirm tool, and never shows a card.",
+   "config": {
+    "interactive": false,
+    "tools": [
+     {
+      "name": "rename",
+      "side": "confirm"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "rename"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "rename",
+        "input": {}
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "rename",
+       "input": {}
+      },
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "rename",
+       "output": {
+        "error": "\"rename\" needs the user's approval and this host cannot ask for it."
+       },
+       "failure": "denied",
+       "ms": 0
+      },
+      {
+       "type": "step-start",
+       "step": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "rename",
+          "input": {}
+         }
+        ]
+       }
+      },
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "rename",
+          "output": {
+           "error": "\"rename\" needs the user's approval and this host cannot ask for it."
+          },
+          "failure": "denied"
+         }
+        ]
+       }
+      },
+      {
+       "kind": "call-model",
+       "step": 1,
+       "toolNames": [
+        "rename"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "text",
+        "text": "I could not."
+       }
+      ],
+      "finishReason": "stop",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "text-delta",
+       "delta": "I could not."
+      },
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 1,
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 2,
+        "outputTokens": 2,
+        "totalTokens": 4
+       },
+       "steps": 2
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "text",
+          "text": "I could not."
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "confirm-tool-runs-after-the-parallel-ones",
+   "description": "In one step, ordinary tools run together first; confirm tools run one at a time after, so their results come last.",
+   "config": {
+    "interactive": true,
+    "tools": [
+     {
+      "name": "rename",
+      "side": "confirm"
+     },
+     {
+      "name": "lookup",
+      "side": "read"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "rename",
+        "lookup"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "rename",
+        "input": {
+         "title": "X"
+        }
+       },
+       {
+        "type": "tool-call",
+        "callId": "c2",
+        "name": "lookup",
+        "input": {
+         "q": 1
+        }
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "rename",
+       "input": {
+        "title": "X"
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c2",
+       "name": "lookup",
+       "input": {
+        "q": 1
+       }
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "rename",
+          "input": {
+           "title": "X"
+          }
+         },
+         {
+          "type": "tool-call",
+          "callId": "c2",
+          "name": "lookup",
+          "input": {
+           "q": 1
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c2",
+       "name": "lookup",
+       "input": {
+        "q": 1
+       }
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c2",
+      "output": {
+       "found": true
+      },
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c2",
+       "name": "lookup",
+       "output": {
+        "found": true
+       },
+       "ms": 0
+      },
+      {
+       "type": "awaiting-user",
+       "callId": "c1",
+       "card": {
+        "id": "approval:c1",
+        "callId": "c1",
+        "spec": {
+         "kind": "confirm",
+         "tool": "rename",
+         "input": {
+          "title": "X"
+         }
+        }
+       }
+      }
+     ],
+     "effects": [
+      {
+       "kind": "ask-user",
+       "callId": "c1"
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "user-action",
+      "callId": "c1",
+      "action": {
+       "type": "confirm"
+      }
+     },
+     "events": [
+      {
+       "type": "user-responded",
+       "callId": "c1",
+       "action": {
+        "type": "confirm"
+       }
+      }
+     ],
+     "effects": [
+      {
+       "kind": "run-tool",
+       "callId": "c1",
+       "name": "rename",
+       "input": {
+        "title": "X"
+       }
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c1",
+      "output": {
+       "renamed": true
+      },
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "rename",
+       "output": {
+        "renamed": true
+       },
+       "ms": 0
+      },
+      {
+       "type": "step-start",
+       "step": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "rename",
+          "output": {
+           "renamed": true
+          }
+         },
+         {
+          "type": "tool-result",
+          "callId": "c2",
+          "name": "lookup",
+          "output": {
+           "found": true
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "call-model",
+       "step": 1,
+       "toolNames": [
+        "rename",
+        "lookup"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "text",
+        "text": "Done."
+       }
+      ],
+      "finishReason": "stop",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "text-delta",
+       "delta": "Done."
+      },
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 1,
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 2,
+        "outputTokens": 2,
+        "totalTokens": 4
+       },
+       "steps": 2
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "text",
+          "text": "Done."
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "consecutive-failures-stop-the-run",
+   "description": "Two steps in a row where every tool failed: stop, finishReason stop, no third model call.",
+   "config": {
+    "stopWhen": [
+     {
+      "kind": "consecutiveFailures",
+      "n": 2
+     }
+    ],
+    "tools": [
+     {
+      "name": "fetch",
+      "side": "read"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "fetch"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "fetch",
+        "input": {}
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "fetch",
+       "input": {}
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "fetch",
+          "input": {}
+         }
+        ]
+       }
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c1",
+       "name": "fetch",
+       "input": {}
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c1",
+      "output": {
+       "error": "no key",
+       "kind": "unknown"
+      },
+      "failure": "execution-error",
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "fetch",
+       "output": {
+        "error": "no key",
+        "kind": "unknown"
+       },
+       "failure": "execution-error",
+       "ms": 0
+      },
+      {
+       "type": "step-start",
+       "step": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "fetch",
+          "output": {
+           "error": "no key",
+           "kind": "unknown"
+          },
+          "failure": "execution-error"
+         }
+        ]
+       }
+      },
+      {
+       "kind": "call-model",
+       "step": 1,
+       "toolNames": [
+        "fetch"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c2",
+        "name": "fetch",
+        "input": {}
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 1,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c2",
+       "name": "fetch",
+       "input": {}
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c2",
+          "name": "fetch",
+          "input": {}
+         }
+        ]
+       }
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c2",
+       "name": "fetch",
+       "input": {}
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c2",
+      "output": {
+       "error": "no key",
+       "kind": "unknown"
+      },
+      "failure": "execution-error",
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c2",
+       "name": "fetch",
+       "output": {
+        "error": "no key",
+        "kind": "unknown"
+       },
+       "failure": "execution-error",
+       "ms": 0
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 2,
+        "outputTokens": 2,
+        "totalTokens": 4
+       },
+       "steps": 2
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c2",
+          "name": "fetch",
+          "output": {
+           "error": "no key",
+           "kind": "unknown"
+          },
+          "failure": "execution-error"
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "after-tool-stops-the-run",
+   "description": "afterTool: the run ends right after that tool succeeds. No further model call.",
+   "config": {
+    "stopWhen": [
+     {
+      "kind": "afterTool",
+      "names": [
+       "save"
+      ]
+     }
+    ],
+    "tools": [
+     {
+      "name": "save",
+      "side": "read"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "save"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "save",
+        "input": {
+         "doc": 1
+        }
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "save",
+       "input": {
+        "doc": 1
+       }
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "save",
+          "input": {
+           "doc": 1
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c1",
+       "name": "save",
+       "input": {
+        "doc": 1
+       }
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c1",
+      "output": {
+       "saved": true
+      },
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "save",
+       "output": {
+        "saved": true
+       },
+       "ms": 0
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       },
+       "steps": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "save",
+          "output": {
+           "saved": true
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "token-budget-stops-the-run",
+   "description": "tokenBudgetExceeded is checked after the tools of a step, against the running total.",
+   "config": {
+    "stopWhen": [
+     {
+      "kind": "tokenBudgetExceeded",
+      "maxTotal": 100
+     }
+    ],
+    "tools": [
+     {
+      "name": "echo",
+      "side": "read"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "echo"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "echo",
+        "input": {}
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 80,
+       "outputTokens": 30,
+       "totalTokens": 110
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 80,
+        "outputTokens": 30,
+        "totalTokens": 110
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 80,
+        "outputTokens": 30,
+        "totalTokens": 110
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "echo",
+       "input": {}
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "echo",
+          "input": {}
+         }
+        ]
+       }
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c1",
+       "name": "echo",
+       "input": {}
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c1",
+      "output": {
+       "ok": 1
+      },
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "echo",
+       "output": {
+        "ok": 1
+       },
+       "ms": 0
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 80,
+        "outputTokens": 30,
+        "totalTokens": 110
+       },
+       "steps": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "echo",
+          "output": {
+           "ok": 1
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "model-error-ends-the-run-as-error",
+   "description": "A failed model call: error (not recoverable), then run-finish error. Steps counts the attempt.",
+   "config": {
+    "tools": [
+     {
+      "name": "echo",
+      "side": "read"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "echo"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "echo",
+        "input": {}
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "echo",
+       "input": {}
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "echo",
+          "input": {}
+         }
+        ]
+       }
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c1",
+       "name": "echo",
+       "input": {}
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c1",
+      "output": {
+       "ok": 1
+      },
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "echo",
+       "output": {
+        "ok": 1
+       },
+       "ms": 0
+      },
+      {
+       "type": "step-start",
+       "step": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "echo",
+          "output": {
+           "ok": 1
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "call-model",
+       "step": 1,
+       "toolNames": [
+        "echo"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-error",
+      "error": {
+       "kind": "overloaded",
+       "message": "Provider is busy."
+      }
+     },
+     "events": [
+      {
+       "type": "error",
+       "error": {
+        "kind": "overloaded",
+        "message": "Provider is busy."
+       },
+       "recoverable": false
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "error",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       },
+       "steps": 2
+      }
+     ],
+     "effects": [
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "cancel-while-tools-run",
+   "description": "Cancel arrives while a tool is running. The tool settles, then the loop stops before the next step: error cancelled, run-finish cancelled, no step-start.",
+   "config": {
+    "tools": [
+     {
+      "name": "slow",
+      "side": "read"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "slow"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "slow",
+        "input": {}
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "slow",
+       "input": {}
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "slow",
+          "input": {}
+         }
+        ]
+       }
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c1",
+       "name": "slow",
+       "input": {}
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "cancel"
+     },
+     "events": [],
+     "effects": []
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c1",
+      "output": {
+       "error": "Run was cancelled.",
+       "kind": "cancelled"
+      },
+      "failure": "denied",
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "slow",
+       "output": {
+        "error": "Run was cancelled.",
+        "kind": "cancelled"
+       },
+       "failure": "denied",
+       "ms": 0
+      },
+      {
+       "type": "error",
+       "error": {
+        "kind": "cancelled",
+        "message": "Run was cancelled."
+       },
+       "recoverable": false
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "cancelled",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       },
+       "steps": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "slow",
+          "output": {
+           "error": "Run was cancelled.",
+           "kind": "cancelled"
+          },
+          "failure": "denied"
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "illegal-input-is-refused",
+   "description": "An input that answers nothing the machine asked for is a driver bug. It is refused, and nothing is emitted.",
+   "config": {
+    "tools": [
+     {
+      "name": "echo",
+      "side": "read"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "echo"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c9",
+      "output": {},
+      "ms": 0
+     },
+     "reject": true
+    }
+   ]
+  },
+  {
+   "name": "user-declined-from-a-tool-that-asks-for-itself",
+   "description": "userDeclined also fires on output.cancelled === true, the answer a tool that asks for itself gets back and returns.",
+   "config": {
+    "stopWhen": [
+     {
+      "kind": "userDeclined"
+     }
+    ],
+    "tools": [
+     {
+      "name": "pick",
+      "side": "write"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "pick"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "pick",
+        "input": {}
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "pick",
+       "input": {}
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "pick",
+          "input": {}
+         }
+        ]
+       }
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c1",
+       "name": "pick",
+       "input": {}
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c1",
+      "output": {
+       "cancelled": true,
+       "reason": "The user declined."
+      },
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "pick",
+       "output": {
+        "cancelled": true,
+        "reason": "The user declined."
+       },
+       "ms": 0
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       },
+       "steps": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "pick",
+          "output": {
+           "cancelled": true,
+           "reason": "The user declined."
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "user-declined-an-interactive-card",
+   "description": "userDeclined also fires on output.response.cancelled === true, what a declined interactive card (visualize) returns.",
+   "config": {
+    "stopWhen": [
+     {
+      "kind": "userDeclined"
+     }
+    ],
+    "tools": [
+     {
+      "name": "visualize",
+      "side": "write"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "visualize"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "visualize",
+        "input": {
+         "kind": "confirm"
+        }
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "visualize",
+       "input": {
+        "kind": "confirm"
+       }
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "visualize",
+          "input": {
+           "kind": "confirm"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c1",
+       "name": "visualize",
+       "input": {
+        "kind": "confirm"
+       }
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c1",
+      "output": {
+       "ok": true,
+       "kind": "confirm",
+       "response": {
+        "cancelled": true
+       }
+      },
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "visualize",
+       "output": {
+        "ok": true,
+        "kind": "confirm",
+        "response": {
+         "cancelled": true
+        }
+       },
+       "ms": 0
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       },
+       "steps": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "visualize",
+          "output": {
+           "ok": true,
+           "kind": "confirm",
+           "response": {
+            "cancelled": true
+           }
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "a-denial-that-is-not-the-persons-does-not-stop-the-run",
+   "description": "A tool that says denied for its own reasons is not the person saying no: userDeclined does not fire and the run goes on.",
+   "config": {
+    "stopWhen": [
+     {
+      "kind": "userDeclined"
+     }
+    ],
+    "tools": [
+     {
+      "name": "send",
+      "side": "write"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "send"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "send",
+        "input": {}
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "send",
+       "input": {}
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "send",
+          "input": {}
+         }
+        ]
+       }
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c1",
+       "name": "send",
+       "input": {}
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c1",
+      "output": {
+       "error": "Not allowed on this account."
+      },
+      "failure": "denied",
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "send",
+       "output": {
+        "error": "Not allowed on this account."
+       },
+       "failure": "denied",
+       "ms": 0
+      },
+      {
+       "type": "step-start",
+       "step": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "send",
+          "output": {
+           "error": "Not allowed on this account."
+          },
+          "failure": "denied"
+         }
+        ]
+       }
+      },
+      {
+       "kind": "call-model",
+       "step": 1,
+       "toolNames": [
+        "send"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "text",
+        "text": "I could not send it."
+       }
+      ],
+      "finishReason": "stop",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "text-delta",
+       "delta": "I could not send it."
+      },
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 1,
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 2,
+        "outputTokens": 2,
+        "totalTokens": 4
+       },
+       "steps": 2
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "text",
+          "text": "I could not send it."
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "repaired-flag-reaches-the-tool-call-event",
+   "description": "A tool-call part the provider layer had to repair says so (repaired: true); the tool-call event repeats it, and the part is written to history as it came.",
+   "config": {
+    "tools": [
+     {
+      "name": "echo",
+      "side": "read"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "echo"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "echo",
+        "input": {
+         "value": "ping"
+        },
+        "repaired": true
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "echo",
+       "input": {
+        "value": "ping"
+       },
+       "repaired": true
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "echo",
+          "input": {
+           "value": "ping"
+          },
+          "repaired": true
+         }
+        ]
+       }
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c1",
+       "name": "echo",
+       "input": {
+        "value": "ping"
+       }
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c1",
+      "output": {
+       "echoed": "ping"
+      },
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "echo",
+       "output": {
+        "echoed": "ping"
+       },
+       "ms": 0
+      },
+      {
+       "type": "step-start",
+       "step": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "echo",
+          "output": {
+           "echoed": "ping"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "call-model",
+       "step": 1,
+       "toolNames": [
+        "echo"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "text",
+        "text": "Ping."
+       }
+      ],
+      "finishReason": "stop",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "text-delta",
+       "delta": "Ping."
+      },
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 1,
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 2,
+        "outputTokens": 2,
+        "totalTokens": 4
+       },
+       "steps": 2
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "text",
+          "text": "Ping."
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "repeat-guard-blocks-an-identical-call",
+   "description": "With repeatGuard, a second call with the same name and the same input (key order does not matter) is answered at once as denied and never reaches the driver. A different input still runs.",
+   "requires": [
+    "repeat-guard"
+   ],
+   "config": {
+    "repeatGuard": true,
+    "tools": [
+     {
+      "name": "lookup",
+      "side": "read"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "lookup"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "lookup",
+        "input": {
+         "q": 1,
+         "r": 2
+        }
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "lookup",
+       "input": {
+        "q": 1,
+        "r": 2
+       }
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "lookup",
+          "input": {
+           "q": 1,
+           "r": 2
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c1",
+       "name": "lookup",
+       "input": {
+        "q": 1,
+        "r": 2
+       }
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c1",
+      "output": {
+       "hit": true
+      },
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "lookup",
+       "output": {
+        "hit": true
+       },
+       "ms": 0
+      },
+      {
+       "type": "step-start",
+       "step": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "lookup",
+          "output": {
+           "hit": true
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "call-model",
+       "step": 1,
+       "toolNames": [
+        "lookup"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c2",
+        "name": "lookup",
+        "input": {
+         "r": 2,
+         "q": 1
+        }
+       },
+       {
+        "type": "tool-call",
+        "callId": "c3",
+        "name": "lookup",
+        "input": {
+         "q": 2
+        }
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 1,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c2",
+       "name": "lookup",
+       "input": {
+        "r": 2,
+        "q": 1
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c3",
+       "name": "lookup",
+       "input": {
+        "q": 2
+       }
+      },
+      {
+       "type": "tool-result",
+       "callId": "c2",
+       "name": "lookup",
+       "output": {
+        "error": "Repeated call: \"lookup\" was already called with the same input in this run. Use that result or change the arguments."
+       },
+       "failure": "denied",
+       "ms": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c2",
+          "name": "lookup",
+          "input": {
+           "r": 2,
+           "q": 1
+          }
+         },
+         {
+          "type": "tool-call",
+          "callId": "c3",
+          "name": "lookup",
+          "input": {
+           "q": 2
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c3",
+       "name": "lookup",
+       "input": {
+        "q": 2
+       }
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c3",
+      "output": {
+       "hit": false
+      },
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c3",
+       "name": "lookup",
+       "output": {
+        "hit": false
+       },
+       "ms": 0
+      },
+      {
+       "type": "step-start",
+       "step": 2
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c2",
+          "name": "lookup",
+          "output": {
+           "error": "Repeated call: \"lookup\" was already called with the same input in this run. Use that result or change the arguments."
+          },
+          "failure": "denied"
+         },
+         {
+          "type": "tool-result",
+          "callId": "c3",
+          "name": "lookup",
+          "output": {
+           "hit": false
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "call-model",
+       "step": 2,
+       "toolNames": [
+        "lookup"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "text",
+        "text": "Done."
+       }
+      ],
+      "finishReason": "stop",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "text-delta",
+       "delta": "Done."
+      },
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 2,
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 3,
+        "outputTokens": 3,
+        "totalTokens": 6
+       },
+       "steps": 3
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "text",
+          "text": "Done."
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "repeat-guard-within-one-step",
+   "description": "Two identical calls in one step: the first runs, the second is blocked. Results are written back in call order.",
+   "requires": [
+    "repeat-guard"
+   ],
+   "config": {
+    "repeatGuard": true,
+    "tools": [
+     {
+      "name": "lookup",
+      "side": "read"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "lookup"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "lookup",
+        "input": {
+         "q": 1
+        }
+       },
+       {
+        "type": "tool-call",
+        "callId": "c2",
+        "name": "lookup",
+        "input": {
+         "q": 1
+        }
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "lookup",
+       "input": {
+        "q": 1
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c2",
+       "name": "lookup",
+       "input": {
+        "q": 1
+       }
+      },
+      {
+       "type": "tool-result",
+       "callId": "c2",
+       "name": "lookup",
+       "output": {
+        "error": "Repeated call: \"lookup\" was already called with the same input in this run. Use that result or change the arguments."
+       },
+       "failure": "denied",
+       "ms": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "lookup",
+          "input": {
+           "q": 1
+          }
+         },
+         {
+          "type": "tool-call",
+          "callId": "c2",
+          "name": "lookup",
+          "input": {
+           "q": 1
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c1",
+       "name": "lookup",
+       "input": {
+        "q": 1
+       }
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c1",
+      "output": {
+       "hit": true
+      },
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "lookup",
+       "output": {
+        "hit": true
+       },
+       "ms": 0
+      },
+      {
+       "type": "step-start",
+       "step": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "lookup",
+          "output": {
+           "hit": true
+          }
+         },
+         {
+          "type": "tool-result",
+          "callId": "c2",
+          "name": "lookup",
+          "output": {
+           "error": "Repeated call: \"lookup\" was already called with the same input in this run. Use that result or change the arguments."
+          },
+          "failure": "denied"
+         }
+        ]
+       }
+      },
+      {
+       "kind": "call-model",
+       "step": 1,
+       "toolNames": [
+        "lookup"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "text",
+        "text": "Done."
+       }
+      ],
+      "finishReason": "stop",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "text-delta",
+       "delta": "Done."
+      },
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 1,
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 2,
+        "outputTokens": 2,
+        "totalTokens": 4
+       },
+       "steps": 2
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "text",
+          "text": "Done."
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "repeat-guard-blocks-a-repeat-of-a-declined-call",
+   "description": "A call the person declined counts as made. Repeating it is blocked without showing the card again.",
+   "requires": [
+    "repeat-guard"
+   ],
+   "config": {
+    "interactive": true,
+    "repeatGuard": true,
+    "tools": [
+     {
+      "name": "rename",
+      "side": "confirm"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "rename"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "rename",
+        "input": {
+         "title": "Q3"
+        }
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "rename",
+       "input": {
+        "title": "Q3"
+       }
+      },
+      {
+       "type": "awaiting-user",
+       "callId": "c1",
+       "card": {
+        "id": "approval:c1",
+        "callId": "c1",
+        "spec": {
+         "kind": "confirm",
+         "tool": "rename",
+         "input": {
+          "title": "Q3"
+         }
+        }
+       }
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "rename",
+          "input": {
+           "title": "Q3"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "ask-user",
+       "callId": "c1"
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "user-action",
+      "callId": "c1",
+      "action": {
+       "type": "cancel"
+      }
+     },
+     "events": [
+      {
+       "type": "user-responded",
+       "callId": "c1",
+       "action": {
+        "type": "cancel"
+       }
+      },
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "rename",
+       "output": {
+        "error": "The user declined."
+       },
+       "failure": "denied",
+       "ms": 0
+      },
+      {
+       "type": "step-start",
+       "step": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "rename",
+          "output": {
+           "error": "The user declined."
+          },
+          "failure": "denied"
+         }
+        ]
+       }
+      },
+      {
+       "kind": "call-model",
+       "step": 1,
+       "toolNames": [
+        "rename"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c2",
+        "name": "rename",
+        "input": {
+         "title": "Q3"
+        }
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 1,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c2",
+       "name": "rename",
+       "input": {
+        "title": "Q3"
+       }
+      },
+      {
+       "type": "tool-result",
+       "callId": "c2",
+       "name": "rename",
+       "output": {
+        "error": "Repeated call: \"rename\" was already called with the same input in this run. Use that result or change the arguments."
+       },
+       "failure": "denied",
+       "ms": 0
+      },
+      {
+       "type": "step-start",
+       "step": 2
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c2",
+          "name": "rename",
+          "input": {
+           "title": "Q3"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c2",
+          "name": "rename",
+          "output": {
+           "error": "Repeated call: \"rename\" was already called with the same input in this run. Use that result or change the arguments."
+          },
+          "failure": "denied"
+         }
+        ]
+       }
+      },
+      {
+       "kind": "call-model",
+       "step": 2,
+       "toolNames": [
+        "rename"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "text",
+        "text": "Understood."
+       }
+      ],
+      "finishReason": "stop",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "text-delta",
+       "delta": "Understood."
+      },
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 2,
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 3,
+        "outputTokens": 3,
+        "totalTokens": 6
+       },
+       "steps": 3
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "text",
+          "text": "Understood."
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "identical-calls-run-when-the-guard-is-off",
+   "description": "Without repeatGuard nothing is compared: an identical call in a later step runs again.",
+   "config": {
+    "tools": [
+     {
+      "name": "lookup",
+      "side": "read"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "lookup"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "lookup",
+        "input": {
+         "q": 1
+        }
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "lookup",
+       "input": {
+        "q": 1
+       }
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "lookup",
+          "input": {
+           "q": 1
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c1",
+       "name": "lookup",
+       "input": {
+        "q": 1
+       }
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c1",
+      "output": {
+       "hit": true
+      },
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "lookup",
+       "output": {
+        "hit": true
+       },
+       "ms": 0
+      },
+      {
+       "type": "step-start",
+       "step": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "lookup",
+          "output": {
+           "hit": true
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "call-model",
+       "step": 1,
+       "toolNames": [
+        "lookup"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c2",
+        "name": "lookup",
+        "input": {
+         "q": 1
+        }
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 1,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c2",
+       "name": "lookup",
+       "input": {
+        "q": 1
+       }
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c2",
+          "name": "lookup",
+          "input": {
+           "q": 1
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c2",
+       "name": "lookup",
+       "input": {
+        "q": 1
+       }
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c2",
+      "output": {
+       "hit": true
+      },
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c2",
+       "name": "lookup",
+       "output": {
+        "hit": true
+       },
+       "ms": 0
+      },
+      {
+       "type": "step-start",
+       "step": 2
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c2",
+          "name": "lookup",
+          "output": {
+           "hit": true
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "call-model",
+       "step": 2,
+       "toolNames": [
+        "lookup"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "text",
+        "text": "Done."
+       }
+      ],
+      "finishReason": "stop",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "text-delta",
+       "delta": "Done."
+      },
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 2,
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 3,
+        "outputTokens": 3,
+        "totalTokens": 6
+       },
+       "steps": 3
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "text",
+          "text": "Done."
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "checkpoint-while-the-model-is-called",
+   "description": "A snapshot taken while the model call is outstanding, then a new process resumes from it: the model is asked again for the same step, and no event is repeated.",
+   "requires": [
+    "checkpoint"
+   ],
+   "config": {
+    "tools": [
+     {
+      "name": "echo",
+      "side": "read"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "echo"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "snapshot"
+     },
+     "events": [],
+     "effects": [
+      {
+       "kind": "checkpoint",
+       "state": {
+        "v": 0,
+        "runId": "run_1",
+        "mode": "stream",
+        "step": 0,
+        "attempted": 1,
+        "usage": {},
+        "streaks": [],
+        "seen": [],
+        "phase": "model"
+       }
+      }
+     ]
+    },
+    {
+     "fresh": true,
+     "in": {
+      "kind": "resume",
+      "state": {
+       "v": 0,
+       "runId": "run_1",
+       "mode": "stream",
+       "step": 0,
+       "attempted": 1,
+       "usage": {},
+       "streaks": [],
+       "seen": [],
+       "phase": "model"
+      }
+     },
+     "events": [],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "echo"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "text",
+        "text": "Hello."
+       }
+      ],
+      "finishReason": "stop",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "text-delta",
+       "delta": "Hello."
+      },
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       },
+       "steps": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "text",
+          "text": "Hello."
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "resume-reruns-only-the-calls-with-no-result",
+   "description": "Two parallel tools; one has reported when the process dies. After resume only the other is run again (same callId, so a tool can use it as an idempotency key). The finished one is not.",
+   "requires": [
+    "checkpoint"
+   ],
+   "config": {
+    "tools": [
+     {
+      "name": "a",
+      "side": "read"
+     },
+     {
+      "name": "b",
+      "side": "read"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "a",
+        "b"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "a",
+        "input": {}
+       },
+       {
+        "type": "tool-call",
+        "callId": "c2",
+        "name": "b",
+        "input": {}
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "a",
+       "input": {}
+      },
+      {
+       "type": "tool-call",
+       "callId": "c2",
+       "name": "b",
+       "input": {}
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "a",
+          "input": {}
+         },
+         {
+          "type": "tool-call",
+          "callId": "c2",
+          "name": "b",
+          "input": {}
+         }
+        ]
+       }
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c1",
+       "name": "a",
+       "input": {}
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c2",
+       "name": "b",
+       "input": {}
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c2",
+      "output": {
+       "v": "B"
+      },
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c2",
+       "name": "b",
+       "output": {
+        "v": "B"
+       },
+       "ms": 0
+      }
+     ],
+     "effects": []
+    },
+    {
+     "in": {
+      "kind": "snapshot"
+     },
+     "events": [],
+     "effects": [
+      {
+       "kind": "checkpoint",
+       "state": {
+        "v": 0,
+        "runId": "run_1",
+        "mode": "stream",
+        "step": 0,
+        "attempted": 1,
+        "usage": {
+         "inputTokens": 1,
+         "outputTokens": 1,
+         "totalTokens": 2
+        },
+        "streaks": [],
+        "seen": [],
+        "phase": "tools",
+        "stepFinish": "tool-calls",
+        "calls": [
+         {
+          "callId": "c1",
+          "name": "a",
+          "input": {}
+         },
+         {
+          "callId": "c2",
+          "name": "b",
+          "input": {}
+         }
+        ],
+        "results": [
+         {
+          "callId": "c2",
+          "name": "b",
+          "output": {
+           "v": "B"
+          },
+          "ms": 0
+         }
+        ],
+        "approved": []
+       }
+      }
+     ]
+    },
+    {
+     "fresh": true,
+     "in": {
+      "kind": "resume",
+      "state": {
+       "v": 0,
+       "runId": "run_1",
+       "mode": "stream",
+       "step": 0,
+       "attempted": 1,
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       },
+       "streaks": [],
+       "seen": [],
+       "phase": "tools",
+       "stepFinish": "tool-calls",
+       "calls": [
+        {
+         "callId": "c1",
+         "name": "a",
+         "input": {}
+        },
+        {
+         "callId": "c2",
+         "name": "b",
+         "input": {}
+        }
+       ],
+       "results": [
+        {
+         "callId": "c2",
+         "name": "b",
+         "output": {
+          "v": "B"
+         },
+         "ms": 0
+        }
+       ],
+       "approved": []
+      }
+     },
+     "events": [],
+     "effects": [
+      {
+       "kind": "run-tool",
+       "callId": "c1",
+       "name": "a",
+       "input": {}
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c1",
+      "output": {
+       "v": "A"
+      },
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "a",
+       "output": {
+        "v": "A"
+       },
+       "ms": 0
+      },
+      {
+       "type": "step-start",
+       "step": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "a",
+          "output": {
+           "v": "A"
+          }
+         },
+         {
+          "type": "tool-result",
+          "callId": "c2",
+          "name": "b",
+          "output": {
+           "v": "B"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "call-model",
+       "step": 1,
+       "toolNames": [
+        "a",
+        "b"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "text",
+        "text": "Both."
+       }
+      ],
+      "finishReason": "stop",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "text-delta",
+       "delta": "Both."
+      },
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 1,
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 2,
+        "outputTokens": 2,
+        "totalTokens": 4
+       },
+       "steps": 2
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "text",
+          "text": "Both."
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "resume-while-asking-asks-again",
+   "description": "The process dies while the person is deciding. After resume the approval card is announced again (a new follower needs it) and the machine waits for the answer.",
+   "requires": [
+    "checkpoint"
+   ],
+   "config": {
+    "interactive": true,
+    "tools": [
+     {
+      "name": "rename",
+      "side": "confirm"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "rename"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "rename",
+        "input": {
+         "title": "Q3"
+        }
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "rename",
+       "input": {
+        "title": "Q3"
+       }
+      },
+      {
+       "type": "awaiting-user",
+       "callId": "c1",
+       "card": {
+        "id": "approval:c1",
+        "callId": "c1",
+        "spec": {
+         "kind": "confirm",
+         "tool": "rename",
+         "input": {
+          "title": "Q3"
+         }
+        }
+       }
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "rename",
+          "input": {
+           "title": "Q3"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "ask-user",
+       "callId": "c1"
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "snapshot"
+     },
+     "events": [],
+     "effects": [
+      {
+       "kind": "checkpoint",
+       "state": {
+        "v": 0,
+        "runId": "run_1",
+        "mode": "stream",
+        "step": 0,
+        "attempted": 1,
+        "usage": {
+         "inputTokens": 1,
+         "outputTokens": 1,
+         "totalTokens": 2
+        },
+        "streaks": [],
+        "seen": [],
+        "phase": "ask",
+        "stepFinish": "tool-calls",
+        "calls": [
+         {
+          "callId": "c1",
+          "name": "rename",
+          "input": {
+           "title": "Q3"
+          }
+         }
+        ],
+        "results": [],
+        "approved": [],
+        "asking": "c1"
+       }
+      }
+     ]
+    },
+    {
+     "fresh": true,
+     "in": {
+      "kind": "resume",
+      "state": {
+       "v": 0,
+       "runId": "run_1",
+       "mode": "stream",
+       "step": 0,
+       "attempted": 1,
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       },
+       "streaks": [],
+       "seen": [],
+       "phase": "ask",
+       "stepFinish": "tool-calls",
+       "calls": [
+        {
+         "callId": "c1",
+         "name": "rename",
+         "input": {
+          "title": "Q3"
+         }
+        }
+       ],
+       "results": [],
+       "approved": [],
+       "asking": "c1"
+      }
+     },
+     "events": [
+      {
+       "type": "awaiting-user",
+       "callId": "c1",
+       "card": {
+        "id": "approval:c1",
+        "callId": "c1",
+        "spec": {
+         "kind": "confirm",
+         "tool": "rename",
+         "input": {
+          "title": "Q3"
+         }
+        }
+       }
+      }
+     ],
+     "effects": [
+      {
+       "kind": "ask-user",
+       "callId": "c1"
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "user-action",
+      "callId": "c1",
+      "action": {
+       "type": "confirm"
+      }
+     },
+     "events": [
+      {
+       "type": "user-responded",
+       "callId": "c1",
+       "action": {
+        "type": "confirm"
+       }
+      }
+     ],
+     "effects": [
+      {
+       "kind": "run-tool",
+       "callId": "c1",
+       "name": "rename",
+       "input": {
+        "title": "Q3"
+       }
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c1",
+      "output": {
+       "renamed": true
+      },
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "rename",
+       "output": {
+        "renamed": true
+       },
+       "ms": 0
+      },
+      {
+       "type": "step-start",
+       "step": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "rename",
+          "output": {
+           "renamed": true
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "call-model",
+       "step": 1,
+       "toolNames": [
+        "rename"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "text",
+        "text": "Renamed."
+       }
+      ],
+      "finishReason": "stop",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "text-delta",
+       "delta": "Renamed."
+      },
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 1,
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 2,
+        "outputTokens": 2,
+        "totalTokens": 4
+       },
+       "steps": 2
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "text",
+          "text": "Renamed."
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "resume-after-approval-runs-the-tool-without-asking-again",
+   "description": "The person already said yes and the tool was running when the process died. After resume the tool is run again (same callId); the person is not asked a second time.",
+   "requires": [
+    "checkpoint"
+   ],
+   "config": {
+    "interactive": true,
+    "tools": [
+     {
+      "name": "rename",
+      "side": "confirm"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "rename"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "rename",
+        "input": {
+         "title": "Q3"
+        }
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "rename",
+       "input": {
+        "title": "Q3"
+       }
+      },
+      {
+       "type": "awaiting-user",
+       "callId": "c1",
+       "card": {
+        "id": "approval:c1",
+        "callId": "c1",
+        "spec": {
+         "kind": "confirm",
+         "tool": "rename",
+         "input": {
+          "title": "Q3"
+         }
+        }
+       }
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "rename",
+          "input": {
+           "title": "Q3"
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "ask-user",
+       "callId": "c1"
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "user-action",
+      "callId": "c1",
+      "action": {
+       "type": "confirm"
+      }
+     },
+     "events": [
+      {
+       "type": "user-responded",
+       "callId": "c1",
+       "action": {
+        "type": "confirm"
+       }
+      }
+     ],
+     "effects": [
+      {
+       "kind": "run-tool",
+       "callId": "c1",
+       "name": "rename",
+       "input": {
+        "title": "Q3"
+       }
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "snapshot"
+     },
+     "events": [],
+     "effects": [
+      {
+       "kind": "checkpoint",
+       "state": {
+        "v": 0,
+        "runId": "run_1",
+        "mode": "stream",
+        "step": 0,
+        "attempted": 1,
+        "usage": {
+         "inputTokens": 1,
+         "outputTokens": 1,
+         "totalTokens": 2
+        },
+        "streaks": [],
+        "seen": [],
+        "phase": "tools",
+        "stepFinish": "tool-calls",
+        "calls": [
+         {
+          "callId": "c1",
+          "name": "rename",
+          "input": {
+           "title": "Q3"
+          }
+         }
+        ],
+        "results": [],
+        "approved": [
+         "c1"
+        ]
+       }
+      }
+     ]
+    },
+    {
+     "fresh": true,
+     "in": {
+      "kind": "resume",
+      "state": {
+       "v": 0,
+       "runId": "run_1",
+       "mode": "stream",
+       "step": 0,
+       "attempted": 1,
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       },
+       "streaks": [],
+       "seen": [],
+       "phase": "tools",
+       "stepFinish": "tool-calls",
+       "calls": [
+        {
+         "callId": "c1",
+         "name": "rename",
+         "input": {
+          "title": "Q3"
+         }
+        }
+       ],
+       "results": [],
+       "approved": [
+        "c1"
+       ]
+      }
+     },
+     "events": [],
+     "effects": [
+      {
+       "kind": "run-tool",
+       "callId": "c1",
+       "name": "rename",
+       "input": {
+        "title": "Q3"
+       }
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c1",
+      "output": {
+       "renamed": true
+      },
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "rename",
+       "output": {
+        "renamed": true
+       },
+       "ms": 0
+      },
+      {
+       "type": "step-start",
+       "step": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "rename",
+          "output": {
+           "renamed": true
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "call-model",
+       "step": 1,
+       "toolNames": [
+        "rename"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "text",
+        "text": "Renamed."
+       }
+      ],
+      "finishReason": "stop",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "text-delta",
+       "delta": "Renamed."
+      },
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 1,
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 2,
+        "outputTokens": 2,
+        "totalTokens": 4
+       },
+       "steps": 2
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "text",
+          "text": "Renamed."
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "resume-keeps-the-failure-streak-and-the-call-history",
+   "description": "What a stop condition and the repeat guard remember across steps survives a resume: one failed step before the crash, a blocked repeat after it, and the streak reaches two.",
+   "requires": [
+    "checkpoint",
+    "repeat-guard"
+   ],
+   "config": {
+    "repeatGuard": true,
+    "stopWhen": [
+     {
+      "kind": "consecutiveFailures",
+      "n": 2
+     }
+    ],
+    "tools": [
+     {
+      "name": "fetch",
+      "side": "read"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "fetch"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c1",
+        "name": "fetch",
+        "input": {
+         "id": 1
+        }
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c1",
+       "name": "fetch",
+       "input": {
+        "id": 1
+       }
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c1",
+          "name": "fetch",
+          "input": {
+           "id": 1
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "run-tool",
+       "callId": "c1",
+       "name": "fetch",
+       "input": {
+        "id": 1
+       }
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "tool-outcome",
+      "callId": "c1",
+      "output": {
+       "error": "no key",
+       "kind": "unknown"
+      },
+      "failure": "execution-error",
+      "ms": 0
+     },
+     "events": [
+      {
+       "type": "tool-result",
+       "callId": "c1",
+       "name": "fetch",
+       "output": {
+        "error": "no key",
+        "kind": "unknown"
+       },
+       "failure": "execution-error",
+       "ms": 0
+      },
+      {
+       "type": "step-start",
+       "step": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c1",
+          "name": "fetch",
+          "output": {
+           "error": "no key",
+           "kind": "unknown"
+          },
+          "failure": "execution-error"
+         }
+        ]
+       }
+      },
+      {
+       "kind": "call-model",
+       "step": 1,
+       "toolNames": [
+        "fetch"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "snapshot"
+     },
+     "events": [],
+     "effects": [
+      {
+       "kind": "checkpoint",
+       "state": {
+        "v": 0,
+        "runId": "run_1",
+        "mode": "stream",
+        "step": 1,
+        "attempted": 2,
+        "usage": {
+         "inputTokens": 1,
+         "outputTokens": 1,
+         "totalTokens": 2
+        },
+        "streaks": [
+         1
+        ],
+        "seen": [
+         {
+          "name": "fetch",
+          "input": {
+           "id": 1
+          }
+         }
+        ],
+        "phase": "model"
+       }
+      }
+     ]
+    },
+    {
+     "fresh": true,
+     "in": {
+      "kind": "resume",
+      "state": {
+       "v": 0,
+       "runId": "run_1",
+       "mode": "stream",
+       "step": 1,
+       "attempted": 2,
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       },
+       "streaks": [
+        1
+       ],
+       "seen": [
+        {
+         "name": "fetch",
+         "input": {
+          "id": 1
+         }
+        }
+       ],
+       "phase": "model"
+      }
+     },
+     "events": [],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 1,
+       "toolNames": [
+        "fetch"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "tool-call",
+        "callId": "c2",
+        "name": "fetch",
+        "input": {
+         "id": 1
+        }
+       }
+      ],
+      "finishReason": "tool-calls",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 1,
+       "finishReason": "tool-calls",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "tool-call",
+       "callId": "c2",
+       "name": "fetch",
+       "input": {
+        "id": 1
+       }
+      },
+      {
+       "type": "tool-result",
+       "callId": "c2",
+       "name": "fetch",
+       "output": {
+        "error": "Repeated call: \"fetch\" was already called with the same input in this run. Use that result or change the arguments."
+       },
+       "failure": "denied",
+       "ms": 0
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 2,
+        "outputTokens": 2,
+        "totalTokens": 4
+       },
+       "steps": 2
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "tool-call",
+          "callId": "c2",
+          "name": "fetch",
+          "input": {
+           "id": 1
+          }
+         }
+        ]
+       }
+      },
+      {
+       "kind": "append",
+       "message": {
+        "role": "tool",
+        "parts": [
+         {
+          "type": "tool-result",
+          "callId": "c2",
+          "name": "fetch",
+          "output": {
+           "error": "Repeated call: \"fetch\" was already called with the same input in this run. Use that result or change the arguments."
+          },
+          "failure": "denied"
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "checkpoint-and-resume-are-refused-out-of-turn",
+   "description": "A snapshot with nothing to save, a resume of a state this version does not know, a resume on a machine that has started, and a snapshot after the run ended are all driver bugs: refused, nothing emitted.",
+   "requires": [
+    "checkpoint"
+   ],
+   "config": {
+    "tools": [
+     {
+      "name": "echo",
+      "side": "read"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "in": {
+      "kind": "snapshot"
+     },
+     "reject": true
+    },
+    {
+     "fresh": true,
+     "in": {
+      "kind": "resume",
+      "state": {
+       "v": 1,
+       "runId": "run_1",
+       "mode": "stream",
+       "step": 0,
+       "attempted": 1,
+       "usage": {},
+       "streaks": [],
+       "seen": [],
+       "phase": "model"
+      }
+     },
+     "reject": true
+    },
+    {
+     "in": {
+      "kind": "start",
+      "runId": "run_1",
+      "mode": "stream",
+      "messages": []
+     },
+     "events": [
+      {
+       "type": "run-start",
+       "runId": "run_1",
+       "mode": "stream"
+      },
+      {
+       "type": "step-start",
+       "step": 0
+      }
+     ],
+     "effects": [
+      {
+       "kind": "call-model",
+       "step": 0,
+       "toolNames": [
+        "echo"
+       ]
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "resume",
+      "state": {
+       "v": 0,
+       "runId": "run_1",
+       "mode": "stream",
+       "step": 0,
+       "attempted": 1,
+       "usage": {},
+       "streaks": [],
+       "seen": [],
+       "phase": "model"
+      }
+     },
+     "reject": true
+    },
+    {
+     "in": {
+      "kind": "model-result",
+      "parts": [
+       {
+        "type": "text",
+        "text": "Hello."
+       }
+      ],
+      "finishReason": "stop",
+      "usage": {
+       "inputTokens": 1,
+       "outputTokens": 1,
+       "totalTokens": 2
+      }
+     },
+     "events": [
+      {
+       "type": "text-delta",
+       "delta": "Hello."
+      },
+      {
+       "type": "usage",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "step-finish",
+       "step": 0,
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       }
+      },
+      {
+       "type": "run-finish",
+       "runId": "run_1",
+       "finishReason": "stop",
+       "usage": {
+        "inputTokens": 1,
+        "outputTokens": 1,
+        "totalTokens": 2
+       },
+       "steps": 1
+      }
+     ],
+     "effects": [
+      {
+       "kind": "append",
+       "message": {
+        "role": "assistant",
+        "parts": [
+         {
+          "type": "text",
+          "text": "Hello."
+         }
+        ]
+       }
+      },
+      {
+       "kind": "done"
+      }
+     ]
+    },
+    {
+     "in": {
+      "kind": "snapshot"
+     },
+     "reject": true
+    }
+   ]
+  }
+ ]
+}

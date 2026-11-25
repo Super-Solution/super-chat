@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `runAgent` and `repairToolArguments` are now tested against the shared agent-loop conformance data of [Super Protocol](https://github.com/Super-Solution/super-protocol) (`agent-loop.v0.json`, `tool-repair.v0.json`), the same files the TypeScript reference machine and the Rust crate there are tested against, so a second implementation of the loop can be held to what this one does. Copies live in `packages/core/src/conformance/` (see its README); the tests that read them are `runtime/agent-loop.conformance.test.ts` and `tools/repair.conformance.test.ts`. Tests only: nothing in the published packages changes for this.
+
+### Changed
+
+- A person declining an approval only tells the model; the run goes on. This is what the code always did for a runtime approval (`side: "confirm"`), now stated and made consistent: `userDeclined` never fired for it (it looked for `output.cancelled`, which only a tool that asks for itself receives), so `DEFAULT_STOP_CONDITIONS` quietly did not include a stop on decline. `userDeclined` now fires on every shape of a person's no (a declined runtime approval, `{ cancelled: true }` from a tool that asks for itself, a declined `visualize` card), is documented as opt-in, and is no longer in `DEFAULT_STOP_CONDITIONS`, which is now `[consecutiveFailures(3)]`. A host that wants a "no" to end the turn adds `userDeclined` to `stopWhen`. `isUserDecline` and `USER_DECLINED` are exported. No change to what a run does by default: the defaults were never applied by `runAgent` itself, and no package in this repository passes them.
+
 ## 0.4.3
 
 ### Changed

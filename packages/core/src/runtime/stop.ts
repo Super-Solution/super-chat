@@ -6,7 +6,7 @@
 // domain.
 
 import type { FinishReason, Usage } from "../content/types.js";
-import type { ToolCallOutcome } from "./execute-tools.js";
+import { USER_DECLINED, type ToolCallOutcome } from "./execute-tools.js";
 
 export type StopContext = {
   step: number;
@@ -45,16 +45,42 @@ export const consecutiveFailures = (n: number): StopCondition => {
   };
 };
 
-/** Stop when the user declined an interactive card — proceeding would ignore them. */
-export const userDeclined: StopCondition = (ctx) =>
-  ctx.outcomes.some(
-    (o) => typeof o.output === "object" && o.output !== null && (o.output as { cancelled?: boolean }).cancelled === true,
-  );
+/**
+ * Whether an outcome is the person saying no, as opposed to a tool failing or a
+ * host that cannot ask. Three shapes carry it:
+ *
+ *  - an approval the runtime asked for (`side: "confirm"`): `failure: "denied"`
+ *    and the error is `USER_DECLINED`;
+ *  - a tool that asks for itself (`confirmation: "tool"`) and returns the
+ *    answer it was given: `{ cancelled: true }`;
+ *  - an interactive card from `visualize`: `{ response: { cancelled: true } }`.
+ */
+export function isUserDecline(outcome: ToolCallOutcome): boolean {
+  const output = outcome.output;
+  if (typeof output !== "object" || output === null) return false;
+  const o = output as { error?: unknown; cancelled?: unknown; response?: unknown };
+  if (outcome.failure === "denied" && o.error === USER_DECLINED) return true;
+  if (o.cancelled === true) return true;
+  return typeof o.response === "object" && o.response !== null && (o.response as { cancelled?: unknown }).cancelled === true;
+}
+
+/**
+ * Stop the run as soon as the person has declined something.
+ *
+ * Opt-in. By default a decline is only a result the model reads ("The user
+ * declined."): the run goes on, and the model decides what to do, usually to say
+ * what was left undone and ask. Use this when your product treats a "no" as the
+ * end of the turn. It is not in `DEFAULT_STOP_CONDITIONS`.
+ */
+export const userDeclined: StopCondition = (ctx) => ctx.outcomes.some(isUserDecline);
 
 export function shouldStop(conditions: readonly StopCondition[] | undefined, ctx: StopContext): boolean {
   if (!conditions?.length) return false;
   return conditions.some((c) => c(ctx));
 }
 
-/** A sane default set for an interactive chat agent. */
-export const DEFAULT_STOP_CONDITIONS: StopCondition[] = [consecutiveFailures(3), userDeclined];
+/**
+ * A sane default set for an interactive chat agent. A person's "no" is not here:
+ * it is told to the model and the run continues (see `userDeclined`).
+ */
+export const DEFAULT_STOP_CONDITIONS: StopCondition[] = [consecutiveFailures(3)];

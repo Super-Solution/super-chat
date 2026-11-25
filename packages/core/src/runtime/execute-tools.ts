@@ -35,6 +35,14 @@ export type ToolCallOutcome = {
 
 const MAX_ERROR_CHARS = 400;
 
+/**
+ * What the model reads when the person says no to an approval. The same words
+ * go into the `{ error }` of the denied result and into the `reason` of the
+ * answer a tool that asks for itself receives, so `userDeclined` (stop.ts) can
+ * tell a person's "no" from a host that cannot ask.
+ */
+export const USER_DECLINED = "The user declined.";
+
 /** Shrink an error to something worth carrying in history. */
 export function compactError(e: unknown): { error: string; kind?: string } {
   if (e instanceof AgentError) {
@@ -55,7 +63,7 @@ async function confirmationRefusal(tool: ToolDefinition, call: ToolCallRequest, 
   if (tool.confirmation === "tool") return undefined;
   const answer = await opts.requestCard(call.callId, approvalCard(tool, call.input));
   if (opts.signal?.aborted) return "The run was stopped before this was approved.";
-  return (answer as { confirmed?: unknown } | null | undefined)?.confirmed === true ? undefined : "The user declined.";
+  return (answer as { confirmed?: unknown } | null | undefined)?.confirmed === true ? undefined : USER_DECLINED;
 }
 
 const isToolResult = (v: unknown): v is ToolResult =>
