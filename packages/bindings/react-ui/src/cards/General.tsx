@@ -20,7 +20,7 @@ import type {
   TreeNode,
 } from "@supersolutions/super-chat-core";
 import type { CardRendererProps } from "../renderer-registry.js";
-import { formatValue, safeHref } from "@supersolutions/super-chat-ui-core";
+import { formatValue, safeHref, type FormatOptions } from "@supersolutions/super-chat-ui-core";
 import { FormattedValue, useFormatOptions } from "./FormattedValue.js";
 import { StatusMark, ToneIcon, type StatusMarkKind } from "./icons.js";
 import { useLabels } from "../labels.js";
@@ -159,6 +159,20 @@ export function citedIndex(items: readonly { id?: string }[], cite: string): num
   return /^[1-9]\d{0,5}$/.test(cite) && Number(cite) <= items.length ? Number(cite) - 1 : -1;
 }
 
+/**
+ * A date such as `1980-01-01` is a day, not a moment: shown as a datetime it reads "12:00:00 AM",
+ * and in a zone west of UTC it would read the day before. A day is formatted as a day, in UTC,
+ * and a bare year (`1980`, how a case is cited) stays a year.
+ */
+export function citedDate(date: string | number, options: FormatOptions | undefined): string {
+  if (typeof date === "string" && /^\d{4}$/.test(date)) return date;
+  if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    const d = new Date(`${date}T00:00:00Z`);
+    if (!Number.isNaN(d.getTime())) return d.toLocaleDateString(options?.locale, { timeZone: "UTC" });
+  }
+  return formatValue(date, "datetime", options);
+}
+
 export function CitationsCardView({ spec }: CardRendererProps<CitationsCard>) {
   const labels = useLabels();
   const formatOptions = useFormatOptions();
@@ -212,7 +226,7 @@ export function CitationsCardView({ spec }: CardRendererProps<CitationsCard>) {
                 {item.relevance ? <span className="sc-pill">{item.relevance}</span> : null}
               </div>
               <div className="sc-muted sc-cite__meta">
-                {[item.source, item.locator, item.date ? formatValue(item.date, "datetime", formatOptions) : null]
+                {[item.source, item.locator, item.date ? citedDate(item.date, formatOptions) : null]
                   .filter(Boolean)
                   .join(" · ")}
               </div>

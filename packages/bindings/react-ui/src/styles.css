@@ -944,7 +944,9 @@
   color: var(--sc-text-muted);
   font-size: var(--sc-fs-micro);
 }
-.sc-msgmeta__facts { font-variant-numeric: tabular-nums; }
+.sc-msgmeta { flex-wrap: wrap; }
+/* "2,188 tok" is read as one thing: when the row is short of room the buttons drop below, not a unit. */
+.sc-msgmeta__facts { font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* Holds the meta row's place under a turn still being written, so the turn does
    not grow when it is saved and the row appears. */
 .sc-msgmeta--reserve { visibility: hidden; min-height: 25px; }
@@ -1129,6 +1131,9 @@
   padding: var(--sc-sp-6) var(--sc-sp-10);
   border-bottom: 1px solid var(--sc-border);
   text-align: left;
+  /* The message's break-word would split "Payments" in a narrow column; the box scrolls instead. */
+  word-break: normal;
+  overflow-wrap: normal;
 }
 .sc-prose .sc-md-table th {
   position: sticky;
