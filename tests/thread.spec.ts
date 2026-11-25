@@ -265,3 +265,15 @@ test("Copy on an answer copies its Markdown, fences and all", async ({ page, con
     expect(clip).toContain("| Metric | Healthy |");
   }
 });
+
+test("the zh-TW preset reaches the thread, the composer and the announcer", async ({ page }) => {
+  await settle(page, "/app-state?lang=zh-TW");
+  await expect(page.getByRole("log", { name: "對話" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "需要什麼協助？" })).toBeVisible();
+  await expect(page.getByRole("list", { name: "建議的問題" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "送出", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Send", exact: true })).toHaveCount(0);
+  await page.getByRole("list", { name: "建議的問題" }).getByRole("button").first().click();
+  await expect(page.locator("[data-sc-announcer]")).toHaveText("助理正在回覆…", { timeout: 15_000 });
+  await expect(page.locator("[data-sc-announcer]")).toHaveText("助理已回覆。", { timeout: 60_000 });
+});

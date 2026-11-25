@@ -149,10 +149,11 @@ export function CalloutCardView({ spec }: CardRendererProps<CalloutCard>) {
 }
 
 export function CitationsCardView({ spec }: CardRendererProps<CitationsCard>) {
+  const labels = useLabels();
   const formatOptions = useFormatOptions();
   return (
     <div className="sc-card">
-      <div className="sc-card__title">{spec.title ?? "Sources"}</div>
+      <div className="sc-card__title">{spec.title ?? labels.sources}</div>
       <ol className="sc-cites">
         {spec.items.map((item, i) => (
           <li key={i} className="sc-cite">

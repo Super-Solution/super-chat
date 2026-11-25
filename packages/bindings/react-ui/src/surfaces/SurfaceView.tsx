@@ -48,6 +48,7 @@ import { useOptionalAgentClient } from "@supersolutions/super-chat-react";
 import { formatValue, toneClass, deltaTone } from "@supersolutions/super-chat-ui-core";
 import { FormattedDelta, FormattedValue, useFormatOptions } from "../cards/FormattedValue.js";
 import { CardRenderer, useCardRegistry, useInteractiveKinds } from "../renderer-registry.js";
+import { useLabels } from "../labels.js";
 
 export type SurfacePlacement = "inline" | "elsewhere";
 
@@ -113,8 +114,13 @@ class SurfaceBoundary extends Component<{ resetKey: unknown; children: ReactNode
   }
 
   override render() {
-    return this.state.failed ? <Fallback message="This part stopped working." /> : this.props.children;
+    return this.state.failed ? <PartFailed /> : this.props.children;
   }
+}
+
+/** The boundary is a class, which cannot read the words in force; this can. */
+function PartFailed() {
+  return <Fallback message={useLabels().surfacePartFailed} />;
 }
 
 function Fallback({ message }: { message?: string }) {
@@ -337,8 +343,9 @@ function Badge({ props }: NodeProps) {
 }
 
 function ImageNode({ props }: NodeProps) {
+  const labels = useLabels();
   const src = safeSurfaceUrl(props["src"], "image");
-  if (!src) return <Fallback message="The image address isn’t allowed." />;
+  if (!src) return <Fallback message={labels.surfaceImageBlocked} />;
   const caption = asText(props["caption"]);
   return (
     <figure className="sc-surface-figure">
@@ -590,6 +597,7 @@ function resolveProps(component: SurfaceComponent, scope: BindingScope): Record<
 }
 
 function SurfaceNode({ id, scope, trail }: { id: string; scope: BindingScope; trail: readonly string[] }) {
+  const labels = useLabels();
   const ctx = useSurfaceContext();
   const { components: custom } = useSurfaceHost();
   const component = ctx.byId.get(id);
@@ -612,7 +620,7 @@ function SurfaceNode({ id, scope, trail }: { id: string; scope: BindingScope; tr
           <Children ids={component["children"]} scope={scope} trail={nextTrail} />
         </Custom>
       ) : (
-        <Fallback message={`No renderer is registered for ${component.component}.`} />
+        <Fallback message={labels.surfaceNoRenderer(String(component.component))} />
       )}
     </SurfaceBoundary>
   );

@@ -88,15 +88,15 @@ export function EmailCardView({ spec, onSend }: EmailCardViewProps) {
     <div className="sc-card sc-email">
       <div className="sc-email__fields">
         <label className="sc-email__row">
-          <span className="sc-email__label">To</span>
+          <span className="sc-email__label">{labels.emailTo}</span>
           <input className="sc-input" value={to} onChange={(e) => setTo(e.target.value)} />
         </label>
         <label className="sc-email__row">
-          <span className="sc-email__label">Cc</span>
+          <span className="sc-email__label">{labels.emailCc}</span>
           <input className="sc-input" value={cc} onChange={(e) => setCc(e.target.value)} placeholder="—" />
         </label>
         <label className="sc-email__row">
-          <span className="sc-email__label">Subject</span>
+          <span className="sc-email__label">{labels.emailSubject}</span>
           <input className="sc-input" value={subject} onChange={(e) => setSubject(e.target.value)} />
         </label>
       </div>
@@ -109,15 +109,14 @@ export function EmailCardView({ spec, onSend }: EmailCardViewProps) {
         // missing its end.
         <div className="sc-callout sc-callout--warning sc-email__warn">
           <div className="sc-callout__body">
-            This is too long for a mailto link ({mailto.length} characters) — some mail clients will cut it short.
-            Download the <code className="sc-mono">.eml</code> instead.
+            {labels.emailTooLong(mailto.length)}
           </div>
         </div>
       ) : null}
 
       <div className="sc-card__actions">
         <button type="button" className="sc-btn sc-btn--primary" onClick={download}>
-          Download .eml
+          {labels.emailDownload}
         </button>
         <a
           className={`sc-btn${mailto.mayTruncate ? " sc-btn--ghost" : ""}`}
@@ -125,16 +124,16 @@ export function EmailCardView({ spec, onSend }: EmailCardViewProps) {
           // Nothing happens on a machine with no mail client registered, and
           // nothing is reported either — so this is the shortcut, never the
           // only way out.
-          title="Opens your mail client"
+          title={labels.emailOpens}
         >
-          Open in mail client
+          {labels.emailOpenMail}
         </a>
         <button type="button" className="sc-btn sc-btn--ghost" onClick={copy}>
-          {state === "copied" ? "Copied" : state === "failed" ? "Copy failed" : "Copy"}
+          {state === "copied" ? labels.copied : state === "failed" ? labels.copyFailed : labels.copy}
         </button>
         {onSend ? (
           <button type="button" className="sc-btn sc-btn--primary" disabled={state === "sending" || state === "sent"} onClick={send}>
-            {state === "sending" ? "Sending…" : state === "sent" ? "Sent" : "Send"}
+            {state === "sending" ? labels.emailSending : state === "sent" ? labels.emailSent : labels.send}
           </button>
         ) : null}
       </div>

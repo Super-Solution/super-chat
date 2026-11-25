@@ -60,6 +60,7 @@ export type Labels = {
   toolsFailed: (count: number) => string;
   thinking: string;
   thought: string;
+  /** `seconds` is the count alone ("3"); the label owns the unit. */
   thoughtFor: (seconds: string) => string;
   toggleThought: string;
   /** Provider-side work, by the kind the provider reported. */
@@ -104,6 +105,7 @@ export type Labels = {
   /** Names the corner cell of a comparison table, which is empty to the eye. */
   criterion: string;
   progress: string;
+  todos: string;
   documentBody: string;
   documentRevision: string;
   dismissQuote: string;
@@ -114,8 +116,62 @@ export type Labels = {
   showAll: (count: number) => string;
   showLess: string;
   download: (name: string) => string;
+  /** The visible word on a download button whose full name is in `download`. */
+  downloadShort: string;
   yes: string;
   no: string;
+  /** A card's own open and close buttons. */
+  expand: string;
+  collapse: string;
+  askAboutThis: string;
+  toggle: (title: string) => string;
+  blocked: string;
+  complete: string;
+  /** The collapsed head of a plan, read as one sentence. */
+  planStatus: (title: string, settled: number, total: number, summary: string) => string;
+  showAllLines: (count: number) => string;
+  showFewerLines: string;
+  generatedImage: string;
+  generatedAudio: string;
+  generatedVideo: string;
+  // Email card
+  emailTo: string;
+  emailCc: string;
+  emailSubject: string;
+  emailTooLong: (length: number) => string;
+  emailDownload: string;
+  emailOpenMail: string;
+  emailSending: string;
+  emailSent: string;
+  // Questions a card asks, and how it says they were answered
+  submit: string;
+  confirm: string;
+  confirmSelection: (count: number) => string;
+  skip: string;
+  answered: string;
+  skipped: string;
+  confirmed: string;
+  declined: string;
+  applyChange: string;
+  applyAll: string;
+  applySome: (accepted: number, total: number) => string;
+  rejectAll: string;
+  // Interfaces an agent builds
+  surfaceFallbackName: string;
+  surfaceRemoved: (name: string) => string;
+  surfaceBeside: (name: string) => string;
+  surfaceUpdated: (name: string) => string;
+  surfacePartFailed: string;
+  surfaceImageBlocked: string;
+  surfaceNoRenderer: (name: string) => string;
+  // The agent input
+  add: string;
+  attachImage: string;
+  skills: string;
+  improve: string;
+  revert: string;
+  improveHint: string;
+  revertHint: string;
   // The side panel
   panel: ChatPanelLabels;
 };
@@ -148,7 +204,7 @@ export const enLabels: Labels = {
   toolsFailed: (count) => `${count} failed`,
   thinking: "Thinking…",
   thought: "Thought",
-  thoughtFor: (seconds) => `Thought for ${seconds}`,
+  thoughtFor: (seconds) => `Thought for ${seconds}s`,
   toggleThought: "Toggle thought",
   providerTools: {
     web_search_call: "Searched the web",
@@ -192,6 +248,7 @@ export const enLabels: Labels = {
   gauge: "Gauge",
   criterion: "Criteria",
   progress: "Progress",
+  todos: "To-dos",
   documentBody: "Document",
   documentRevision: "Document revision",
   dismissQuote: "Dismiss quote",
@@ -202,8 +259,56 @@ export const enLabels: Labels = {
   showAll: (count) => `Show all ${count}`,
   showLess: "Show less",
   download: (name) => `Download ${name}`,
+  downloadShort: "Download",
   yes: "yes",
   no: "no",
+  expand: "Open",
+  collapse: "Close",
+  askAboutThis: "Ask about this",
+  toggle: (title) => `Toggle ${title}`,
+  blocked: "Blocked",
+  complete: "Complete",
+  planStatus: (title, settled, total, summary) => `${title} — ${settled} of ${total} — ${summary}`,
+  showAllLines: (count) => `Show all (${count} lines)`,
+  showFewerLines: "Show fewer lines",
+  generatedImage: "Generated image",
+  generatedAudio: "Generated audio",
+  generatedVideo: "Generated video",
+  emailTo: "To",
+  emailCc: "Cc",
+  emailSubject: "Subject",
+  emailTooLong: (length) =>
+    `This is too long for a mailto link (${length} characters) — some mail clients will cut it short. Download the .eml instead.`,
+  emailDownload: "Download .eml",
+  emailOpenMail: "Open in mail client",
+  emailSending: "Sending…",
+  emailSent: "Sent",
+  submit: "Submit",
+  confirm: "Confirm",
+  confirmSelection: (count) => `Confirm selection (${count})`,
+  skip: "Skip",
+  answered: "Answered.",
+  skipped: "Skipped.",
+  confirmed: "Confirmed.",
+  declined: "Declined.",
+  applyChange: "Apply change",
+  applyAll: "Apply all changes",
+  applySome: (accepted, total) => `Apply ${accepted} of ${total}`,
+  rejectAll: "Reject all",
+  surfaceFallbackName: "the interface",
+  surfaceRemoved: (name) => `Removed ${name}`,
+  surfaceBeside: (name) => `${name} is open beside the conversation`,
+  surfaceUpdated: (name) => `Updated ${name}`,
+  surfacePartFailed: "This part stopped working.",
+  surfaceImageBlocked: "The image address isn’t allowed.",
+  surfaceNoRenderer: (name) => `No renderer is registered for ${name}.`,
+  add: "Add",
+  attachImage: "Attach an image",
+  skills: "Skills",
+  improve: "Improve",
+  revert: "Revert",
+  improveHint: "Improve this prompt",
+  revertHint: "Revert to your original prompt",
   panel: {
     opened: "Opened beside the chat",
     open: "Open",
@@ -240,7 +345,7 @@ export const zhTW: Labels = {
   toolsFailed: (count) => `${count} 次失敗`,
   thinking: "思考中…",
   thought: "已思考",
-  thoughtFor: (seconds) => `已思考 ${seconds}`,
+  thoughtFor: (seconds) => `已思考 ${seconds} 秒`,
   toggleThought: "展開或收合思考過程",
   providerTools: {
     web_search_call: "已搜尋網路",
@@ -284,6 +389,7 @@ export const zhTW: Labels = {
   gauge: "量表",
   criterion: "比較項目",
   progress: "進度",
+  todos: "待辦事項",
   documentBody: "文件",
   documentRevision: "文件版本",
   dismissQuote: "取消引用",
@@ -294,8 +400,55 @@ export const zhTW: Labels = {
   showAll: (count) => `顯示全部 ${count} 筆`,
   showLess: "收合",
   download: (name) => `下載 ${name}`,
+  downloadShort: "下載",
   yes: "是",
   no: "否",
+  expand: "展開",
+  collapse: "收合",
+  askAboutThis: "針對這段提問",
+  toggle: (title) => `展開或收合 ${title}`,
+  blocked: "受阻",
+  complete: "完成",
+  planStatus: (title, settled, total, summary) => `${title}：${total} 項中已完成 ${settled} 項，${summary}`,
+  showAllLines: (count) => `顯示全部 ${count} 行`,
+  showFewerLines: "顯示較少行數",
+  generatedImage: "產生的圖片",
+  generatedAudio: "產生的音訊",
+  generatedVideo: "產生的影片",
+  emailTo: "收件人",
+  emailCc: "副本",
+  emailSubject: "主旨",
+  emailTooLong: (length) => `內容太長（${length} 字元），超出 mailto 連結的範圍，部分郵件程式會截斷。請改下載 .eml。`,
+  emailDownload: "下載 .eml",
+  emailOpenMail: "用郵件程式開啟",
+  emailSending: "傳送中…",
+  emailSent: "已傳送",
+  submit: "送出",
+  confirm: "確認",
+  confirmSelection: (count) => `確認選擇（${count}）`,
+  skip: "略過",
+  answered: "已回答。",
+  skipped: "已略過。",
+  confirmed: "已確認。",
+  declined: "已拒絕。",
+  applyChange: "套用這項修改",
+  applyAll: "套用所有修改",
+  applySome: (accepted, total) => `套用 ${total} 項中的 ${accepted} 項`,
+  rejectAll: "全部拒絕",
+  surfaceFallbackName: "這個介面",
+  surfaceRemoved: (name) => `已移除${name}`,
+  surfaceBeside: (name) => `${name}已在對話旁邊開啟`,
+  surfaceUpdated: (name) => `已更新${name}`,
+  surfacePartFailed: "這個部分發生了問題。",
+  surfaceImageBlocked: "不允許這個圖片位址。",
+  surfaceNoRenderer: (name) => `沒有註冊「${name}」的呈現元件。`,
+  add: "新增",
+  attachImage: "附加圖片",
+  skills: "技能",
+  improve: "優化",
+  revert: "還原",
+  improveHint: "優化這段提示",
+  revertHint: "還原成你原本的提示",
   panel: {
     opened: "已在聊天旁邊開啟",
     open: "開啟",

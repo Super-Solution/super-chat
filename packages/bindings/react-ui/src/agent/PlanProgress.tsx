@@ -27,6 +27,7 @@
 // none of it touches layout.
 
 import { useState } from "react";
+import { useLabels } from "../labels.js";
 import { RollingCount } from "./RollingCount.js";
 
 export type PlanStepStatus = "pending" | "active" | "done" | "failed" | "skipped";
@@ -110,11 +111,13 @@ const Chevron = () => (
 
 export function PlanProgress({
   steps,
-  title = "Progress",
+  title: given,
   defaultCollapsed = false,
   static: isStatic = false,
   className,
 }: PlanProgressProps) {
+  const labels = useLabels();
+  const title = given ?? labels.progress;
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
   const total = steps.length;
@@ -126,7 +129,7 @@ export function PlanProgress({
 
   // The head summarises whichever state the list is in, so collapsing it loses
   // position but never loses meaning.
-  const summary = failed ? "Blocked" : allDone ? "Complete" : (active?.label ?? title);
+  const summary = failed ? labels.blocked : allDone ? labels.complete : (active?.label ?? title);
 
   return (
     <section
@@ -140,7 +143,7 @@ export function PlanProgress({
         aria-expanded={open}
         // Collapsed, the head IS the component, so it announces the state it
         // is standing in for rather than just "toggle".
-        aria-label={`${title} — ${settled} of ${total} — ${summary}`}
+        aria-label={labels.planStatus(title, settled, total, summary)}
         disabled={isStatic}
         onClick={isStatic ? undefined : () => setCollapsed((c) => !c)}
       >

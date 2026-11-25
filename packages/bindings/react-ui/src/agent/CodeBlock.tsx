@@ -6,6 +6,7 @@
 // the code and copying by hand does not drag the line numbers along with it.
 
 import { useEffect, useRef, useState } from "react";
+import { useLabels } from "../labels.js";
 
 export interface CodeBlockProps {
   code: string;
@@ -79,6 +80,7 @@ const DownloadIcon = () => (
 );
 
 export function CodeBlock({ code, lang, filename, lineNumbers = true, highlight, downloadName }: CodeBlockProps) {
+  const labels = useLabels();
   const [copied, setCopied] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -134,15 +136,15 @@ export function CodeBlock({ code, lang, filename, lineNumbers = true, highlight,
           type="button"
           className="sc-code__copy"
           onClick={copy}
-          aria-label={copied ? "Copied" : "Copy code"}
+          aria-label={copied ? labels.copied : labels.copyCode}
         >
           {copied ? <CheckIcon /> : <CopyIcon />}
-          <span>{copied ? "Copied" : "Copy"}</span>
+          <span>{copied ? labels.copied : labels.copy}</span>
         </button>
         {downloadName ? (
-          <button type="button" className="sc-code__copy" onClick={download} aria-label={`Download ${downloadName}`}>
+          <button type="button" className="sc-code__copy" onClick={download} aria-label={labels.download(downloadName)}>
             <DownloadIcon />
-            <span>Download</span>
+            <span>{labels.downloadShort}</span>
           </button>
         ) : null}
       </div>
@@ -159,7 +161,7 @@ export function CodeBlock({ code, lang, filename, lineNumbers = true, highlight,
       </div>
       {truncated ? (
         <button type="button" className="sc-btn sc-btn--ghost sc-btn--sm sc-code__more" onClick={() => setShowAll((v) => !v)}>
-          {showAll ? "Show fewer lines" : `Show all (${lines.length} lines)`}
+          {showAll ? labels.showFewerLines : labels.showAllLines(lines.length)}
         </button>
       ) : null}
     </div>

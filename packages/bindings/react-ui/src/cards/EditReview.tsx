@@ -12,8 +12,10 @@
 import { useState } from "react";
 import type { EditReviewCard } from "@supersolutions/super-chat-core";
 import type { CardRendererProps } from "../renderer-registry.js";
+import { useLabels } from "../labels.js";
 
 export function EditReviewCardView({ spec, card, respond, answered }: CardRendererProps<EditReviewCard>) {
+  const labels = useLabels();
   // Everything starts accepted. The model proposed these because it was asked
   // to; opting out of one is the exception, and making the user tick every box
   // to get what they requested is friction that reads as distrust.
@@ -104,11 +106,13 @@ export function EditReviewCardView({ spec, card, respond, answered }: CardRender
       <div className="sc-card__actions">
         <button type="button" className="sc-btn sc-btn--primary" disabled={done || accepted.size === 0} onClick={apply}>
           {accepted.size === spec.hunks.length
-            ? `Apply ${spec.hunks.length === 1 ? "change" : "all changes"}`
-            : `Apply ${accepted.size} of ${spec.hunks.length}`}
+            ? spec.hunks.length === 1
+              ? labels.applyChange
+              : labels.applyAll
+            : labels.applySome(accepted.size, spec.hunks.length)}
         </button>
         <button type="button" className="sc-btn" disabled={done} onClick={reject}>
-          Reject all
+          {labels.rejectAll}
         </button>
       </div>
     </div>

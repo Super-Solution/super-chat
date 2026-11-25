@@ -170,7 +170,7 @@ export function DocumentCardView({ spec, onQuote: onQuoteProp }: DocumentCardVie
     <>
       <div className="sc-doc__head">
         <span className="sc-doc__title">{spec.title}</span>
-        <span className="sc-doc__rev sc-mono" title="Document revision">
+        <span className="sc-doc__rev sc-mono" title={labels.documentRevision}>
           v{spec.revision}
         </span>
         <button
@@ -179,7 +179,7 @@ export function DocumentCardView({ spec, onQuote: onQuoteProp }: DocumentCardVie
           onClick={() => setExpanded((e) => !e)}
           aria-expanded={expanded}
         >
-          {expanded ? "Close" : "Open"}
+          {expanded ? labels.collapse : labels.expand}
         </button>
       </div>
 
@@ -203,12 +203,12 @@ export function DocumentCardView({ spec, onQuote: onQuoteProp }: DocumentCardVie
         <div className="sc-doc__quotebar">
           <span className="sc-doc__quotetext">{pending.text.trim().slice(0, 90)}</span>
           <button type="button" className="sc-btn sc-btn--sm sc-btn--primary" onClick={quote}>
-            Ask about this
+            {labels.askAboutThis}
           </button>
           <button
             type="button"
             className="sc-doc__quotedismiss"
-            aria-label="Dismiss quote"
+            aria-label={labels.dismissQuote}
             onClick={() => setPending(null)}
           >
             ✕

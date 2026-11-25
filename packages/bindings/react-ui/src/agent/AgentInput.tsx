@@ -14,6 +14,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
+import { useLabels } from "../labels.js";
 
 /* ── icons ────────────────────────────────────────────────────────────────── */
 
@@ -135,7 +136,7 @@ const escapeHtml = (str: string) =>
 /* ── component ────────────────────────────────────────────────────────────── */
 
 export function AgentInput({
-  placeholder = "Ask anything…",
+  placeholder: givenPlaceholder,
   disabled = false,
   running = false,
   onSubmit,
@@ -149,6 +150,8 @@ export function AgentInput({
   onRemoveAttachment,
   onEnhance,
 }: AgentInputProps) {
+  const labels = useLabels();
+  const placeholder = givenPlaceholder ?? labels.placeholder;
   const [value, setValue] = useState("");
   const [phase, setPhase] = useState<"idle" | "enhancing" | "enhanced">("idle");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -256,8 +259,8 @@ export function AgentInput({
       '<span class="sc-ai__pill-label">/' +
       escapeHtml(skill.name) +
       "</span>" +
-      '<button type="button" class="sc-ai__pill-x" data-remove="1" aria-label="Remove ' +
-      escapeHtml(skill.name) +
+      '<button type="button" class="sc-ai__pill-x" data-remove="1" aria-label="' +
+      escapeHtml(labels.removeAttachment(skill.name)) +
       '"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>';
     return el;
   };
@@ -449,7 +452,7 @@ export function AgentInput({
                 <button
                   type="button"
                   className="sc-ai__chip-x"
-                  aria-label={`Remove ${a.name}`}
+                  aria-label={labels.removeAttachment(a.name)}
                   onClick={() => onRemoveAttachment(a.id)}
                 >
                   <IconX />
@@ -487,7 +490,7 @@ export function AgentInput({
         />
 
         {slashOpen && slashResults.length ? (
-          <div className="sc-ai__palette" role="listbox" aria-label="Skills">
+          <div className="sc-ai__palette" role="listbox" aria-label={labels.skills}>
             {slashResults.map((sk, i) => (
               <button
                 type="button"
@@ -516,7 +519,7 @@ export function AgentInput({
               <button
                 type="button"
                 className="sc-ai__icon"
-                aria-label="Add"
+                aria-label={labels.add}
                 aria-expanded={menuOpen}
                 disabled={disabled}
                 onClick={() => {
@@ -533,11 +536,11 @@ export function AgentInput({
                     <>
                       <button type="button" className="sc-ai__menuitem" role="menuitem" onClick={() => pickFile("file")}>
                         <IconPaperclip />
-                        <span>Attach a file</span>
+                        <span>{labels.attachFile}</span>
                       </button>
                       <button type="button" className="sc-ai__menuitem" role="menuitem" onClick={() => pickFile("image")}>
                         <IconImage />
-                        <span>Attach an image</span>
+                        <span>{labels.attachImage}</span>
                       </button>
                     </>
                   ) : null}
@@ -555,7 +558,7 @@ export function AgentInput({
                         onClick={() => setSkillsOpen((o) => !o)}
                       >
                         <IconBook />
-                        <span>Skills</span>
+                        <span>{labels.skills}</span>
                         <span className="sc-ai__menuchevron">
                           <IconChevronRight />
                         </span>
@@ -594,7 +597,7 @@ export function AgentInput({
                   }}
                 >
                   {activeModel?.icon}
-                  <span>{activeModel?.name ?? "Model"}</span>
+                  <span>{activeModel?.name ?? labels.model}</span>
                 </button>
                 {modelOpen ? (
                   <div className="sc-ai__menu sc-ai__menu--wide" role="menu">
@@ -634,23 +637,23 @@ export function AgentInput({
               enhancing ? (
                 <button type="button" className="sc-ai__enhance sc-ai__enhance--busy" onClick={cancelEnhance}>
                   <span className="sc-spinner" aria-hidden />
-                  <span>Cancel</span>
+                  <span>{labels.cancel}</span>
                 </button>
               ) : (
                 <button
                   type="button"
                   className={"sc-ai__enhance" + (phase === "enhanced" ? " sc-ai__enhance--on" : "")}
                   onClick={runEnhance}
-                  title={phase === "enhanced" ? "Revert to your original prompt" : "Improve this prompt"}
+                  title={phase === "enhanced" ? labels.revertHint : labels.improveHint}
                 >
                   <IconSparkle />
-                  <span>{phase === "enhanced" ? "Revert" : "Improve"}</span>
+                  <span>{phase === "enhanced" ? labels.revert : labels.improve}</span>
                 </button>
               )
             ) : null}
 
             {running ? (
-              <button type="button" className="sc-ai__send sc-ai__send--stop" onClick={onStop} aria-label="Stop">
+              <button type="button" className="sc-ai__send sc-ai__send--stop" onClick={onStop} aria-label={labels.stop}>
                 <IconStop />
               </button>
             ) : (
@@ -659,7 +662,7 @@ export function AgentInput({
                 className="sc-ai__send"
                 onClick={submit}
                 disabled={!canSend}
-                aria-label="Send"
+                aria-label={labels.send}
               >
                 <IconArrowUp />
               </button>

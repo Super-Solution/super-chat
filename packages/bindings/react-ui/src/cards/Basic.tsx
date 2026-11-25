@@ -50,6 +50,7 @@ function cardTableToTsv(columns: TableColumn[], rows: Record<string, unknown>[])
 }
 
 export function TableCardView({ spec, partial }: CardRendererProps<TableCard>) {
+  const labels = useLabels();
   const [sortBy, setSortBy] = useState(spec.sortBy);
   const [sortDir, setSortDir] = useState<"asc" | "desc">(spec.sortDir ?? "desc");
   const [showAll, setShowAll] = useState(false);
@@ -148,7 +149,7 @@ export function TableCardView({ spec, partial }: CardRendererProps<TableCard>) {
       </div>
       {truncated ? (
         <button type="button" className="sc-btn sc-btn--ghost sc-btn--sm sc-table__more" onClick={() => setShowAll((v) => !v)}>
-          {showAll ? "Show less" : `Show all (${rows.length})`}
+          {showAll ? labels.showLess : labels.showAll(rows.length)}
         </button>
       ) : null}
       {spec.caption ? <div className="sc-muted sc-card__caption">{spec.caption}</div> : null}
@@ -253,9 +254,10 @@ export function ProgressCardView({ spec }: CardRendererProps<ProgressCard>) {
 type MediaItem = MediaCard["items"][number];
 
 function MediaItemView({ item }: { item: MediaItem }) {
+  const labels = useLabels();
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const type = item.mediaType?.toLowerCase() ?? "image/*";
-  const label = item.alt ?? item.caption ?? (type.startsWith("audio/") ? "Generated audio" : type.startsWith("video/") ? "Generated video" : "Generated image");
+  const label = item.alt ?? item.caption ?? (type.startsWith("audio/") ? labels.generatedAudio : type.startsWith("video/") ? labels.generatedVideo : labels.generatedImage);
   const ratio = item.width && item.height ? `${item.width} / ${item.height}` : undefined;
 
   const imageReady = (event: SyntheticEvent<HTMLImageElement>) => {

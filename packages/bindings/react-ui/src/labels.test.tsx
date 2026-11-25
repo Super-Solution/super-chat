@@ -33,7 +33,7 @@ describe("labels", () => {
     expect(Object.keys(zhTW.providerTools).sort()).toEqual(Object.keys(enLabels.providerTools).sort());
     for (const [key, value] of Object.entries(zhTW)) {
       if (typeof value !== "function") continue;
-      const sample = (value as (...a: unknown[]) => string)(2, "x", "y");
+      const sample = (value as (...a: unknown[]) => string)(2, "x", "y", "z");
       expect(typeof sample, key).toBe("string");
       expect(sample, key).not.toMatch(/undefined|NaN/);
     }
