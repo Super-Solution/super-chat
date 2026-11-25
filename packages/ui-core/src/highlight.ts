@@ -28,13 +28,13 @@ const lexer = (groups: [cls: string | undefined, source: string][], flags = "g")
   classes: groups.map(([cls]) => cls),
 });
 
-const JS_WORDS = words(`
+const JS_WORDS = /* @__PURE__ */ words(`
   as async await break case catch class const continue debugger default delete do else enum export
   extends finally for from function if implements import in instanceof interface let new of package
   private protected public readonly return static super switch this throw try type typeof var void
   while with yield satisfies declare namespace abstract keyof
 `);
-const LITERALS = words("true false null undefined NaN Infinity None True False nil");
+const LITERALS = /* @__PURE__ */ words("true false null undefined NaN Infinity None True False nil");
 
 const SOURCES: Record<string, () => Lexer> = {
   js: () => lexer([
@@ -163,7 +163,7 @@ function diff(code: string): string {
 }
 
 /** The languages the built-in highlighter knows, by every name it answers to. */
-export const HIGHLIGHT_LANGUAGES: readonly string[] = [...Object.keys(ALIASES), "diff", "patch"];
+export const HIGHLIGHT_LANGUAGES: readonly string[] = /* @__PURE__ */ (() => [...Object.keys(ALIASES), "diff", "patch"])();
 
 /**
  * Highlight `code` written in `lang`, as HTML for the inside of `<code>`.

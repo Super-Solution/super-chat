@@ -69,7 +69,7 @@ type SurfaceHost = {
   placement: (spec: SurfaceSpec) => SurfacePlacement;
 };
 
-const HostContext = createContext<SurfaceHost>({ components: {}, placement: () => "inline" });
+const HostContext = /* @__PURE__ */ createContext<SurfaceHost>({ components: {}, placement: () => "inline" });
 export const useSurfaceHost = () => useContext(HostContext);
 
 export type SurfaceHostProviderProps = {
@@ -165,7 +165,7 @@ type SurfaceContextValue = {
   answer: (componentId: string, answer: Omit<SurfaceCardAnswer, "at">) => void;
 };
 
-const SurfaceContext = createContext<SurfaceContextValue | null>(null);
+const SurfaceContext = /* @__PURE__ */ createContext<SurfaceContextValue | null>(null);
 const useSurfaceContext = () => useContext(SurfaceContext)!;
 
 type NodeProps = { component: SurfaceComponent; props: Record<string, unknown>; scope: BindingScope; trail: readonly string[] };

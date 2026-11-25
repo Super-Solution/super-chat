@@ -14,7 +14,8 @@
     "test:rwd": "playwright test",
     "typecheck": "pnpm -r typecheck",
     "check:architecture": "node scripts/check-architecture.mjs",
-    "verify": "pnpm check:architecture && pnpm build && pnpm typecheck && pnpm test"
+    "check:size": "node scripts/check-size.mjs",
+    "verify": "pnpm check:architecture && pnpm build && pnpm check:size && pnpm typecheck && pnpm test"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",

@@ -24,7 +24,7 @@ export type QuoteBus = {
   clear(): void;
 };
 
-const QuoteContext = createContext<QuoteBus | null>(null);
+const QuoteContext = /* @__PURE__ */ createContext<QuoteBus | null>(null);
 
 export function DocumentQuoteProvider({ children }: { children: ReactNode }) {
   const [quotes, setQuotes] = useState<DocumentQuoteRef[]>([]);

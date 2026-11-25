@@ -31,7 +31,7 @@ export type ChatPanelState = {
   labels: ChatPanelLabels;
 };
 
-const ChatPanelContext = createContext<ChatPanelState | null>(null);
+const ChatPanelContext = /* @__PURE__ */ createContext<ChatPanelState | null>(null);
 
 /** The panel, inside a `ChatPanelProvider`. Throws outside one. */
 export function useChatPanel(): ChatPanelState {

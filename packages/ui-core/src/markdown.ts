@@ -162,8 +162,8 @@ const IMAGE = /!\[([^\]]*)\]\((https?:\/\/(?:[^()\s]|\([^()\s]*\))+)\)/g;
 // or angle bracket, and at a parenthesis that is not part of a balanced pair, so a sentence
 // that ends with "(see https://example.com)" does not take the bracket with it.
 const URL_BODY = String.raw`(?:(?!&(?:quot|lt|gt);)[^\s\0()]|\([^\s\0()]*\))+`;
-const ANGLE_URL = new RegExp(String.raw`&lt;(https?:\/\/${URL_BODY})&gt;`, "g");
-const BARE_URL = new RegExp(String.raw`(?<![\w/=@])https?:\/\/${URL_BODY}`, "g");
+const ANGLE_URL = /* @__PURE__ */ new RegExp(String.raw`&lt;(https?:\/\/${URL_BODY})&gt;`, "g");
+const BARE_URL = /* @__PURE__ */ new RegExp(String.raw`(?<![\w/=@])https?:\/\/${URL_BODY}`, "g");
 // Punctuation that ends a sentence, or the emphasis around a URL, is not part of it.
 const URL_TAIL = /[.,;:!?*_~]+$/;
 // A character reference in text stays one (`&amp;` shows `&`), and everything it can name is text.

@@ -17,7 +17,7 @@ export type Toast = { id: string; message: string; tone?: "info" | "positive" | 
 
 type ToastApi = { show: (message: string, tone?: Toast["tone"]) => void };
 
-const ToastContext = createContext<ToastApi | null>(null);
+const ToastContext = /* @__PURE__ */ createContext<ToastApi | null>(null);
 
 /** Fire a toast. Safe to call without a provider — it simply does nothing. */
 export function useToast(): ToastApi {

@@ -31,7 +31,7 @@ import { decorateActions, runAction } from "./prose-actions.js";
 
 type RefContext = { host: CardRefHost; announce: (text: string) => void };
 
-const Context = createContext<RefContext | undefined>(undefined);
+const Context = /* @__PURE__ */ createContext<RefContext | undefined>(undefined);
 
 /** The host in force, if any. Without one, refs render as plain text. */
 export function useCardRefHost(): CardRefHost | undefined {

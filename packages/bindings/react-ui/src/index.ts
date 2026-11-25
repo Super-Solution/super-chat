@@ -71,6 +71,7 @@ export {
   useLabels,
   enLabels,
   zhTW,
+  formatBytes,
   type Labels,
   type LabelsOverride,
 } from "./labels.js";

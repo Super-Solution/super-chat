@@ -11,7 +11,7 @@ import { createContext, useContext, useMemo, type ReactNode } from "react";
 import type { MarkdownOptions } from "@supersolutions/super-chat-ui-core";
 
 const DEFAULT: MarkdownOptions = { actions: true };
-const Context = createContext<MarkdownOptions>(DEFAULT);
+const Context = /* @__PURE__ */ createContext<MarkdownOptions>(DEFAULT);
 
 /** The options in force: the nearest provider's, or the kit's default. Stable between renders. */
 export function useMarkdownOptions(): MarkdownOptions {

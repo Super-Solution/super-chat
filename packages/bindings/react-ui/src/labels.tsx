@@ -464,7 +464,7 @@ export type LabelsOverride = Partial<Omit<Labels, "panel" | "providerTools">> & 
   providerTools?: Record<string, string>;
 };
 
-const Context = createContext<Labels>(enLabels);
+const Context = /* @__PURE__ */ createContext<Labels>(enLabels);
 
 /** The words in force: the nearest provider's, or English. */
 export function useLabels(): Labels {

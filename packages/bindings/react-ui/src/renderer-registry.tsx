@@ -42,17 +42,22 @@ export type CardRendererProps<S extends CardSpec = CardSpec> = {
   placement?: CardPlacement;
 };
 
-/** What a host that names no registry gets: the built-in kinds. */
-const DEFAULT_REGISTRY = new CardRegistry(BUILTIN_CARDS);
-const BUILTIN_INTERACTIVE: ReadonlySet<string> = new Set(BUILTIN_CARDS.filter((c) => c.interactive).map((c) => c.kind));
+// What a host that names no registry gets: the built-in kinds. Built on first use, not when the
+// module loads: a statement that runs at load cannot be dropped by a bundler, and this one holds
+// every built-in card definition, so a page that imports one component would carry them all.
+let defaultRegistry: CardRegistry | undefined;
+const getDefaultRegistry = (): CardRegistry => (defaultRegistry ??= new CardRegistry(BUILTIN_CARDS));
+let builtinInteractive: ReadonlySet<string> | undefined;
+const getBuiltinInteractive = (): ReadonlySet<string> =>
+  (builtinInteractive ??= new Set(BUILTIN_CARDS.filter((c) => c.interactive).map((c) => c.kind)));
 
-const CardRegistryContext = createContext<CardRegistry | null>(null);
+const CardRegistryContext = /* @__PURE__ */ createContext<CardRegistry | null>(null);
 
 /** The registry in force: the nearest provider's, then the client's, then the built-ins. */
 export function useCardRegistry(): CardRegistry {
   const provided = useContext(CardRegistryContext);
   const client = useOptionalAgentClient();
-  return provided ?? client?.getConfig().cards ?? DEFAULT_REGISTRY;
+  return provided ?? client?.getConfig().cards ?? getDefaultRegistry();
 }
 
 /**
@@ -63,12 +68,12 @@ export function useCardRegistry(): CardRegistry {
  */
 export function useInteractiveKinds(): (kind: string | undefined) => boolean {
   const registry = useCardRegistry();
-  return useMemo(() => (kind) => Boolean(kind) && (BUILTIN_INTERACTIVE.has(kind!) || registry.isInteractive(kind!)), [registry]);
+  return useMemo(() => (kind) => Boolean(kind) && (getBuiltinInteractive().has(kind!) || registry.isInteractive(kind!)), [registry]);
 }
 
 export type CardRendererMap = Record<string, ComponentType<CardRendererProps<never>>>;
 
-const RendererContext = createContext<CardRendererMap>({});
+const RendererContext = /* @__PURE__ */ createContext<CardRendererMap>({});
 
 export function CardRendererProvider({
   renderers,

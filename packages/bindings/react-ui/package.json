@@ -18,6 +18,26 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./cards": {
+      "types": "./dist/cards.d.ts",
+      "import": "./dist/cards.js",
+      "default": "./dist/cards.js"
+    },
+    "./agent": {
+      "types": "./dist/agent.d.ts",
+      "import": "./dist/agent.js",
+      "default": "./dist/agent.js"
+    },
+    "./surfaces": {
+      "types": "./dist/surfaces.d.ts",
+      "import": "./dist/surfaces.js",
+      "default": "./dist/surfaces.js"
+    },
+    "./labels": {
+      "types": "./dist/labels.d.ts",
+      "import": "./dist/labels.js",
+      "default": "./dist/labels.js"
+    },
     "./mobile-agent": {
       "types": "./dist/mobile-agent.d.ts",
       "import": "./dist/mobile-agent.js",
