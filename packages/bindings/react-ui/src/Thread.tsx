@@ -34,7 +34,7 @@ import {
 } from "@supersolutions/super-chat-react";
 import type { TurnMeta } from "@supersolutions/super-chat-client";
 import { CardRenderer, CardSkeleton, useInteractiveKinds } from "./renderer-registry.js";
-import { AttachIcon, Chevron, FileIcon, ImageIcon, StatusMark, ToolIcon, SpeakerIcon } from "./cards/icons.js";
+import { AttachIcon, Chevron, FileIcon, ImageIcon, StatusMark, ToolIcon, SpeakerIcon, ThumbIcon } from "./cards/icons.js";
 import { newMarkdownStream, renderMarkdown, renderMarkdownBlocks } from "@supersolutions/super-chat-ui-core";
 import { useMarkdownOptions } from "./markdown-options.js";
 import { CardRefProvider, ProseHtml, useCardRefHost } from "./card-refs.js";
@@ -112,7 +112,21 @@ function ProviderToolChips({ items }: { items: { id: string; kind: string }[] })
  * Copy takes the answer's Markdown source, not what is on screen: copying the rendered text
  * ran the cells of a table together and dropped a code block's fence and language.
  */
-function MessageMeta({ meta, source, onRegenerate }: { meta?: TurnMeta; source: string; onRegenerate?: () => void }) {
+function MessageMeta({
+  meta,
+  source,
+  onRegenerate,
+  feedback,
+  onFeedback,
+  extra,
+}: {
+  meta?: TurnMeta;
+  source: string;
+  onRegenerate?: () => void;
+  feedback?: MessageFeedback;
+  onFeedback?: (value: MessageFeedback | null) => void;
+  extra?: ReactNode;
+}) {
   const labels = useLabels();
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const bits = [
@@ -145,9 +159,31 @@ function MessageMeta({ meta, source, onRegenerate }: { meta?: TurnMeta; source: 
           {labels.retry}
         </button>
       ) : null}
+      {/* Only when a host listens: a thumb that records nothing implies a capability that is not there. */}
+      {onFeedback ? (
+        <span className="sc-feedback" role="group" aria-label={labels.feedback}>
+          {(["up", "down"] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              className="sc-btn sc-btn--ghost sc-btn--sm sc-feedback__btn"
+              aria-pressed={feedback === value}
+              aria-label={value === "up" ? labels.feedbackGood : labels.feedbackBad}
+              title={value === "up" ? labels.feedbackGood : labels.feedbackBad}
+              onClick={() => onFeedback(feedback === value ? null : value)}
+            >
+              <ThumbIcon down={value === "down"} />
+            </button>
+          ))}
+        </span>
+      ) : null}
+      {extra}
     </div>
   );
 }
+
+/** A reader's verdict on an answer. Pressing the same thumb again takes it back (`null`). */
+export type MessageFeedback = "up" | "down";
 
 /** A finished block of prose. Memoised for identity: see HANDOFF, bug 8. */
 function SettledText({ text }: { text: string }) {
@@ -166,15 +202,19 @@ function SurfaceEventNote({ record }: { record: SurfaceEventRecord }) {
   );
 }
 
-export function MessageView({
-  message,
-  respond,
-  onRegenerate,
-}: {
+export type MessageViewProps = {
   message: Message;
   respond?: ReturnType<typeof useCardAction>["respond"];
   onRegenerate?: () => void;
-}) {
+  /** This answer's current verdict, for the thumbs. The host owns it; the kit only shows it. */
+  feedback?: MessageFeedback;
+  /** Shows thumbs under answers and reports each press. Omit and no thumbs are drawn. */
+  onFeedback?: (message: Message, value: MessageFeedback | null) => void;
+  /** More controls in an answer's row, after Copy, Retry and the thumbs (Share, Pin, Save…). */
+  actions?: (message: Message, source: string) => ReactNode;
+};
+
+export function MessageView({ message, respond, onRegenerate, feedback, onFeedback, actions }: MessageViewProps) {
   const labels = useLabels();
   const { cards, rest, providerTools } = useMemo(() => partsOf(message), [message]);
   const isInteractive = useInteractiveKinds();
@@ -291,7 +331,14 @@ export function MessageView({
       )}
       {!text && !cards.length && !calls.length ? <div className="sc-muted">{labels.noResponse}</div> : null}
       {(text || cards.length) && (message.metadata as { turn?: TurnMeta } | undefined)?.turn?.origin !== "surface-action" ? (
-        <MessageMeta meta={(message.metadata as { turn?: TurnMeta } | undefined)?.turn} source={source} onRegenerate={onRegenerate} />
+        <MessageMeta
+          meta={(message.metadata as { turn?: TurnMeta } | undefined)?.turn}
+          source={source}
+          onRegenerate={onRegenerate}
+          feedback={feedback}
+          onFeedback={onFeedback ? (value) => onFeedback(message, value) : undefined}
+          extra={actions?.(message, source)}
+        />
       ) : null}
       <BranchNav messageId={message.id} />
     </div>
@@ -860,10 +907,25 @@ function ThreadAnnouncer({ running, failed }: { running: boolean; failed: boolea
   );
 }
 
+/**
+ * What an error block says, or `""` for the generic line. A host's `format` replaces the raw
+ * message; if it throws, the generic line is shown, never the raw text the host meant to hide.
+ */
+export function errorDetail(error: unknown, format?: (error: unknown) => string): string {
+  if (format) {
+    try {
+      return format(error) ?? "";
+    } catch {
+      return "";
+    }
+  }
+  return error != null ? (error instanceof Error ? error.message : String(error)) : "";
+}
+
 /** Inline error block for a failed run, with a retry that re-runs the last turn. */
-function ErrorBlock({ error, onRetry }: { error: unknown; onRetry: () => void }) {
+function ErrorBlock({ error, onRetry, format }: { error: unknown; onRetry: () => void; format?: (error: unknown) => string }) {
   const labels = useLabels();
-  const detail = error != null ? (error instanceof Error ? error.message : String(error)) : "";
+  const detail = errorDetail(error, format);
   return (
     <div className="sc-card sc-card--error" role="alert">
       {detail || labels.somethingWrong}
@@ -884,6 +946,16 @@ export type ThreadProps = {
   empty?: ReactNode;
   /** Starting prompts for the built-in empty state. Ignored when `empty` is given. */
   suggestions?: readonly Suggestion[];
+  /**
+   * What a failed turn says. Default: the error's own message, which for a provider error can be
+   * a raw API response. Return the words a person should read (or a translation); an empty
+   * string falls back to the generic line.
+   */
+  formatError?: (error: unknown) => string;
+  /** Shows thumbs under each answer and reports a press. Omit and none are drawn. */
+  onFeedback?: (message: Message, value: MessageFeedback | null) => void;
+  /** More controls in each answer's row (Share, Pin, Save…). Receives the answer's Markdown source. */
+  actions?: (message: Message, source: string) => ReactNode;
 };
 
 /**
@@ -897,7 +969,7 @@ export function Thread(props: ThreadProps) {
   return host ? body : <CardRefProvider host={builtinCardRefHost}>{body}</CardRefProvider>;
 }
 
-function ThreadBody({ empty, suggestions }: ThreadProps) {
+function ThreadBody({ empty, suggestions, formatError, onFeedback, actions }: ThreadProps) {
   const labels = useLabels();
   const { messages, status, error, regenerate, isRunning } = useThread();
   const { respond } = useCardAction();
@@ -905,6 +977,8 @@ function ThreadBody({ empty, suggestions }: ThreadProps) {
   const pendingCardId = useRun((r) => r.pendingCard?.id);
   const bottomRef = useRef<HTMLDivElement>(null);
   const [pinned, setPinned] = useState(true);
+  // What each answer was marked as. Kept here so a press shows at once; the host's callback is what persists it.
+  const [verdicts, setVerdicts] = useState<Record<string, MessageFeedback>>({});
 
   // A question the person has to answer is brought into view wherever they had
   // scrolled to. A button high up a surface can raise one at the bottom of the
@@ -958,12 +1032,27 @@ function ThreadBody({ empty, suggestions }: ThreadProps) {
                 message={m}
                 respond={respond}
                 onRegenerate={m.id === lastAssistant && !isRunning ? () => void regenerate() : undefined}
+                feedback={verdicts[m.id]}
+                onFeedback={
+                  onFeedback
+                    ? (message, value) => {
+                        setVerdicts((prev) => {
+                          const next = { ...prev };
+                          if (value) next[message.id] = value;
+                          else delete next[message.id];
+                          return next;
+                        });
+                        onFeedback(message, value);
+                      }
+                    : undefined
+                }
+                actions={actions}
               />
             </div>
           );
         })}
         <LiveTurn />
-        {status === "error" ? <ErrorBlock error={error} onRetry={() => void regenerate()} /> : null}
+        {status === "error" ? <ErrorBlock error={error} onRetry={() => void regenerate()} format={formatError} /> : null}
         <div ref={bottomRef} />
       </div>
       <ThreadAnnouncer running={isRunning} failed={status === "error"} />

@@ -46,6 +46,8 @@ export type Labels = {
   copy: string;
   copied: string;
   copyFailed: string;
+  /** The accessible name of the pair of thumbs. */
+  feedback: string;
   feedbackGood: string;
   feedbackBad: string;
   previousBranch: string;
@@ -191,6 +193,7 @@ export const enLabels: Labels = {
   copy: "Copy",
   copied: "Copied",
   copyFailed: "Copy failed",
+  feedback: "Rate this response",
   feedbackGood: "Good response",
   feedbackBad: "Bad response",
   previousBranch: "Previous branch",
@@ -332,6 +335,7 @@ export const zhTW: Labels = {
   copy: "複製",
   copied: "已複製",
   copyFailed: "複製失敗",
+  feedback: "評價這則回覆",
   feedbackGood: "回答得好",
   feedbackBad: "回答不好",
   previousBranch: "上一個分支",

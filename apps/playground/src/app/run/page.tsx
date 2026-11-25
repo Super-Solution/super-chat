@@ -325,7 +325,7 @@ export default function RunPanel() {
               <p className="dev__banner">Enter an API key before sending a BYOK request.</p>
             ) : null}
 
-            <Thread empty={<Examples />} />
+            <Thread empty={<Examples />} onFeedback={recordFeedback} />
             <Composer placeholder="Ask about a contract, a funnel, or a market…" onAttachFile={attachFile} />
           </div>
 
@@ -339,6 +339,22 @@ export default function RunPanel() {
       </CardRendererProvider>
     </AgentProvider>
   );
+}
+
+/**
+ * What a host does with a thumb: keep it. The playground writes it to this browser; a product
+ * would send it to its own analytics. The kit only reports the press.
+ */
+function recordFeedback(message: { id: string }, value: "up" | "down" | null) {
+  try {
+    const key = "superchat.playground.feedback";
+    const all = JSON.parse(localStorage.getItem(key) ?? "{}") as Record<string, string>;
+    if (value) all[message.id] = value;
+    else delete all[message.id];
+    localStorage.setItem(key, JSON.stringify(all));
+  } catch {
+    // Storage can be unavailable; the thumb still shows, nothing is kept.
+  }
 }
 
 const THREADS_PAGE_SIZE = 20;

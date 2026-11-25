@@ -308,3 +308,29 @@ test("a citation in an answer points at its source: hover shows it, a keyboard n
   await page.locator(".sc-ref[data-ref*='cite=ucta-s3']").hover();
   await expect(page.locator(".sc-cite[data-cite='ucta-s3'][data-pointed]")).toHaveCount(1);
 });
+
+test("an answer can be rated when the host listens, and the press is reported and can be taken back", async ({ page }) => {
+  await settle(page);
+  await ask(page, "Where are we losing people in the signup funnel?");
+  await finished(page);
+  const row = page.locator(".sc-msgmeta").last();
+  const group = row.getByRole("group", { name: "Rate this response" });
+  const good = group.getByRole("button", { name: "Good response" });
+  const bad = group.getByRole("button", { name: "Bad response" });
+  await expect(good).toHaveAttribute("aria-pressed", "false");
+
+  await good.click();
+  await expect(good).toHaveAttribute("aria-pressed", "true");
+  await expect(bad).toHaveAttribute("aria-pressed", "false");
+  const kept = () => page.evaluate(() => Object.values(JSON.parse(localStorage.getItem("superchat.playground.feedback") ?? "{}")));
+  expect(await kept()).toEqual(["up"]);
+
+  await bad.click();
+  await expect(bad).toHaveAttribute("aria-pressed", "true");
+  await expect(good).toHaveAttribute("aria-pressed", "false");
+  expect(await kept()).toEqual(["down"]);
+
+  await bad.click();
+  await expect(bad).toHaveAttribute("aria-pressed", "false");
+  expect(await kept()).toEqual([]);
+});

@@ -880,6 +880,9 @@
 .sc-bubble--editing { display: grid; gap: var(--sc-sp-8); width: min(100%, 620px); max-width: none; background: var(--sc-surface); color: var(--sc-text); border-color: var(--sc-border); white-space: normal; }
 .sc-bubble__editbar { display: flex; gap: var(--sc-sp-6); justify-content: flex-end; }
 .sc-mark--flip { transform: scaleY(-1); }
+/* Thumbs under an answer. Pressed is shown by weight and a filled ground, not by colour alone. */
+.sc-feedback { display: inline-flex; gap: var(--sc-sp-2); }
+.sc-feedback__btn[aria-pressed="true"] { background: var(--sc-live-accent-tint); color: var(--sc-live-accent-strong); border-color: var(--sc-live-accent-strong); }
 .sc-composer__file { display: none; }
 .sc-composer__rejected { list-style: none; margin: 0 0 var(--sc-sp-8); padding: 0; width: 100%; display: grid; gap: var(--sc-sp-2); font-size: var(--sc-fs-meta); color: var(--sc-negative); }
 
