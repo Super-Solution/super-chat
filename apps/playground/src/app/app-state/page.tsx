@@ -15,7 +15,6 @@ import {
   AgentProvider,
   useAppState,
   useContextTrace,
-  useThread,
 } from "@supersolutions/super-chat-react";
 import { BUILTIN_RENDERERS, CardRendererProvider, Composer, Thread } from "@supersolutions/super-chat-ui";
 import {
@@ -173,8 +172,8 @@ export default function AppStatePanel() {
                 Demo transport — replies are scripted, so use the buttons to change the board and read the state layer
                 in the trace below. Point this panel at a real provider and the agent drives the board itself.
               </p>
-              <Thread empty={<Prompts />} />
-              <Composer placeholder="Move c1 to doing, assign it to sam…" />
+              <Thread suggestions={PROMPTS} />
+              <Composer placeholder="Move c1 to doing, assign it to sam…" maxFileBytes={2 * 1024 * 1024} />
             </div>
             <aside className="dev__runside">
               <StateLayer />
@@ -227,26 +226,12 @@ function Board({
   );
 }
 
-function Prompts() {
-  const { send } = useThread();
-  const examples = [
-    "What's on the board right now?",
-    "Move the login redirect card to done.",
-    "Assign everything in todo to dana.",
-  ];
-  return (
-    <div className="dev__prompts">
-      <p className="sc-muted" style={{ fontSize: 13, marginTop: 0 }}>
-        The agent already knows the board — it is in the context layer, not the conversation.
-      </p>
-      {examples.map((e) => (
-        <button key={e} type="button" className="dev__prompt" onClick={() => void send(e)}>
-          <span>{e}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
+/** The built-in empty state offers these; the board itself is already in the context layer. */
+const PROMPTS = [
+  "What's on the board right now?",
+  "Move the login redirect card to done.",
+  "Assign everything in todo to dana.",
+];
 
 /** The state layer as the model received it, straight from the trace. */
 function StateLayer() {

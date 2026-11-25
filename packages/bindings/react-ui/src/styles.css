@@ -844,6 +844,38 @@
    and it is prose to be read rather than chrome to be scanned. */
 .sc-empty { color: var(--sc-text-muted); text-align: center; padding: var(--sc-sp-48) var(--sc-sp-20); font-size: var(--sc-fs-body); }
 
+/* The built-in empty state and its starting prompts. */
+.sc-emptystate { display: grid; justify-items: center; gap: var(--sc-sp-8); }
+.sc-emptystate__title { margin: 0; font-size: var(--sc-fs-stat); line-height: var(--sc-lh-tight); font-weight: 600; color: var(--sc-text); }
+.sc-emptystate__text { margin: 0; }
+.sc-suggestions { list-style: none; margin: var(--sc-sp-16) 0 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sc-sp-8); max-width: 100%; }
+.sc-suggestion {
+  font: inherit;
+  font-size: var(--sc-fs-ui);
+  line-height: var(--sc-lh-ui);
+  color: var(--sc-text);
+  background: var(--sc-surface);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius-pill);
+  padding: var(--sc-sp-6) var(--sc-sp-12);
+  cursor: pointer;
+  text-align: start;
+  max-width: 100%;
+}
+.sc-suggestion:hover:not(:disabled) { background: var(--sc-surface-2); border-color: var(--sc-border-strong, var(--sc-border)); }
+.sc-suggestion:disabled { opacity: 0.5; cursor: default; }
+.sc-suggestion:focus-visible { outline: 2px solid var(--sc-live-accent-strong); outline-offset: 2px; }
+
+/* Work shown under an answer, and the controls that were inline styles. */
+.sc-providertools { display: flex; flex-wrap: wrap; gap: var(--sc-sp-6); margin-bottom: var(--sc-sp-8); }
+.sc-branchnav { display: inline-flex; align-items: center; gap: var(--sc-sp-4); font-size: var(--sc-fs-meta); font-variant-numeric: tabular-nums; }
+.sc-media__img { max-width: min(100%, 360px); border-radius: var(--sc-radius-sm); display: block; }
+.sc-bubble--editing { display: grid; gap: var(--sc-sp-8); width: min(100%, 620px); max-width: none; background: var(--sc-surface); color: var(--sc-text); border-color: var(--sc-border); white-space: normal; }
+.sc-bubble__editbar { display: flex; gap: var(--sc-sp-6); justify-content: flex-end; }
+.sc-mark--flip { transform: scaleY(-1); }
+.sc-composer__file { display: none; }
+.sc-composer__rejected { list-style: none; margin: 0 0 var(--sc-sp-8); padding: 0; width: 100%; display: grid; gap: var(--sc-sp-2); font-size: var(--sc-fs-meta); color: var(--sc-negative); }
+
 /* The thread needs a positioned parent for the jump button to anchor to, but
    must not itself become the scroll container's offset parent. */
 /* Also a container, so .sc-thread's own padding has something to query: an

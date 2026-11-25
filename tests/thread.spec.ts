@@ -187,3 +187,81 @@ test("task lists, bare links and pictures render as the safe, readable thing", a
   await expect(answer.locator("img")).toHaveCount(0);
   await expect(answer.getByRole("link", { name: "invoice layout" })).toHaveAttribute("href", "https://example.com/invoice.png");
 });
+
+test("the empty thread offers starting prompts, and pressing one sends it", async ({ page }) => {
+  await settle(page, "/app-state");
+  await expect(page.getByRole("heading", { name: "How can I help?" })).toBeVisible();
+  const list = page.getByRole("list", { name: "Suggestions" });
+  await expect(list.getByRole("button")).toHaveCount(3);
+  await list.getByRole("button", { name: "What's on the board right now?" }).click();
+  await expect(page.locator(".sc-msg--user", { hasText: "What's on the board right now?" })).toBeVisible();
+  // Once there is a conversation the starting prompts are gone.
+  await expect(page.getByRole("heading", { name: "How can I help?" })).toHaveCount(0);
+});
+
+// 1x1 PNG.
+const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64");
+
+test("a file that cannot be attached is refused out loud, not dropped", async ({ page }) => {
+  await settle(page, "/app-state");
+  const input = page.locator(".sc-composer input[type=file]");
+  await expect(input).toHaveAttribute("accept", /image\/\*/);
+  await input.setInputFiles([
+    { name: "tiny.png", mimeType: "image/png", buffer: PNG },
+    { name: "bundle.zip", mimeType: "application/zip", buffer: Buffer.from("PK") },
+    { name: "huge.txt", mimeType: "text/plain", buffer: Buffer.alloc(2 * 1024 * 1024 + 1, 97) },
+  ]);
+  const alert = page.locator(".sc-composer__rejected");
+  await expect(alert).toHaveAttribute("role", "alert");
+  await expect(alert).toContainText("bundle.zip is not a type that can be attached.");
+  await expect(alert).toContainText("huge.txt is larger than 2.0 MB and was not attached.");
+  // The file that was fine is attached, and the others are not.
+  await expect(page.getByRole("button", { name: "Remove tiny.png" })).toBeVisible();
+  await expect(page.locator(".sc-attachment")).toHaveCount(1);
+});
+
+test("editing a message keeps its attachment and is driven from the keyboard", async ({ page }) => {
+  await settle(page, "/app-state");
+  await page.locator(".sc-composer input[type=file]").setInputFiles({ name: "tiny.png", mimeType: "image/png", buffer: PNG });
+  await page.locator(".sc-composer__input").fill("What is in this picture?");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await finished(page);
+  const user = page.locator(".sc-msg--user").last();
+  await expect(user.locator("img")).toHaveCount(1);
+
+  const edit = page.getByRole("button", { name: "Edit message" });
+  await edit.click();
+  const box = page.getByRole("textbox", { name: "Edit message" });
+  await expect(box).toBeFocused();
+  // Escape closes it and puts focus back where it came from.
+  await page.keyboard.press("Escape");
+  await expect(box).toHaveCount(0);
+  await expect(edit).toBeFocused();
+
+  await edit.click();
+  await box.fill("What is in this picture, briefly?");
+  await page.keyboard.press("Control+Enter");
+  await finished(page);
+  // The reworded question is a branch, and it still carries the picture.
+  await expect(page.getByRole("button", { name: "Previous branch" })).toBeVisible();
+  const reworded = page.locator(".sc-msg--user", { hasText: "briefly" });
+  await expect(reworded.locator("img")).toHaveCount(1);
+});
+
+test("Copy on an answer copies its Markdown, fences and all", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => {});
+  await settle(page);
+  await ask(page, RICH);
+  await finished(page);
+  // By position, not by name: while it says "Copied" a name locator would stop matching it.
+  const copy = page.locator(".sc-msgmeta").last().locator("button").first();
+  await expect(copy).toHaveText("Copy");
+  await copy.click();
+  await expect(copy).toHaveText("Copied");
+  const clip = await page.evaluate(() => navigator.clipboard.readText()).catch(() => null);
+  if (clip !== null) {
+    expect(clip).toContain("## Rolling out the new billing flow");
+    expect(clip).toContain("```ts");
+    expect(clip).toContain("| Metric | Healthy |");
+  }
+});

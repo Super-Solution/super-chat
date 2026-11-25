@@ -34,7 +34,7 @@ import {
 } from "@supersolutions/super-chat-react";
 import type { TurnMeta } from "@supersolutions/super-chat-client";
 import { CardRenderer, CardSkeleton, useInteractiveKinds } from "./renderer-registry.js";
-import { AttachIcon, Chevron, FileIcon, ImageIcon, StatusMark } from "./cards/icons.js";
+import { AttachIcon, Chevron, FileIcon, ImageIcon, StatusMark, ToolIcon, SpeakerIcon } from "./cards/icons.js";
 import { newMarkdownStream, renderMarkdown, renderMarkdownBlocks } from "@supersolutions/super-chat-ui-core";
 import { useMarkdownOptions } from "./markdown-options.js";
 import { ProseHtml } from "./card-refs.js";
@@ -51,7 +51,8 @@ import {
 } from "./Autocomplete.js";
 import { Orb } from "./agent/Orb.js";
 import { Thinking } from "./agent/Thinking.js";
-import { useLabels } from "./labels.js";
+import { formatBytes, useLabels, type Labels } from "./labels.js";
+import { EmptyThread, type Suggestion } from "./Suggestions.js";
 
 function partsOf(message: Message) {
   const cards: Card[] = [];
@@ -87,22 +88,14 @@ function partsOf(message: Message) {
   return { cards, rest, providerTools };
 }
 
-const PROVIDER_TOOL_LABELS: Record<string, string> = {
-  web_search_call: "Searched the web",
-  web_fetch_tool_result: "Fetched a page",
-  code_interpreter_call: "Ran code",
-  server_tool_use: "Used a hosted tool",
-  web_search_tool_result: "Searched the web",
-  bash_code_execution_tool_result: "Ran code",
-};
-
 /** "Searched the web" chips — provider-side work, shown so answers aren't magic. */
 function ProviderToolChips({ items }: { items: { id: string; kind: string }[] }) {
+  const labels = useLabels();
   return (
-    <div className="sc-providertools" style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "4px 0" }}>
+    <div className="sc-providertools">
       {items.map((t) => (
         <span key={t.id} className="sc-pill" title={t.kind}>
-          ⚙ {PROVIDER_TOOL_LABELS[t.kind] ?? t.kind.replace(/_/g, " ")}
+          <ToolIcon /> {labels.providerTools[t.kind] ?? labels.providerToolFallback}
         </span>
       ))}
     </div>
@@ -114,8 +107,12 @@ function ProviderToolChips({ items }: { items: { id: string; kind: string }[] })
  *
  * Actions are always visible rather than revealed on hover — a hover-only
  * control does not exist on a touch device.
+ *
+ * Copy takes the answer's Markdown source, not what is on screen: copying the rendered text
+ * ran the cells of a table together and dropped a code block's fence and language.
  */
-function MessageMeta({ meta, onRegenerate }: { meta?: TurnMeta; onRegenerate?: () => void }) {
+function MessageMeta({ meta, source, onRegenerate }: { meta?: TurnMeta; source: string; onRegenerate?: () => void }) {
+  const labels = useLabels();
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const bits = [
     meta?.ms ? formatMs(meta.ms) : null,
@@ -131,23 +128,20 @@ function MessageMeta({ meta, onRegenerate }: { meta?: TurnMeta; onRegenerate?: (
       <button
         type="button"
         className={`sc-btn sc-btn--ghost sc-btn--sm${copyState === "failed" ? " sc-tone--negative" : ""}`}
-        onClick={(e) => {
-          // A turn's text can sit in several blocks, either side of its cards.
-          const blocks = e.currentTarget.closest(".sc-msg")?.querySelectorAll(".sc-msg__text") ?? [];
-          const body = Array.from(blocks, (block) => block.textContent ?? "").join("\n\n");
+        onClick={() => {
           // Report the failure rather than swallowing it — a copy button that
           // does nothing visible is indistinguishable from a broken one.
-          void (navigator.clipboard?.writeText(body) ?? Promise.reject())
+          void (navigator.clipboard?.writeText(source) ?? Promise.reject())
             .then(() => setCopyState("copied"))
             .catch(() => setCopyState("failed"))
             .finally(() => setTimeout(() => setCopyState("idle"), 1500));
         }}
       >
-        {copyState === "copied" ? "Copied" : copyState === "failed" ? "Copy failed" : "Copy"}
+        {copyState === "copied" ? labels.copied : copyState === "failed" ? labels.copyFailed : labels.copy}
       </button>
       {onRegenerate ? (
         <button type="button" className="sc-btn sc-btn--ghost sc-btn--sm" onClick={onRegenerate}>
-          Retry
+          {labels.retry}
         </button>
       ) : null}
     </div>
@@ -180,6 +174,7 @@ export function MessageView({
   respond?: ReturnType<typeof useCardAction>["respond"];
   onRegenerate?: () => void;
 }) {
+  const labels = useLabels();
   const { cards, rest, providerTools } = useMemo(() => partsOf(message), [message]);
   const isInteractive = useInteractiveKinds();
   // Turns saved before order was recorded keep the layout they were written for.
@@ -201,6 +196,12 @@ export function MessageView({
   }, [rest]);
   const options = useMarkdownOptions();
   const html = useMemo(() => renderMarkdown(text, options), [text, options]);
+  // What Copy hands over: the answer's own Markdown, its text parts in the order they were
+  // written (a turn's text can sit in several blocks, either side of its cards).
+  const source = useMemo(
+    () => (segments ? segments.flatMap((segment) => (segment.type === "text" ? [segment.text] : [])).join("\n\n") : text),
+    [segments, text],
+  );
 
   // Split cards: interactive ones stay at top level, read-only ones may sit with
   // the tool activity they came from. One pass rather than a filter whose
@@ -287,9 +288,9 @@ export function MessageView({
           {text ? <ProseHtml className="sc-prose sc-msg__text" html={html} /> : null}
         </>
       )}
-      {!text && !cards.length && !calls.length ? <div className="sc-muted">(no response)</div> : null}
+      {!text && !cards.length && !calls.length ? <div className="sc-muted">{labels.noResponse}</div> : null}
       {(text || cards.length) && (message.metadata as { turn?: TurnMeta } | undefined)?.turn?.origin !== "surface-action" ? (
-        <MessageMeta meta={(message.metadata as { turn?: TurnMeta } | undefined)?.turn} onRegenerate={onRegenerate} />
+        <MessageMeta meta={(message.metadata as { turn?: TurnMeta } | undefined)?.turn} source={source} onRegenerate={onRegenerate} />
       ) : null}
       <BranchNav messageId={message.id} />
     </div>
@@ -298,43 +299,75 @@ export function MessageView({
 
 /** "‹ 2/3 ›" — rendered only when the message actually has siblings. */
 function BranchNav({ messageId }: { messageId: string }) {
+  const labels = useLabels();
   const { index, count, prev, next } = useBranches(messageId);
   const { isRunning } = useThread();
   if (count < 2) return null;
   return (
-    <div className="sc-branchnav" style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
-      <button type="button" className="sc-btn sc-btn--ghost sc-btn--sm" disabled={isRunning} onClick={prev} aria-label="Previous branch">
+    <div className="sc-branchnav">
+      <button type="button" className="sc-btn sc-btn--ghost sc-btn--sm" disabled={isRunning} onClick={prev} aria-label={labels.previousBranch}>
         ‹
       </button>
       <span className="sc-muted">
         {index + 1}/{count}
       </span>
-      <button type="button" className="sc-btn sc-btn--ghost sc-btn--sm" disabled={isRunning} onClick={next} aria-label="Next branch">
+      <button type="button" className="sc-btn sc-btn--ghost sc-btn--sm" disabled={isRunning} onClick={next} aria-label={labels.nextBranch}>
         ›
       </button>
     </div>
   );
 }
 
-/** The user bubble, with edit-as-fork: saving runs a sibling branch. */
+/**
+ * The user bubble, with edit-as-fork: saving runs a sibling branch.
+ *
+ * The edit keeps what the message carried besides its words (an attached image or file): the
+ * branch is the same question reworded, not the same question with its evidence taken away.
+ * The box takes focus when it opens; Escape cancels it and Ctrl or Cmd with Enter sends.
+ */
 function UserBubble({ message, text }: { message: Message; text: string }) {
   const client = useAgentClient();
+  const labels = useLabels();
   const { isRunning } = useThread();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(text);
+  const box = useRef<HTMLTextAreaElement>(null);
+  const edit = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const el = box.current;
+    if (!editing || !el) return;
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+  }, [editing]);
 
   if (!text && !editing) return null;
+
+  const close = () => {
+    setEditing(false);
+    // Back to the button that opened the box, so a keyboard user is not dropped at the top of the page.
+    requestAnimationFrame(() => edit.current?.focus());
+  };
+  const save = () => {
+    const words = draft.trim();
+    if (!words || isRunning) return;
+    setEditing(false);
+    const kept = message.parts.filter((p) => p.type !== "text");
+    void client.editMessage(message.id, kept.length ? [...kept, { type: "text", text: words }] : words);
+  };
+
   if (!editing) {
     return (
       <div className="sc-bubblerow">
         {/* Beside the bubble, not in it: the message reads as written, and the
             control shows on hover or focus (always, on touch). */}
         <button
+          ref={edit}
           type="button"
           className="sc-bubble__edit"
           disabled={isRunning}
-          aria-label="Edit message"
-          title="Edit. The original stays as a branch you can switch back to."
+          aria-label={labels.editMessage}
+          title={labels.editHint}
           onClick={() => {
             setDraft(text);
             setEditing(true);
@@ -349,28 +382,32 @@ function UserBubble({ message, text }: { message: Message; text: string }) {
     );
   }
   return (
-    <div className="sc-bubble" style={{ width: "100%" }}>
+    <div className="sc-bubble sc-bubble--editing">
       <textarea
+        ref={box}
         className="sc-composer__input"
         rows={2}
         value={draft}
+        aria-label={labels.editMessage}
         onChange={(e) => setDraft(e.target.value)}
-        style={{ width: "100%" }}
+        onKeyDown={(e) => {
+          // Neither key means anything while an IME candidate is open.
+          if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+          if (e.key === "Escape") {
+            e.preventDefault();
+            close();
+          } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            save();
+          }
+        }}
       />
-      <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-        <button
-          type="button"
-          className="sc-btn sc-btn--primary sc-btn--sm"
-          disabled={!draft.trim() || isRunning}
-          onClick={() => {
-            setEditing(false);
-            void client.editMessage(message.id, draft.trim());
-          }}
-        >
-          Send edited
+      <div className="sc-bubble__editbar">
+        <button type="button" className="sc-btn sc-btn--primary sc-btn--sm" disabled={!draft.trim() || isRunning} onClick={save}>
+          {labels.sendEdited}
         </button>
-        <button type="button" className="sc-btn sc-btn--ghost sc-btn--sm" onClick={() => setEditing(false)}>
-          Cancel
+        <button type="button" className="sc-btn sc-btn--ghost sc-btn--sm" onClick={close}>
+          {labels.cancel}
         </button>
       </div>
     </div>
@@ -378,18 +415,15 @@ function UserBubble({ message, text }: { message: Message; text: string }) {
 }
 
 /** `2026-08-04` → `Today` / `Yesterday` / a written date. */
-function dayLabel(at: number): string {
+function dayLabel(at: number, labels: Labels): string {
   const d = new Date(at);
   const today = new Date();
   const midnight = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
   const diffDays = Math.round((midnight(today) - midnight(d)) / 86_400_000);
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
+  if (diffDays === 0) return labels.today;
+  if (diffDays === 1) return labels.yesterday;
   return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
-
-const formatBytes = (n: number) =>
-  n < 1024 ? `${n} B` : n < 1024 * 1024 ? `${(n / 1024).toFixed(0)} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`;
 
 /** `840ms` under a second, `1.4s` above it — two digits of precision, never more. */
 function formatMs(ms: number): string {
@@ -409,21 +443,22 @@ const mediaSrc = (source: MediaSource, mediaType?: string): string | null => {
  * transcript, including after a reload.
  */
 function MediaParts({ parts }: { parts: Extract<ContentPart, { type: "image" | "file" | "audio" }>[] }) {
+  const labels = useLabels();
   return (
     <div className="sc-media">
       {parts.map((p, i) => {
         if (p.type === "image") {
           const src = mediaSrc(p.source, p.mediaType);
           return src ? (
-            <img key={i} className="sc-media__img" src={src} alt="attached image" style={{ maxWidth: "min(100%, 360px)", borderRadius: 8 }} />
+            <img key={i} className="sc-media__img" src={src} alt={labels.attachedImage} />
           ) : (
             <span key={i} className="sc-pill" title={(p.source as { id?: string }).id}>
-              <ImageIcon /> attached image
+              <ImageIcon /> {labels.attachedImage}
             </span>
           );
         }
         if (p.type === "file") {
-          const name = p.filename ?? (p.source.kind === "providerFile" ? p.source.id : "attachment");
+          const name = p.filename ?? (p.source.kind === "providerFile" ? p.source.id : labels.attachment);
           return (
             <span key={i} className="sc-pill" title={p.mediaType}>
               <FileIcon /> {name}
@@ -433,12 +468,13 @@ function MediaParts({ parts }: { parts: Extract<ContentPart, { type: "image" | "
         const src = mediaSrc(p.source, p.mediaType);
         return src ? (
           <span key={i} className="sc-media__audio">
-            <audio src={src} controls preload="metadata" aria-label="Attached audio" />
+            <audio src={src} controls preload="metadata" aria-label={labels.attachedAudio} />
             {p.transcript ? <span className="sc-muted">{p.transcript.slice(0, 60)}{p.transcript.length > 60 ? "…" : ""}</span> : null}
           </span>
         ) : (
           <span key={i} className="sc-pill">
-            🔊 audio{p.transcript ? ` — “${p.transcript.slice(0, 60)}${p.transcript.length > 60 ? "…" : ""}”` : ""}
+            <SpeakerIcon /> {labels.attachedAudio}
+            {p.transcript ? ` — “${p.transcript.slice(0, 60)}${p.transcript.length > 60 ? "…" : ""}”` : ""}
           </span>
         );
       })}
@@ -453,6 +489,7 @@ function ToolActivity({
   calls: Extract<ContentPart, { type: "tool-call" }>[];
   results: Extract<ContentPart, { type: "tool-result" }>[];
 }) {
+  const labels = useLabels();
   const [open, setOpen] = useState(false);
   const { byId, items } = useMemo(() => {
     const byId = new Map(results.map((r) => [r.callId, r]));
@@ -469,8 +506,8 @@ function ToolActivity({
   const totalMs = results.reduce((sum, r) => sum + (r.ms ?? 0), 0);
 
   const summary = isRunning
-    ? `Running tools ${items.length - running.length}/${items.length}${current ? ` · ${current.name}` : ""}…`
-    : `${items.length} tool ${items.length === 1 ? "call" : "calls"}${totalMs ? ` · ${formatMs(totalMs)}` : ""}`;
+    ? labels.toolsRunning(items.length - running.length, items.length, current?.name)
+    : labels.toolCalls(items.length, totalMs ? formatMs(totalMs) : undefined);
 
   const row = (c: { callId: string; name: string; input?: unknown }) => {
     const result = byId.get(c.callId);
@@ -506,7 +543,7 @@ function ToolActivity({
           {open ? "▾" : "▸"}
         </span>
         <span className="sc-tools__summary">{summary}</span>
-        {failures ? <span className="sc-pill sc-pill--negative">{failures} failed</span> : null}
+        {failures ? <span className="sc-pill sc-pill--negative">{labels.toolsFailed(failures)}</span> : null}
       </button>
       {/* While running, the in-flight call shows without expanding the group —
           seeing which tool is live is the point; the other rows are history. */}
@@ -649,6 +686,7 @@ function StreamedSurface({ callId, card, spec }: { callId: string; card?: Card; 
 
 /** The live turn: streamed text, cards as they arrive, and any blocking card. */
 export function LiveTurn() {
+  const labels = useLabels();
   const run = useRun();
   const { pending, respond } = useCardAction();
 
@@ -766,7 +804,7 @@ export function LiveTurn() {
           from run state rather than a rotation of invented phrases. */}
       {run.status === "running" && !text && !calls.length && !flow.some(Boolean) ? (
         <div className="sc-status" aria-live="polite">
-          <Orb variant="S1" pill label={statusLine(run)} />
+          <Orb variant="S1" pill label={statusLine(run, labels)} />
         </div>
       ) : null}
       {/* The saved turn shows a meta row; holding its place now keeps the turn from growing when it is saved. */}
@@ -782,20 +820,20 @@ export function LiveTurn() {
  * status line that cycles through plausible-sounding stages while the agent does
  * something else is a lie, and users notice when it never matches the tool list.
  */
-function statusLine(run: RunState): string {
-  if (run.job) return `Working in the background — ${run.job.status}`;
-  if (run.pendingCard) return "Waiting for you";
+function statusLine(run: RunState, labels: Labels): string {
+  if (run.job) return labels.statusBackground(run.job.status);
+  if (run.pendingCard) return labels.statusWaiting;
   const writing = Object.values(run.partialTools ?? {}).find(
     (p) => !run.parts.some((part) => part.type === "tool-call" && part.callId === p.callId),
   );
-  if (writing) return `Preparing ${writing.name}…`;
+  if (writing) return labels.statusPreparing(writing.name);
   const lastCall = [...run.parts].reverse().find((p) => p.type === "tool-call") as
     | Extract<ContentPart, { type: "tool-call" }>
     | undefined;
-  if (lastCall && lastCall.status === "running") return `Running ${lastCall.name}…`;
-  if (run.parts.some((p) => p.type === "reasoning")) return "Thinking…";
-  if (run.steps > 1) return `Working — step ${run.steps}`;
-  return "Thinking…";
+  if (lastCall && lastCall.status === "running") return labels.statusRunning(lastCall.name);
+  if (run.parts.some((p) => p.type === "reasoning")) return labels.thinking;
+  if (run.steps > 1) return labels.statusStep(run.steps);
+  return labels.thinking;
 }
 
 /**
@@ -823,20 +861,31 @@ function ThreadAnnouncer({ running, failed }: { running: boolean; failed: boolea
 
 /** Inline error block for a failed run, with a retry that re-runs the last turn. */
 function ErrorBlock({ error, onRetry }: { error: unknown; onRetry: () => void }) {
+  const labels = useLabels();
   const detail = error != null ? (error instanceof Error ? error.message : String(error)) : "";
   return (
     <div className="sc-card sc-card--error" role="alert">
-      {detail || "Something went wrong."}
+      {detail || labels.somethingWrong}
       <div className="sc-card__actions">
         <button type="button" className="sc-btn sc-btn--sm" onClick={onRetry}>
-          Retry
+          {labels.retry}
         </button>
       </div>
     </div>
   );
 }
 
-export function Thread({ empty }: { empty?: ReactNode }) {
+export type ThreadProps = {
+  /**
+   * What to show before the first message. Omit for the built-in empty state (a title, one line
+   * and `suggestions`); pass your own node to replace it, or `null` for nothing at all.
+   */
+  empty?: ReactNode;
+  /** Starting prompts for the built-in empty state. Ignored when `empty` is given. */
+  suggestions?: readonly Suggestion[];
+};
+
+export function Thread({ empty, suggestions }: ThreadProps) {
   const labels = useLabels();
   const { messages, status, error, regenerate, isRunning } = useThread();
   const { respond } = useCardAction();
@@ -879,9 +928,11 @@ export function Thread({ empty }: { empty?: ReactNode }) {
           setPinned(el.scrollHeight - el.scrollTop - el.clientHeight < 80);
         }}
       >
-        {messages.length === 0 && run.status === "idle" ? <div className="sc-empty">{empty}</div> : null}
+        {messages.length === 0 && run.status === "idle" ? (
+          <div className="sc-empty">{empty === undefined ? <EmptyThread suggestions={suggestions} /> : empty}</div>
+        ) : null}
         {messages.map((m) => {
-          const day = m.createdAt ? dayLabel(m.createdAt) : "";
+          const day = m.createdAt ? dayLabel(m.createdAt, labels) : "";
           const divider = day && day !== lastDay ? day : "";
           if (day) lastDay = day;
           return (
@@ -914,7 +965,7 @@ export function Thread({ empty }: { empty?: ReactNode }) {
             bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
           }}
         >
-          <Chevron /> Latest
+          <Chevron /> {labels.latest}
         </button>
       ) : null}
     </div>
@@ -940,17 +991,42 @@ export type ComposerProps = {
    * read back from `useAttachments()` — the two never both hold a file.
    */
   onAttachFile?: (file: File) => void | Promise<void>;
+  /**
+   * The `accept` list of the file picker, and the rule a dropped or pasted file is held to.
+   * Default: images, PDF and text. A file outside it is refused with a message, not dropped.
+   */
+  accept?: string;
+  /** Refuse a file larger than this many bytes, with a message. Omit for no limit: the kit does not guess. */
+  maxFileBytes?: number;
 };
 
+/** Does `file` match an `accept` list (`image/*,.pdf,text/plain`)? */
+export function matchesAccept(file: { name: string; type: string }, accept: string): boolean {
+  const name = file.name.toLowerCase();
+  const type = file.type.toLowerCase();
+  return accept
+    .split(",")
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean)
+    .some((t) =>
+      t.startsWith(".") ? name.endsWith(t) : t.endsWith("/*") ? type.startsWith(t.slice(0, -1)) : type === t,
+    );
+}
+
+const DEFAULT_ACCEPT = "image/*,application/pdf,text/*";
+
 export function Composer({
-  placeholder = "Ask anything…",
+  placeholder,
   maxInputTokens,
   models,
   model,
   onModelChange,
   toolToggles,
   onAttachFile,
+  accept = DEFAULT_ACCEPT,
+  maxFileBytes,
 }: ComposerProps) {
+  const labels = useLabels();
   const { send, stop, isRunning, stopping, messages } = useThread();
   const quoteBus = useDocumentQuotes();
   const quotes = quoteBus?.quotes ?? [];
@@ -962,6 +1038,9 @@ export function Composer({
   const tokens = useMemo(() => (value ? estimateTokens(value) : 0), [value]);
   const overLimit = maxInputTokens != null && tokens > maxInputTokens;
   const [local, setLocal] = useState<{ id: string; name: string; size: number; part: ContentPart }[]>([]);
+  // Files that were not attached, and why. Said out loud (role="alert"): a file that vanishes with
+  // no word reads as the button being broken.
+  const [rejected, setRejected] = useState<string[]>([]);
 
   // One list to render and to gate "can send", whichever path staged the file.
   const attachments = onAttachFile
@@ -1000,19 +1079,38 @@ export function Composer({
   // storage of its own, and `MediaSource` already carries inline data. A host
   // with a file API can swap these for `providerFile` sources before sending.
   const addFiles = async (files: FileList | File[]) => {
-    const accepted = [...files].filter((f) => f.type.startsWith("image/") || f.type === "application/pdf" || f.type.startsWith("text/"));
+    const refusals: string[] = [];
+    const accepted = [...files].filter((f) => {
+      if (!matchesAccept(f, accept)) {
+        refusals.push(labels.fileNotAccepted(f.name));
+        return false;
+      }
+      if (maxFileBytes != null && f.size > maxFileBytes) {
+        refusals.push(labels.fileTooLarge(f.name, formatBytes(maxFileBytes)));
+        return false;
+      }
+      return true;
+    });
+    setRejected(refusals);
     // With a host seam, staging is the host's job — it may need to upload and
     // hand back a providerFile reference, which base64 here cannot produce.
     if (onAttachFile) {
-      for (const f of accepted) await onAttachFile(f);
+      for (const f of accepted) {
+        try {
+          await onAttachFile(f);
+        } catch {
+          refusals.push(labels.fileNotAccepted(f.name));
+          setRejected([...refusals]);
+        }
+      }
       return;
     }
-    const read = await Promise.all(
+    const settled = await Promise.allSettled(
       accepted.map(
         (f) =>
           new Promise<{ id: string; name: string; size: number; part: ContentPart }>((resolve, reject) => {
             const reader = new FileReader();
-            reader.onerror = () => reject(reader.error);
+            reader.onerror = () => reject(new Error(f.name));
             reader.onload = () => {
               const data = String(reader.result).split(",")[1] ?? "";
               const source = { kind: "base64" as const, data };
@@ -1029,6 +1127,13 @@ export function Composer({
           }),
       ),
     );
+    // A file the browser could not read is reported like any other refusal.
+    const read: { id: string; name: string; size: number; part: ContentPart }[] = [];
+    settled.forEach((r, i) => {
+      if (r.status === "fulfilled") read.push(r.value);
+      else refusals.push(labels.fileNotAccepted(accepted[i]!.name));
+    });
+    if (refusals.length) setRejected([...refusals]);
     // Dedupe by identity so dropping the same file twice does not send it twice.
     setAttachments((prev) => [...prev, ...read.filter((r) => !prev.some((p) => p.id === r.id))]);
   };
@@ -1049,6 +1154,7 @@ export function Composer({
     ];
     setValue("");
     setAttachments([]);
+    setRejected([]);
     // Cleared before the run, not after: a quote left in the composer would be
     // re-sent with the next message, which is the stale-context bug that keeping
     // quotes off app-state was meant to avoid in the first place.
@@ -1074,18 +1180,21 @@ export function Composer({
   // Drag-and-drop is not discoverable on its own, and does not exist at all on
   // a touch device — so the picker is always offered too.
   const attachButton = (
-    <label className="sc-btn sc-btn--ghost sc-btn--sm" title="Attach a file" aria-disabled={isRunning}>
+    <label className="sc-btn sc-btn--ghost sc-btn--sm" title={labels.attachFile} aria-disabled={isRunning}>
       <AttachIcon />
-      <span className="sc-sr-only">Attach a file</span>
+      <span className="sc-sr-only">{labels.attachFile}</span>
       <input
         type="file"
         multiple
-        style={{ display: "none" }}
+        accept={accept}
+        className="sc-composer__file"
         disabled={isRunning}
         onChange={(e) => {
-          const files = e.target.files;
+          // Copied before the input is cleared: the FileList is live, and clearing the value (so
+          // the same file can be picked again) empties it.
+          const files = e.target.files ? [...e.target.files] : [];
           e.target.value = "";
-          if (files?.length) void addFiles(files);
+          if (files.length) void addFiles(files);
         }}
       />
     </label>
@@ -1095,11 +1204,11 @@ export function Composer({
     // Disabled once requested: pressing Stop twice does nothing extra, and a
     // still-live button after a stop reads as the button being broken.
     <button type="button" className="sc-btn sc-btn--ghost" onClick={stop} disabled={stopping}>
-      {stopping ? "Stopping…" : "Stop"}
+      {stopping ? labels.stopping : labels.stop}
     </button>
   ) : (
     <button type="submit" className="sc-btn sc-btn--primary" disabled={!hasContent || overLimit}>
-      Send
+      {labels.send}
     </button>
   );
 
@@ -1121,7 +1230,7 @@ export function Composer({
         <SuggestMenu items={suggestions} active={activeIdx} onPick={pick} />
       ) : null}
       {quotes.length ? (
-        <ul className="sc-quotes" aria-label="Quoted from a document">
+        <ul className="sc-quotes" aria-label={labels.quotedFromDocument}>
           {quotes.map((q, i) => (
             <li key={`${q.docId}:${q.start}:${q.end}`} className="sc-quote">
               <span className="sc-quote__doc">{q.title}</span>
@@ -1129,12 +1238,19 @@ export function Composer({
               <button
                 type="button"
                 className="sc-quote__remove"
-                aria-label={`Remove quote from ${q.title}`}
+                aria-label={labels.removeQuote(q.title)}
                 onClick={() => quoteBus?.remove(i)}
               >
                 ✕
               </button>
             </li>
+          ))}
+        </ul>
+      ) : null}
+      {rejected.length ? (
+        <ul className="sc-composer__rejected" role="alert">
+          {rejected.map((r) => (
+            <li key={r}>{r}</li>
           ))}
         </ul>
       ) : null}
@@ -1148,7 +1264,7 @@ export function Composer({
               <button
                 type="button"
                 className="sc-attachment__remove"
-                aria-label={`Remove ${a.name}`}
+                aria-label={labels.removeAttachment(a.name)}
                 onClick={() =>
                   onAttachFile ? staged.remove(i) : setAttachments((prev) => prev.filter((p) => p.id !== a.id))
                 }
@@ -1164,7 +1280,8 @@ export function Composer({
         className="sc-composer__input"
         rows={1}
         value={value}
-        placeholder={placeholder}
+        placeholder={placeholder ?? labels.placeholder}
+        aria-label={placeholder ?? labels.placeholder}
         onPaste={(e) => {
           const files = [...e.clipboardData.files];
           if (!files.length) return;
@@ -1248,7 +1365,7 @@ export function Composer({
               className="sc-composer__model"
               value={model ?? models[0]}
               onChange={(e) => onModelChange?.(e.target.value)}
-              aria-label="Model"
+              aria-label={labels.model}
             >
               {models.map((m) => (
                 <option key={m} value={m}>

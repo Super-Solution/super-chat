@@ -38,7 +38,8 @@ export { DocumentCardView, type DocumentQuote, type DocumentCardViewProps } from
 export { EditReviewCardView } from "./cards/EditReview.js";
 export { EmailCardView, type EmailCardViewProps } from "./cards/Email.js";
 
-export { Thread, Composer, MessageView, LiveTurn } from "./Thread.js";
+export { Thread, Composer, MessageView, LiveTurn, matchesAccept, type ThreadProps, type ComposerProps } from "./Thread.js";
+export { Suggestions, EmptyThread, type Suggestion, type SuggestionsProps } from "./Suggestions.js";
 export {
   ChatPanel,
   ChatPanelProvider,

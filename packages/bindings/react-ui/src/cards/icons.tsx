@@ -92,3 +92,29 @@ export function ImageIcon() {
     </svg>
   );
 }
+
+/** Work done by a hosted tool: a small wrench. */
+export function ToolIcon() {
+  return (
+    <svg className="sc-mark" width={12} height={12} viewBox="0 0 16 16" aria-hidden>
+      <path d="M10.3 2.2a3.5 3.5 0 0 0-3.2 4.8L2.4 11.7a1.4 1.4 0 0 0 2 2l4.7-4.7a3.5 3.5 0 0 0 4.8-3.2l-2.1 2.1-1.9-.5-.5-1.9 2.1-2.1a3.5 3.5 0 0 0-1.2-.2Z" {...stroke} strokeWidth={1.3} />
+    </svg>
+  );
+}
+
+export function SpeakerIcon() {
+  return (
+    <svg className="sc-mark" width={12} height={12} viewBox="0 0 16 16" aria-hidden>
+      <path d="M2.5 6v4h2.6L9 13V3L5.1 6H2.5ZM11.2 5.6a3.5 3.5 0 0 1 0 4.8" {...stroke} strokeWidth={1.3} />
+    </svg>
+  );
+}
+
+/** Thumbs up, or down when `down`. */
+export function ThumbIcon({ down = false }: { down?: boolean }) {
+  return (
+    <svg className={down ? "sc-mark sc-mark--flip" : "sc-mark"} width={14} height={14} viewBox="0 0 16 16" aria-hidden>
+      <path d="M5.5 7.2 8 2c1.2 0 1.9.9 1.7 2L9.3 6h3.2c.9 0 1.5.8 1.3 1.6l-.9 4.4c-.1.7-.7 1.2-1.4 1.2H5.5V7.2ZM2.5 7.2h3v6h-3v-6Z" {...stroke} strokeWidth={1.3} />
+    </svg>
+  );
+}
