@@ -33,8 +33,8 @@ apps/playground   Next.js dev panels. runs with NO API key.
 
 ```bash
 pnpm install && pnpm build && pnpm dev     # → http://localhost:3210
-pnpm test                                  # 359 tests, ~4s
-pnpm test:rwd                              # 152 browser checks, 4 viewports
+pnpm test                                  # ~1,090 tests, ~30s
+pnpm test:rwd                              # ~250 browser checks, 4 viewports
 ```
 
 The playground is **not a product**. It is one panel per capability, aimed at a
