@@ -1225,13 +1225,15 @@
    may set --sc-tok-* alone to tune just the code. */
 :root {
   --sc-tok-k: var(--sc-accent);       /* keywords, tags */
-  --sc-tok-s: var(--sc-positive);     /* strings */
-  --sc-tok-n: var(--sc-warning);      /* numbers */
+  /* Strings, numbers and literals sit on the code surface, which is darker than the page: the plain
+     status colours fall just under 4.5:1 there, so they are pulled a little toward the text colour. */
+  --sc-tok-s: color-mix(in srgb, var(--sc-positive) 80%, var(--sc-text));  /* strings */
+  --sc-tok-n: color-mix(in srgb, var(--sc-warning) 80%, var(--sc-text));   /* numbers */
   --sc-tok-c: var(--sc-text-muted);   /* comments */
   --sc-tok-f: var(--sc-info);         /* function names */
   --sc-tok-p: var(--sc-info);         /* object keys, properties */
   --sc-tok-a: var(--sc-info);         /* attributes, flags */
-  --sc-tok-l: var(--sc-warning);      /* true, false, null */
+  --sc-tok-l: color-mix(in srgb, var(--sc-warning) 80%, var(--sc-text));   /* true, false, null */
   --sc-tok-v: var(--sc-info);         /* variables */
 }
 .sc-tok-k { color: var(--sc-tok-k); }

@@ -293,7 +293,7 @@ export function SpecSplit({ spec, children, label }: { spec: unknown; children: 
     <div className="dev__split">
       <div className="dev__spec">
         {label ? <div className="dev__spec-label">{label}</div> : null}
-        <pre className="sc-pre dev__code">{JSON.stringify(spec, null, 2)}</pre>
+        <pre className="sc-pre dev__code" tabIndex={0}>{JSON.stringify(spec, null, 2)}</pre>
       </div>
       <div className="dev__preview">{children}</div>
     </div>
