@@ -64,6 +64,15 @@ export { AgentSurface, SurfaceCardView, type AgentSurfaceProps } from "./surface
 export { ContextInspector } from "./ContextInspector.js";
 export { ToastProvider, ConnectionBanner, useToast, type Toast } from "./Toast.js";
 export { CardRefProvider, ProseHtml, useCardRefHost } from "./card-refs.js";
+export {
+  LabelsProvider,
+  useLabels,
+  enLabels,
+  zhTW,
+  type Labels,
+  type LabelsOverride,
+} from "./labels.js";
+export { MarkdownProvider, useMarkdownOptions, type MarkdownProviderProps } from "./markdown-options.js";
 export type { CardRef, CardRefEvent, CardRefHost, CardRefResult } from "@supersolutions/super-chat-core";
 export { DocumentQuoteProvider, useDocumentQuotes, type QuoteBus } from "./quotes.js";
 

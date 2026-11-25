@@ -39,6 +39,8 @@ const EXAMPLES = [
   { title: "Markets — chart", prompt: "Show me SUI price action over the last 60 days." },
   { title: "Interactive — confirm", prompt: "Set an alert for when SUI goes above $5." },
   { title: "Manual skill", prompt: "Do a deep research pass on the market structure." },
+  { title: "Rich answer — Markdown", prompt: "Give me a rich answer in Markdown: how do we roll out the new billing flow?" },
+  { title: "繁體中文", prompt: "請用繁體中文說明新的計費流程要怎麼上線。" },
 ];
 
 export default function RunPanel() {

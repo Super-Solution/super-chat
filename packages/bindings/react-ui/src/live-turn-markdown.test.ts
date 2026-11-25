@@ -11,7 +11,7 @@ describe("LiveTurn markdown streaming", () => {
     const start = thread.indexOf("export function LiveTurn(");
     expect(start).toBeGreaterThan(-1);
     const liveTurn = thread.slice(start, thread.indexOf("\n}\n", start));
-    expect(liveTurn).toMatch(/renderMarkdownStream\(throttledText, /);
+    expect(liveTurn).toMatch(/renderMarkdownBlocks\(throttledText, /);
     expect(liveTurn).not.toMatch(/renderMarkdown\(/);
   });
 });

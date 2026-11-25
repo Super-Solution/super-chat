@@ -23,8 +23,10 @@ import type { CardRendererProps } from "../renderer-registry.js";
 import { formatValue, safeHref } from "@supersolutions/super-chat-ui-core";
 import { FormattedValue, useFormatOptions } from "./FormattedValue.js";
 import { StatusMark, ToneIcon, type StatusMarkKind } from "./icons.js";
+import { useLabels } from "../labels.js";
 
 export function ComparisonCardView({ spec }: CardRendererProps<ComparisonCard>) {
+  const labels = useLabels();
   return (
     <div className="sc-card">
       {spec.title ? <div className="sc-card__title">{spec.title}</div> : null}
@@ -32,7 +34,8 @@ export function ComparisonCardView({ spec }: CardRendererProps<ComparisonCard>) 
         <table className="sc-table sc-compare">
           <thead>
             <tr>
-              <th />
+              {/* The corner cell heads the row labels: named for a screen reader, empty to the eye. */}
+              <th scope="col"><span className="sc-sr-only">{labels.criterion}</span></th>
               {spec.options.map((o) => (
                 <th key={o.id} className={o.highlight ? "sc-compare__best" : undefined}>
                   <div>{o.label}</div>
@@ -240,6 +243,7 @@ export function FunnelCardView({ spec }: CardRendererProps<FunnelCard>) {
 }
 
 export function GaugeCardView({ spec }: CardRendererProps<GaugeCard>) {
+  const labels = useLabels();
   const min = spec.min ?? 0;
   const max = spec.max ?? 100;
   const clamped = Math.min(max, Math.max(min, spec.value));
@@ -256,7 +260,7 @@ export function GaugeCardView({ spec }: CardRendererProps<GaugeCard>) {
         <div className="sc-gauge__value"><FormattedValue value={spec.value} format={spec.format ?? "number"} /></div>
         {band || spec.label ? <div className="sc-gauge__label">{spec.label ?? band?.label}</div> : null}
       </div>
-      <div className="sc-gauge__track" role="meter" aria-valuenow={clamped} aria-valuemin={min} aria-valuemax={max}>
+      <div className="sc-gauge__track" role="meter" aria-label={spec.title ?? spec.label ?? labels.gauge} aria-valuenow={clamped} aria-valuemin={min} aria-valuemax={max}>
         {(spec.bands ?? []).map((b, i) => (
           <div
             key={i}

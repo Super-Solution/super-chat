@@ -430,7 +430,7 @@
   .sc-skeleton__surface { animation: none; background: var(--sc-surface-2); }
   /* The caret stays put rather than blinking — it still marks the write head. */
   .sc-msg__text--streaming:not(:has(> *))::after,
-  .sc-msg__text--streaming > :last-child:not(ul, ol, pre, table)::after,
+  .sc-msg__text--streaming > :last-child:not(ul, ol, pre, table, .sc-mdcode, .sc-md-tablebox, .sc-md-scroll, .sc-math-block)::after,
   .sc-msg__text--streaming > :last-child:is(ul, ol) > li:last-child::after { animation: none; }
   .sc-media__viewport :is(img, video, audio) { transition: none; }
 }
@@ -903,7 +903,7 @@
    caret after a closing paragraph would open a line of its own, and the turn
    would shrink by that line when the answer is saved. */
 .sc-msg__text--streaming:not(:has(> *))::after,
-.sc-msg__text--streaming > :last-child:not(ul, ol, pre, table)::after,
+.sc-msg__text--streaming > :last-child:not(ul, ol, pre, table, .sc-mdcode, .sc-md-tablebox, .sc-md-scroll, .sc-math-block)::after,
 .sc-msg__text--streaming > :last-child:is(ul, ol) > li:last-child::after {
   content: "";
   display: inline-block;
@@ -914,7 +914,7 @@
   background: var(--sc-accent);
 }
 .sc-msg__text--paused:not(:has(> *))::after,
-.sc-msg__text--paused > :last-child:not(ul, ol, pre, table)::after,
+.sc-msg__text--paused > :last-child:not(ul, ol, pre, table, .sc-mdcode, .sc-md-tablebox, .sc-md-scroll, .sc-math-block)::after,
 .sc-msg__text--paused > :last-child:is(ul, ol) > li:last-child::after { animation: sc-caret 1s step-end infinite; }
 @keyframes sc-caret { 50% { opacity: 0; } }
 
@@ -1030,15 +1030,24 @@
 .sc-prose hr { margin: var(--sc-sp-16) 0; border: 0; border-top: 1px solid var(--sc-border); }
 .sc-prose del { text-decoration: line-through; color: var(--sc-text-muted); }
 
-/* The table scrolls inside its own box. A wide table is the single most common
-   way an embedded transcript ends up with a horizontal scrollbar on the PAGE,
-   and at 360px almost any table is wide. */
-.sc-prose .sc-md-table {
-  display: block;
-  overflow-x: auto;
-  width: 100%;
+/* The table scrolls inside a box of its own, and the box takes focus so a keyboard can scroll
+   it. A wide table is the single most common way an embedded transcript ends up with a
+   horizontal scrollbar on the PAGE, and at 360px almost any table is wide. The box, not the
+   table, is what scrolls: a `display: block` table stops being a table to some assistive
+   technology. A tall table scrolls here too, under a header that stays put. */
+.sc-prose .sc-md-scroll {
+  overflow: auto;
+  max-width: 100%;
+  max-height: min(70dvh, 44rem);
   margin: 0 0 var(--sc-sp-8);
-  border-collapse: collapse;
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius-sm);
+}
+.sc-prose .sc-md-scroll:focus-visible { outline: 2px solid var(--sc-live-accent-strong); outline-offset: 2px; }
+.sc-prose .sc-md-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: var(--sc-fs-meta);
 }
 .sc-prose .sc-md-table th,
@@ -1047,11 +1056,125 @@
   border-bottom: 1px solid var(--sc-border);
   text-align: left;
 }
-.sc-prose .sc-md-table th { color: var(--sc-text-muted); font-weight: 600; white-space: nowrap; }
+.sc-prose .sc-md-table th {
+  position: sticky;
+  top: 0;
+  background: var(--sc-surface-2);
+  color: var(--sc-text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
 .sc-prose .sc-md-table tbody tr:last-child td { border-bottom: 0; }
 .sc-prose .sc-md-left { text-align: left; }
 .sc-prose .sc-md-center { text-align: center; }
 .sc-prose .sc-md-right { text-align: right; }
+
+/* Beside a table: the two ways to take it away, as quiet text buttons. A box of its own so the
+   bar sits on the table's edge and the table keeps its own border. */
+.sc-prose .sc-md-tablebox { margin: 0 0 var(--sc-sp-8); }
+.sc-prose .sc-md-tablebox .sc-md-scroll { margin-bottom: 0; }
+.sc-md-tablebar { display: flex; justify-content: flex-end; gap: var(--sc-sp-4); margin-bottom: var(--sc-sp-4); }
+.sc-md-tablebtn,
+.sc-mdcode__btn {
+  min-height: 24px;
+  padding: var(--sc-sp-2) var(--sc-sp-8);
+  border: 0;
+  border-radius: var(--sc-radius-xs);
+  background: none;
+  color: var(--sc-text-muted);
+  font: inherit;
+  font-size: var(--sc-fs-meta);
+  line-height: var(--sc-lh-ui);
+  cursor: pointer;
+}
+.sc-md-tablebtn:hover,
+.sc-mdcode__btn:hover { background: var(--sc-surface-2); color: var(--sc-text); }
+.sc-md-tablebtn:focus-visible,
+.sc-mdcode__btn:focus-visible,
+.sc-mdcode__more:focus-visible { outline: 2px solid var(--sc-live-accent-strong); outline-offset: 2px; }
+.sc-mdcode__btn svg { display: block; }
+.sc-mdcode__btn[aria-pressed="true"] { background: var(--sc-surface); color: var(--sc-text); }
+.sc-md-tablebtn[data-ui-done="failed"],
+.sc-mdcode__btn[data-ui-done="failed"] { color: var(--sc-negative); }
+
+/* A fenced block of code with its language and its buttons. Inside prose, so the plain `pre`
+   rule above still draws the code; this draws the frame around it. */
+.sc-prose .sc-mdcode {
+  margin: var(--sc-sp-6) 0 var(--sc-sp-8);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius-sm);
+  background: var(--sc-surface-2);
+  overflow: hidden;
+}
+.sc-mdcode__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sc-sp-8);
+  padding: var(--sc-sp-2) var(--sc-sp-6) var(--sc-sp-2) var(--sc-sp-12);
+  border-bottom: 1px solid var(--sc-border);
+  color: var(--sc-text-muted);
+  font-size: var(--sc-fs-meta);
+}
+.sc-mdcode__lang { font-family: var(--sc-mono); }
+.sc-mdcode__tools { display: flex; gap: var(--sc-sp-2); }
+.sc-prose .sc-mdcode pre { margin: 0; border: 0; border-radius: 0; background: none; }
+.sc-mdcode[data-ui-wrap] pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.sc-mdcode__more {
+  display: none;
+  width: 100%;
+  padding: var(--sc-sp-6);
+  border: 0;
+  border-top: 1px solid var(--sc-border);
+  background: none;
+  color: var(--sc-text-muted);
+  font: inherit;
+  font-size: var(--sc-fs-meta);
+  cursor: pointer;
+}
+.sc-mdcode__more:hover { background: var(--sc-surface); color: var(--sc-text); }
+/* Past about two dozen lines a block is cut at sixteen, with a fade, until it is opened. */
+.sc-mdcode[data-ui-long] .sc-mdcode__more { display: block; }
+.sc-prose .sc-mdcode[data-ui-long]:not([data-ui-open]) pre {
+  max-height: calc(16 * 1.5em);
+  overflow-y: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, black 75%, transparent);
+  mask-image: linear-gradient(to bottom, black 75%, transparent);
+}
+
+/* Code colours are the kit's own tokens, so a retheme recolours code with everything else. A host
+   may set --sc-tok-* alone to tune just the code. */
+:root {
+  --sc-tok-k: var(--sc-accent);       /* keywords, tags */
+  --sc-tok-s: var(--sc-positive);     /* strings */
+  --sc-tok-n: var(--sc-warning);      /* numbers */
+  --sc-tok-c: var(--sc-text-muted);   /* comments */
+  --sc-tok-f: var(--sc-info);         /* function names */
+  --sc-tok-p: var(--sc-info);         /* object keys, properties */
+  --sc-tok-a: var(--sc-info);         /* attributes, flags */
+  --sc-tok-l: var(--sc-warning);      /* true, false, null */
+  --sc-tok-v: var(--sc-info);         /* variables */
+}
+.sc-tok-k { color: var(--sc-tok-k); }
+.sc-tok-s { color: var(--sc-tok-s); }
+.sc-tok-n { color: var(--sc-tok-n); }
+.sc-tok-c { color: var(--sc-tok-c); font-style: italic; }
+.sc-tok-f { color: var(--sc-tok-f); }
+.sc-tok-p { color: var(--sc-tok-p); }
+.sc-tok-a { color: var(--sc-tok-a); }
+.sc-tok-l { color: var(--sc-tok-l); }
+.sc-tok-v { color: var(--sc-tok-v); }
+/* A diff is read by its signs as well as its colours (the line begins with + or -). */
+.sc-tok-add { color: var(--sc-positive); background: color-mix(in srgb, var(--sc-positive) 12%, transparent); }
+.sc-tok-del { color: var(--sc-negative); background: color-mix(in srgb, var(--sc-negative) 12%, transparent); }
+
+/* A task list in an answer: the box shows, and cannot be changed. */
+.sc-prose li.sc-md-task { list-style: none; margin-left: calc(-1 * var(--sc-sp-20)); }
+.sc-prose li.sc-md-task > label { display: inline; }
+.sc-prose li.sc-md-task input[type="checkbox"] { margin: 0 var(--sc-sp-8) 0 0; vertical-align: -0.1em; accent-color: var(--sc-accent); }
+.sc-prose .sc-md-image::before { content: "\2197\00a0"; }
+.sc-prose .sc-md-img { max-width: 100%; height: auto; border-radius: var(--sc-radius-sm); }
+.sc-prose .sc-math-block { margin: 0 0 var(--sc-sp-8); overflow-x: auto; text-align: center; }
 
 /* thinking bar — collapsed by default, but shows the latest reasoning line
    inline while it streams, so "is it thinking about the right thing" is
@@ -3048,7 +3171,7 @@
    their transitions under reduced motion; only travel stops. */
 @media (prefers-reduced-motion: reduce) {
   .sc-msg__text--paused:not(:has(> *))::after,
-  .sc-msg__text--paused > :last-child:not(ul, ol, pre, table)::after,
+  .sc-msg__text--paused > :last-child:not(ul, ol, pre, table, .sc-mdcode, .sc-md-tablebox, .sc-md-scroll, .sc-math-block)::after,
   .sc-msg__text--paused > :last-child:is(ul, ol) > li:last-child::after,
   .sc-toast { animation: none; }
   .sc-think__chevron,

@@ -35,7 +35,8 @@ import {
 import type { TurnMeta } from "@supersolutions/super-chat-client";
 import { CardRenderer, CardSkeleton, useInteractiveKinds } from "./renderer-registry.js";
 import { AttachIcon, Chevron, FileIcon, ImageIcon, StatusMark } from "./cards/icons.js";
-import { newMarkdownStream, renderMarkdown, renderMarkdownStream } from "@supersolutions/super-chat-ui-core";
+import { newMarkdownStream, renderMarkdown, renderMarkdownBlocks } from "@supersolutions/super-chat-ui-core";
+import { useMarkdownOptions } from "./markdown-options.js";
 import { ProseHtml } from "./card-refs.js";
 import { useDocumentQuotes } from "./quotes.js";
 import {
@@ -50,6 +51,7 @@ import {
 } from "./Autocomplete.js";
 import { Orb } from "./agent/Orb.js";
 import { Thinking } from "./agent/Thinking.js";
+import { useLabels } from "./labels.js";
 
 function partsOf(message: Message) {
   const cards: Card[] = [];
@@ -154,7 +156,8 @@ function MessageMeta({ meta, onRegenerate }: { meta?: TurnMeta; onRegenerate?: (
 
 /** A finished block of prose. Memoised for identity: see HANDOFF, bug 8. */
 function SettledText({ text }: { text: string }) {
-  const html = useMemo(() => renderMarkdown(text), [text]);
+  const options = useMarkdownOptions();
+  const html = useMemo(() => renderMarkdown(text, options), [text, options]);
   return <ProseHtml className="sc-prose sc-msg__text" html={html} />;
 }
 
@@ -196,7 +199,8 @@ export function MessageView({
     }
     return { text, reasoning, calls, results };
   }, [rest]);
-  const html = useMemo(() => renderMarkdown(text), [text]);
+  const options = useMarkdownOptions();
+  const html = useMemo(() => renderMarkdown(text, options), [text, options]);
 
   // Split cards: interactive ones stay at top level, read-only ones may sit with
   // the tool activity they came from. One pass rather than a filter whose
@@ -669,7 +673,10 @@ export function LiveTurn() {
   // A new block starts from its own text, not one frame of the block before it.
   const throttledText = liveText.startsWith(throttled) ? throttled : liveText;
   const [markdownStream] = useState(newMarkdownStream);
-  const html = useMemo(() => renderMarkdownStream(throttledText, markdownStream), [throttledText, markdownStream]);
+  const options = useMarkdownOptions();
+  // Block by block: the settled blocks are the same strings from frame to frame, which is what
+  // lets ProseHtml leave their DOM (and a selection in it) alone while the tail grows.
+  const html = useMemo(() => renderMarkdownBlocks(throttledText, markdownStream, options), [throttledText, markdownStream, options]);
   const thoughtFor = useThinkingDuration(run.runId, run.parts.some((p) => p.type === "reasoning"), Boolean(text));
   const streamPhase = useStreamingPulse(text, run.status === "running");
 
@@ -732,7 +739,10 @@ export function LiveTurn() {
   ];
 
   return (
-    <div className="sc-msg sc-msg--assistant">
+    // Busy while the turn is open, so a screen reader holds the growing text back instead
+    // of reading it token by token; the finished message that replaces this is appended to
+    // the log whole, and ThreadAnnouncer says that the turn began and ended.
+    <div className="sc-msg sc-msg--assistant" aria-busy={run.status === "running"}>
       {run.job ? (
         <div className="sc-jobchip">
           <span className="sc-spinner" aria-hidden /> Background job <code className="sc-mono">{run.job.handle.id.slice(0, 18)}…</code>{" "}
@@ -788,6 +798,29 @@ function statusLine(run: RunState): string {
   return "Thinking…";
 }
 
+/**
+ * Says, in a polite status region outside the log, that a turn began and that it ended.
+ *
+ * The log itself stays quiet while an answer streams (the live turn is `aria-busy`), so this is
+ * what tells a person using a screen reader that something is happening and when it is done. A
+ * failed turn says nothing here: its error block is a `role="alert"` and speaks for itself.
+ */
+function ThreadAnnouncer({ running, failed }: { running: boolean; failed: boolean }) {
+  const labels = useLabels();
+  const [text, setText] = useState("");
+  const was = useRef(running);
+  useEffect(() => {
+    if (running === was.current) return;
+    was.current = running;
+    setText(running ? labels.responding : failed ? "" : labels.replied);
+  }, [running, failed, labels]);
+  return (
+    <div className="sc-sr-only" role="status" aria-live="polite" data-sc-announcer>
+      {text}
+    </div>
+  );
+}
+
 /** Inline error block for a failed run, with a retry that re-runs the last turn. */
 function ErrorBlock({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const detail = error != null ? (error instanceof Error ? error.message : String(error)) : "";
@@ -804,6 +837,7 @@ function ErrorBlock({ error, onRetry }: { error: unknown; onRetry: () => void })
 }
 
 export function Thread({ empty }: { empty?: ReactNode }) {
+  const labels = useLabels();
   const { messages, status, error, regenerate, isRunning } = useThread();
   const { respond } = useCardAction();
   const run = useRun();
@@ -836,6 +870,10 @@ export function Thread({ empty }: { empty?: ReactNode }) {
     <div className="sc-threadwrap">
       <div
         className="sc-thread"
+        // A log: new messages are only ever added at the end, which is what `role="log"` (polite,
+        // non-atomic) is for. Without it a screen reader is told nothing when an answer arrives.
+        role="log"
+        aria-label={labels.thread}
         onScroll={(e) => {
           const el = e.currentTarget;
           setPinned(el.scrollHeight - el.scrollTop - el.clientHeight < 80);
@@ -865,6 +903,7 @@ export function Thread({ empty }: { empty?: ReactNode }) {
         {status === "error" ? <ErrorBlock error={error} onRetry={() => void regenerate()} /> : null}
         <div ref={bottomRef} />
       </div>
+      <ThreadAnnouncer running={isRunning} failed={status === "error"} />
       {/* Only offered when it does something: pinned means already at the end. */}
       {!pinned ? (
         <button

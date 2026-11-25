@@ -22,6 +22,7 @@
 import { useState } from "react";
 import { buildEml, buildMailto, emlFilename, type EmailCard } from "@supersolutions/super-chat-core";
 import type { CardRendererProps } from "../renderer-registry.js";
+import { useLabels } from "../labels.js";
 
 export type EmailCardViewProps = CardRendererProps<EmailCard> & {
   /** Host-supplied delivery. Absent means no send button at all. */
@@ -32,6 +33,7 @@ const list = (v: string) =>
   v.split(",").map((s) => s.trim()).filter(Boolean);
 
 export function EmailCardView({ spec, onSend }: EmailCardViewProps) {
+  const labels = useLabels();
   const [to, setTo] = useState(spec.to.join(", "));
   const [cc, setCc] = useState((spec.cc ?? []).join(", "));
   const [subject, setSubject] = useState(spec.subject);
@@ -99,7 +101,7 @@ export function EmailCardView({ spec, onSend }: EmailCardViewProps) {
         </label>
       </div>
 
-      <textarea className="sc-email__body sc-input" rows={8} value={body} onChange={(e) => setBody(e.target.value)} />
+      <textarea className="sc-email__body sc-input" aria-label={labels.emailBody} rows={8} value={body} onChange={(e) => setBody(e.target.value)} />
 
       {mailto.mayTruncate ? (
         // Named before the user clicks, because the failure is otherwise

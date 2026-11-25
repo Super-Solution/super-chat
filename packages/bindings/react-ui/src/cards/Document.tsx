@@ -22,6 +22,7 @@ import type { MarkdownBlock } from "@supersolutions/super-chat-core";
 import { renderMarkdownWithAnchors } from "@supersolutions/super-chat-ui-core";
 import type { CardRendererProps } from "../renderer-registry.js";
 import { useDocumentQuotes } from "../quotes.js";
+import { useLabels } from "../labels.js";
 import { CardActions } from "./CardActions.js";
 
 /**
@@ -111,6 +112,7 @@ export function DocumentCardView({ spec, onQuote: onQuoteProp }: DocumentCardVie
   const [expanded, setExpanded] = useState(false);
   const [pending, setPending] = useState<Omit<DocumentQuote, "docId" | "title" | "revision"> | null>(null);
   const bodyRef = useRef<HTMLDivElement | null>(null);
+  const labels = useLabels();
 
   const { html, blocks } = useMemo(() => renderMarkdownWithAnchors(spec.markdown), [spec.markdown]);
   // Memoised for IDENTITY, not for the cost of building an object literal.
@@ -184,6 +186,11 @@ export function DocumentCardView({ spec, onQuote: onQuoteProp }: DocumentCardVie
       <div
         ref={bodyRef}
         className="sc-doc__body sc-prose"
+        // The body scrolls, so a keyboard has to be able to land on it; a named region tells a
+        // screen reader what it landed on.
+        role="region"
+        aria-label={labels.documentBody}
+        tabIndex={0}
         dangerouslySetInnerHTML={inner}
       />
 

@@ -18,17 +18,20 @@ import type {
 import type { CardRendererProps } from "../renderer-registry.js";
 import { CodeBlock } from "../agent/CodeBlock.js";
 import { ProseHtml } from "../card-refs.js";
+import { useMarkdownOptions } from "../markdown-options.js";
 import {
   deltaTone,
   formatValue,
   newMarkdownStream,
   renderMarkdown,
-  renderMarkdownStream,
+  renderMarkdownBlocks,
+  tableToTsv,
   toneClass,
 } from "@supersolutions/super-chat-ui-core";
 import { CardActions } from "./CardActions.js";
 import { FormattedDelta, FormattedValue } from "./FormattedValue.js";
 import { Chevron, StatusMark } from "./icons.js";
+import { useLabels } from "../labels.js";
 
 // Rows beyond this render behind a "Show all" toggle — a 200-row agent result
 // would otherwise turn the card into the entire scroll surface.
@@ -36,14 +39,14 @@ const TABLE_TRUNCATE_AT = 30;
 
 /** Header row + data rows, tab-separated — what Copy/Download hand off for
  * TableCardView. Values go through the same formatValue() the cells render,
- * so the export matches what's on screen rather than raw payload values. Tabs
- * and newlines inside a cell are flattened to a space; TSV has no escaping
- * mechanism for them. */
-function tableToTsv(columns: TableColumn[], rows: Record<string, unknown>[]): string {
-  const cell = (v: string) => v.replace(/[\t\r\n]+/g, " ");
-  const header = columns.map((c) => cell(c.label)).join("\t");
-  const body = rows.map((row) => columns.map((c) => cell(formatValue(row[c.key], c.format))).join("\t")).join("\n");
-  return rows.length ? `${header}\n${body}` : header;
+ * so the export matches what's on screen rather than raw payload values. The
+ * text layout itself is ui-core's `tableToTsv`, shared with the tables in
+ * rendered Markdown. */
+function cardTableToTsv(columns: TableColumn[], rows: Record<string, unknown>[]): string {
+  return tableToTsv(
+    columns.map((c) => c.label),
+    rows.map((row) => columns.map((c) => formatValue(row[c.key], c.format))),
+  );
 }
 
 export function TableCardView({ spec, partial }: CardRendererProps<TableCard>) {
@@ -150,7 +153,7 @@ export function TableCardView({ spec, partial }: CardRendererProps<TableCard>) {
       ) : null}
       {spec.caption ? <div className="sc-muted sc-card__caption">{spec.caption}</div> : null}
       {partial ? null : (
-        <CardActions getText={() => tableToTsv(spec.columns, rows)} filename="table.tsv" mimeType="text/tab-separated-values" />
+        <CardActions getText={() => cardTableToTsv(spec.columns, rows)} filename="table.tsv" mimeType="text/tab-separated-values" />
       )}
     </div>
   );
@@ -215,6 +218,7 @@ export function TimelineCardView({ spec }: CardRendererProps<TimelineCard>) {
 }
 
 export function ProgressCardView({ spec }: CardRendererProps<ProgressCard>) {
+  const labels = useLabels();
   const done = spec.steps.filter((s) => s.status === "done").length;
   const fraction = spec.fraction ?? (spec.steps.length ? done / spec.steps.length : 0);
 
@@ -224,6 +228,7 @@ export function ProgressCardView({ spec }: CardRendererProps<ProgressCard>) {
       <div
         className="sc-progress"
         role="progressbar"
+        aria-label={spec.title ?? labels.progress}
         aria-valuenow={Math.round(fraction * 100)}
         aria-valuemin={0}
         aria-valuemax={100}
@@ -317,9 +322,10 @@ export function MarkdownCardView({ spec, partial }: CardRendererProps<MarkdownCa
   // A body that is still growing re-renders only its open tail per update —
   // the same output renderMarkdown gives, without re-parsing settled blocks.
   const [stream] = useState(newMarkdownStream);
+  const options = useMarkdownOptions();
   const html = useMemo(
-    () => (partial ? renderMarkdownStream(spec.body, stream) : renderMarkdown(spec.body)),
-    [spec.body, partial, stream],
+    () => (partial ? renderMarkdownBlocks(spec.body, stream, options) : renderMarkdown(spec.body, options)),
+    [spec.body, partial, stream, options],
   );
   return (
     <div className="sc-card">
