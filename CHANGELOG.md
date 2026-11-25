@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.5.0
 
-No change to super-protocol: every shared shape stays as it was. Everything below is additive unless it is under Changed.
+Requires `@supersolutions/super-protocol` 0.4.1 (unchanged; the plugin and router packages pin it). No change to super-protocol: every shared shape stays as it was. Everything below is additive unless it is under Changed.
 
 ### Added
 
