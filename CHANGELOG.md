@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.4.4
+
+Requires `@supersolutions/super-protocol` 0.4.1 (the plugin and router packages pin it).
 
 ### Added
 
@@ -9,6 +11,7 @@
 ### Changed
 
 - A person declining an approval only tells the model; the run goes on. This is what the code always did for a runtime approval (`side: "confirm"`), now stated and made consistent: `userDeclined` never fired for it (it looked for `output.cancelled`, which only a tool that asks for itself receives), so `DEFAULT_STOP_CONDITIONS` quietly did not include a stop on decline. `userDeclined` now fires on every shape of a person's no (a declined runtime approval, `{ cancelled: true }` from a tool that asks for itself, a declined `visualize` card), is documented as opt-in, and is no longer in `DEFAULT_STOP_CONDITIONS`, which is now `[consecutiveFailures(3)]`. A host that wants a "no" to end the turn adds `userDeclined` to `stopWhen`. `isUserDecline` and `USER_DECLINED` are exported. No change to what a run does by default: the defaults were never applied by `runAgent` itself, and no package in this repository passes them.
+- A plot card refused for a missing `spec` now shows a real nested example in `expected` (a small valid plot spec inside `spec`, with `alt` beside it) instead of `spec: { ...a plot spec }`. A model that sent the plot's fields flat inside the card spec gave up on the plot after one refusal; this comes with super-protocol 0.4.1. Error text only.
 
 ## 0.4.3
 
