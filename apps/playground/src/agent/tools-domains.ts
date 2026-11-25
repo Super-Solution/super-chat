@@ -163,6 +163,14 @@ const PRECEDENTS = [
 export const findPrecedent: ToolDefinition = {
   name: "findPrecedent",
   side: "read",
+  // How the call reads in the transcript, instead of the tool's name and raw JSON.
+  display: {
+    label: (input) => `Looking for authority on “${(input as { question?: string } | null)?.question ?? "the question"}”`,
+    summary: (output) => {
+      const found = (output as { authorities?: unknown[] } | null)?.authorities?.length ?? 0;
+      return `${found} ${found === 1 ? "authority" : "authorities"}`;
+    },
+  },
   description:
     "Find authority supporting or limiting a legal position. ALWAYS render the result as a `citations` card — an unsourced legal claim is worse than no answer. In your answer, cite each authority where you rely on it: [[1]](ref:authority?cite=photo-production).",
   inputSchema: {

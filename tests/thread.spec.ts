@@ -334,3 +334,78 @@ test("an answer can be rated when the host listens, and the press is reported an
   await expect(bad).toHaveAttribute("aria-pressed", "false");
   expect(await kept()).toEqual([]);
 });
+
+test("a tool that says how its call reads is shown that way, with its name on hover", async ({ page }) => {
+  await settle(page);
+  await ask(page, "Can we exclude liability entirely in our standard terms?");
+  await finished(page);
+  const head = page.locator(".sc-tools__head").first();
+  await head.click();
+  const label = page.locator(".sc-tools__label").first();
+  await expect(label).toContainText("Looking for authority on “excluding liability entirely in standard terms”");
+  await expect(label).toHaveAttribute("title", "findPrecedent");
+  await expect(page.locator(".sc-tools__summary-text").first()).toHaveText(/\d+ authorit(y|ies)/);
+});
+
+test("headings step down, prose keeps a measure, and density and fade are tokens a host sets", async ({ page }) => {
+  await settle(page);
+  await ask(page, RICH);
+  await finished(page);
+  // `#` renders as h2, `##` as h3 and `###` as h4: an answer mostly uses the last two.
+  const style = (sel: string) => page.locator(sel).first().evaluate((el) => ({ size: parseFloat(getComputedStyle(el).fontSize), weight: Number(getComputedStyle(el).fontWeight) }));
+  const h3 = await style(".sc-msg__text h3");
+  const h4 = await style(".sc-msg__text h4");
+  const body = await style(".sc-msg__text p");
+  expect(h3.size).toBeGreaterThan(body.size);
+  expect(h3.size).toBeGreaterThan(h4.size - 0.01);
+  expect(h4.weight).toBeGreaterThanOrEqual(600);
+  expect(body.weight).toBeLessThan(600);
+
+  // A paragraph stops at the measure (a column wider than that does not stretch the line); the
+  // code and the table beside it are not held to it.
+  const caps = await page.evaluate(() => {
+    const cap = (s: string) => getComputedStyle(document.querySelector(s)!).maxWidth;
+    return { p: cap(".sc-msg__text > p"), code: cap(".sc-mdcode"), measure: getComputedStyle(document.documentElement).getPropertyValue("--sc-measure").trim() };
+  });
+  expect(caps.measure).toBe("72ch");
+  expect(caps.p).toMatch(/^\d+(\.\d+)?px$/);
+  expect(caps.code).toBe("none");
+
+  // Density is one token: compact tightens the gap between messages.
+  const gap = () => page.locator(".sc-msg").first().evaluate((el) => parseFloat(getComputedStyle(el).marginBottom));
+  const comfortable = await gap();
+  await page.evaluate(() => document.documentElement.setAttribute("data-sc-density", "compact"));
+  expect(await gap()).toBeLessThan(comfortable);
+});
+
+test("streamed blocks fade in only when a host sets the duration, and never under reduced motion", async ({ page }) => {
+  await settle(page);
+  await page.evaluate(() => document.documentElement.style.setProperty("--sc-fade-in", "200ms"));
+  await ask(page, RICH);
+  // While it streams, a block that arrived after the first carries the mark and the animation.
+  const fading = page.locator(".sc-prose [data-sc-new]").first();
+  await expect(fading).toBeAttached({ timeout: 20_000 });
+  expect(await fading.evaluate((el) => getComputedStyle(el).animationName)).toBe("sc-fade-in");
+  expect(await fading.evaluate((el) => getComputedStyle(el).animationDuration)).toBe("0.2s");
+  await finished(page);
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await ask(page, RICH);
+  const still = page.locator(".sc-prose [data-sc-new]").last();
+  await expect(still).toBeAttached({ timeout: 20_000 });
+  expect(await still.evaluate((el) => getComputedStyle(el).animationName)).toBe("none");
+});
+
+test("forced colours: surfaces get a border and a pressed control an outline", async ({ page }) => {
+  await page.emulateMedia({ forcedColors: "active" });
+  await settle(page);
+  await ask(page, RICH);
+  await finished(page);
+  const box = page.locator(".sc-mdcode").first();
+  expect(await box.evaluate((el) => getComputedStyle(el).borderTopStyle)).toBe("solid");
+  const wrap = page.locator(".sc-mdcode").first().getByRole("button", { name: "Wrap lines" });
+  expect(await wrap.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe("none");
+  await wrap.click();
+  expect(await wrap.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe("solid");
+  expect(await wrap.evaluate((el) => parseFloat(getComputedStyle(el).outlineWidth))).toBe(2);
+});

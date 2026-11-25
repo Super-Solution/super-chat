@@ -18,7 +18,7 @@
 // This is plain DOM and knows nothing of React, Markdown or cards.
 
 /** Attributes the host page puts on rendered nodes after the fact; a new render does not own them. */
-const KEEP = /^(?:data-ui-|aria-|role$|tabindex$|title$|data-ref-live$|data-ref-state$)/;
+const KEEP = /^(?:data-ui-|aria-|role$|tabindex$|title$|data-ref-live$|data-ref-state$|data-sc-new$)/;
 
 function sameKind(a: Node, b: Node): boolean {
   if (a.nodeType !== b.nodeType) return false;

@@ -136,6 +136,15 @@
   --sc-fs-glyph: 9px;  /* decorative caret/marker glyphs — never prose */
   --sc-fs-stat: 22px;  /* stat values */
   --sc-fs-hero: 26px;  /* gauge headline value */
+  --sc-fs-h2: 19px;    /* a # or ## heading in an answer */
+  --sc-fs-h3: 17px;    /* ### */
+  /* How wide a line of prose may be. Wide objects (code, tables) are not held to it. */
+  --sc-measure: 72ch;
+  /* Vertical rhythm of messages and prose: 1 is comfortable, [data-sc-density="compact"] is tighter. */
+  --sc-density: 1;
+  /* Fade streamed blocks in over this long. 0ms (the default) is no animation; a host opts in with
+     e.g. 180ms. Never plays under prefers-reduced-motion. */
+  --sc-fade-in: 0ms;
   --sc-lh-tight: 1.25; /* large numbers, stat value */
   --sc-lh-ui: 1.4;     /* labels, buttons, chips */
   --sc-lh-prose: 1.7;  /* message body, callout body */
@@ -960,7 +969,8 @@
 .sc-msg__text--paused > :last-child:is(ul, ol) > li:last-child::after { animation: sc-caret 1s step-end infinite; }
 @keyframes sc-caret { 50% { opacity: 0; } }
 
-.sc-msg { margin-bottom: var(--sc-sp-24); }
+.sc-msg { margin-bottom: calc(var(--sc-sp-24) * var(--sc-density)); }
+[data-sc-density="compact"] { --sc-density: 0.7; }
 .sc-tooloutput { display: grid; gap: var(--sc-sp-10); }
 /* A card whose spec is still arriving. What it shows is real, so it gets no
    shimmer over it — just a write-head along its bottom edge while more is
@@ -1023,10 +1033,24 @@
    that, doubling the gap between blocks. Word wrapping still applies. */
 .sc-msg__text { font-size: var(--sc-fs-body); line-height: var(--sc-lh-prose); word-break: break-word; }
 
+/* A heading ramp that reads at a glance: size for the two top levels, weight for the rest, and
+   air above a heading that is larger than the air below it, so it belongs to what follows. */
 .sc-prose h2, .sc-prose h3, .sc-prose h4,
-.sc-prose h5, .sc-prose h6 { margin: var(--sc-sp-16) 0 var(--sc-sp-6); font-size: var(--sc-fs-body); }
-.sc-prose p { margin: 0 0 var(--sc-sp-8); }
-.sc-prose ul, .sc-prose ol { margin: 0 0 var(--sc-sp-8); padding-left: var(--sc-sp-20); }
+.sc-prose h5, .sc-prose h6 {
+  margin: calc(var(--sc-sp-20) * var(--sc-density)) 0 calc(var(--sc-sp-6) * var(--sc-density));
+  font-size: var(--sc-fs-body);
+  line-height: var(--sc-lh-tight);
+  font-weight: 600;
+  text-wrap: balance;
+}
+.sc-prose h2 { font-size: var(--sc-fs-h2); font-weight: 650; }
+.sc-prose h3 { font-size: var(--sc-fs-h3); }
+.sc-prose h5, .sc-prose h6 { color: var(--sc-text-muted); }
+.sc-prose > :first-child { margin-top: 0; }
+.sc-prose p { margin: 0 0 calc(var(--sc-sp-8) * var(--sc-density)); }
+.sc-prose ul, .sc-prose ol { margin: 0 0 calc(var(--sc-sp-8) * var(--sc-density)); padding-left: var(--sc-sp-20); }
+/* Prose reads at a measure; code and tables take the room the thread has. */
+.sc-msg__text > :is(p, ul, ol, h2, h3, h4, h5, h6, blockquote) { max-width: var(--sc-measure); }
 /* A nested list is inside its parent's <li>, so its own bottom margin would
    add to the item's line spacing rather than to the gap after the list. */
 .sc-prose li > ul, .sc-prose li > ol { margin-bottom: 0; }
@@ -1059,6 +1083,11 @@
 .sc-prose .sc-ref[data-ref-live][data-ref*="?cite="] { text-decoration: none; color: var(--sc-live-accent-strong); padding: 0 var(--sc-sp-2); border-radius: var(--sc-radius-xs); }
 .sc-prose .sc-ref[data-ref-live]:focus-visible { outline: 2px solid var(--sc-live-accent-strong); outline-offset: 2px; }
 
+
+/* Blocks that arrive while an answer streams fade in over --sc-fade-in (0ms unless a host sets it). */
+@media (prefers-reduced-motion: no-preference) {
+  .sc-prose [data-sc-new] { animation: sc-fade-in var(--sc-fade-in) var(--sc-ease-out) both; }
+}
 
 /* Document constructs. These arrived with the document previewer: a report is
    the first thing anyone writes that has a table in it, and until the renderer
@@ -1266,6 +1295,11 @@
 .sc-tools__status { flex: none; width: 12px; text-align: center; color: var(--sc-text-muted); }
 /* Duration pushes to the right edge; success is stated, not celebrated. */
 .sc-tools__ms { margin-left: auto; font-variant-numeric: tabular-nums; }
+/* The tool's own words for a call, and what it found. The name stays on hover. */
+.sc-tools__label { min-width: 0; overflow-wrap: anywhere; }
+.sc-tools__summary-text { font-size: var(--sc-fs-meta); }
+/* A call's share of the slowest one in the group: a thin bar under its row. */
+.sc-tools__bar { height: 2px; margin: var(--sc-sp-2) 0 0 calc(12px + var(--sc-sp-6)); width: var(--sc-bar); max-width: calc(100% - 12px - var(--sc-sp-6)); border-radius: var(--sc-radius-pill); background: var(--sc-line-strong); }
 .sc-tools__row .sc-spinner { margin: 0; }
 
 .sc-jobchip {
@@ -3499,7 +3533,7 @@
 @container (max-width: 600px) {
   /* 76% of 360px is 274px: under thirteen CJK characters to a line. */
   .sc-bubble { max-width: 88%; }
-  .sc-msg { margin-bottom: var(--sc-sp-16); }
+  .sc-msg { margin-bottom: calc(var(--sc-sp-16) * var(--sc-density)); }
   .sc-daydivider { margin: var(--sc-sp-16) 0 var(--sc-sp-12); }
 
   /* Cards keep 12px of air on each side. Bleeding them to the screen edge
@@ -3614,4 +3648,44 @@
   .sc-surface-grid--3 { --sc-surface-columns: 1; }
   .sc-surface-stack--row:not(.sc-surface-stack--wrap) { flex-direction: column; align-items: stretch; }
   .sc-surface__body { padding: var(--sc-sp-12); }
+}
+
+/* Forced colours (Windows High Contrast). The system picks the palette, so what the kit's tokens
+   did by colour has to be said another way: every surface gets a border, state is shown by a
+   border or an outline and not by a fill alone, and code is told apart by weight and style. */
+@media (forced-colors: active) {
+  .sc-card, .sc-panel, .sc-bubble, .sc-composer, .sc-md-scroll, .sc-mdcode, .sc-code, .sc-suggestion,
+  .sc-pill, .sc-quote, .sc-attachment, .sc-ai, .sc-surface, .sc-tools {
+    border: 1px solid CanvasText;
+  }
+  .sc-bubble { background: Canvas; color: CanvasText; }
+  .sc-btn, .sc-suggestion, .sc-bubble__edit, .sc-doc__expand, .sc-mdcode__btn { border: 1px solid ButtonText; color: ButtonText; background: ButtonFace; }
+  .sc-btn:disabled, .sc-suggestion:disabled { color: GrayText; border-color: GrayText; }
+  .sc-btn--primary { background: Highlight; color: HighlightText; border-color: Highlight; }
+  /* Pressed, active and pointed-at are not left to a tint the system would flatten. */
+  [aria-pressed="true"], .sc-toggle--on, .sc-cite[data-pointed] {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+    font-weight: 700;
+  }
+  :is(a, button, input, select, textarea, [tabindex]):focus-visible { outline: 2px solid Highlight; outline-offset: 2px; }
+  .sc-prose a, .sc-cite__head a { color: LinkText; }
+  .sc-prose .sc-ref[data-ref-live] { color: LinkText; text-decoration: underline; }
+  /* Bars and fills are the data: keep a colour the system will not drop. */
+  .sc-progress, .sc-bar__track, .sc-gauge__track, .sc-tools__bar { border: 1px solid CanvasText; forced-color-adjust: none; background: Canvas; }
+  .sc-progress__bar, .sc-bar__fill { background: Highlight; }
+  .sc-gauge__needle { background: CanvasText; }
+  .sc-tools__bar { background: CanvasText; border: 0; }
+  .sc-tok-k, .sc-tok-l { color: CanvasText; font-weight: 700; }
+  .sc-tok-c { color: CanvasText; font-style: italic; }
+  .sc-tok-s, .sc-tok-n, .sc-tok-f, .sc-tok-p, .sc-tok-a, .sc-tok-v { color: CanvasText; }
+  .sc-tok-add { color: CanvasText; text-decoration: underline; }
+  .sc-tok-del { color: CanvasText; text-decoration: line-through; }
+  .sc-prose blockquote { border-left-color: CanvasText; }
+  .sc-prose hr { border-top-color: CanvasText; }
+  /* A plan's steps differ by a fill and a halo; under forced colours, by border weight and style. */
+  .sc-plan__step[data-status="active"] .sc-plan__node { border: 3px solid Highlight; }
+  .sc-plan__step[data-status="done"] .sc-plan__node { border: 3px solid CanvasText; }
+  .sc-plan__step[data-status="failed"] .sc-plan__node { border: 3px double CanvasText; }
+  .sc-plan__step[data-status="skipped"] .sc-plan__node { border: 1px dashed CanvasText; }
 }

@@ -53,6 +53,7 @@ import {
 import { Orb } from "./agent/Orb.js";
 import { Thinking } from "./agent/Thinking.js";
 import { formatBytes, useLabels, type Labels } from "./labels.js";
+import { describeCall } from "./tool-display.js";
 import { EmptyThread, type Suggestion } from "./Suggestions.js";
 
 function partsOf(message: Message) {
@@ -538,6 +539,8 @@ function ToolActivity({
   results: Extract<ContentPart, { type: "tool-result" }>[];
 }) {
   const labels = useLabels();
+  const { all: tools } = useTools();
+  const toolByName = useMemo(() => new Map(tools.map((t) => [t.name, t])), [tools]);
   const [open, setOpen] = useState(false);
   const { byId, items } = useMemo(() => {
     const byId = new Map(results.map((r) => [r.callId, r]));
@@ -557,19 +560,34 @@ function ToolActivity({
     ? labels.toolsRunning(items.length - running.length, items.length, current?.name)
     : labels.toolCalls(items.length, totalMs ? formatMs(totalMs) : undefined);
 
+  // The longest call sets the scale, so a bar is a share of the slowest one and never of a made-up budget.
+  const slowest = Math.max(0, ...results.map((r) => r.ms ?? 0));
+
   const row = (c: { callId: string; name: string; input?: unknown }) => {
     const result = byId.get(c.callId);
     const state = !result ? "running" : result.failure ? "failed" : "done";
+    // The tool's own words for the call, when it has some; its name is still on hover.
+    const said = describeCall(toolByName.get(c.name), c.input, result?.output, Boolean(result) && !result?.failure);
     return (
       <li key={c.callId} className="sc-tools__item">
         <div className="sc-tools__row">
           <span className="sc-tools__status" aria-hidden>
             {state === "running" ? <span className="sc-spinner" /> : <StatusMark kind={state} />}
           </span>
-          <code className="sc-mono">{c.name}</code>
+          {said.label ? (
+            <span className="sc-tools__label" title={c.name}>
+              {said.label}
+            </span>
+          ) : (
+            <code className="sc-mono">{c.name}</code>
+          )}
+          {said.summary ? <span className="sc-tools__summary-text sc-muted">{said.summary}</span> : null}
           {result?.failure ? <span className="sc-pill sc-pill--negative">{result.failure}</span> : null}
           {result?.ms != null ? <span className="sc-tools__ms sc-muted">{formatMs(result.ms)}</span> : null}
         </div>
+        {result?.ms != null && slowest > 0 && items.length > 1 ? (
+          <div className="sc-tools__bar" aria-hidden style={{ ["--sc-bar" as string]: `${Math.max(2, Math.round((result.ms / slowest) * 100))}%` }} />
+        ) : null}
         {open ? (
           <>
             {c.input !== undefined ? <pre className="sc-pre sc-pre--sm">{JSON.stringify(c.input, null, 2)}</pre> : null}
