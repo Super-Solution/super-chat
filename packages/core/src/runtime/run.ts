@@ -22,7 +22,7 @@ import type { ToolRegistry } from "../tools/registry.js";
 import { resolvePartialCard, resolveToolLoading, type ToolDefinition, type ToolResolution } from "../tools/types.js";
 import { PartialJsonParser } from "../tools/partial-json.js";
 import { awaitJob } from "./jobs.js";
-import { executeToolCalls, type ToolCallRequest } from "./execute-tools.js";
+import { executeToolCalls, USER_DECLINED, type ToolCallRequest } from "./execute-tools.js";
 import { EventChannel } from "./channel.js";
 import type { RunEvent, RunMode } from "./events.js";
 import {
@@ -398,7 +398,7 @@ export async function* runAgent(
               const action = await config.onUserDecision!(callId, card);
               channel.push({ type: "user-responded", callId, action });
               return action.type === "cancel" || action.type === "dismiss"
-                ? { cancelled: true, reason: "The user declined." }
+                ? { cancelled: true, reason: USER_DECLINED }
                 : (action.value ?? { confirmed: true });
             }
           : undefined,

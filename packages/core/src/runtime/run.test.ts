@@ -18,6 +18,8 @@ import { userMessage } from "../content/parts.js";
 import { isCardCarrier, withCard } from "../cards/types.js";
 import { AgentError } from "../errors.js";
 import { runAgent } from "./run.js";
+import { USER_DECLINED } from "./execute-tools.js";
+import { DEFAULT_STOP_CONDITIONS, userDeclined } from "./stop.js";
 import { initialRunState, reduceRunEvent, type RunEvent } from "./events.js";
 import type { ContentPart } from "../content/types.js";
 import type { Transport, TransportRequest } from "../transport/types.js";
@@ -1001,6 +1003,28 @@ describe("parallel tool results arrive as each tool finishes", () => {
     expect(events.map((e) => e.type)).toContain("awaiting-user");
     expect(execute).not.toHaveBeenCalled();
     expect(results(events)[0]).toMatchObject({ callId: "c_send", failure: "denied" });
+  });
+
+  describe("a declined approval", () => {
+    const decline = async (callId: string, card: { id: string }) => ({ cardId: card.id, callId, kind: "confirm" as const, type: "cancel" as const, at: 0 });
+    const sendTool = (): ToolDefinition => ({ name: "send", description: "Send it.", inputSchema: { type: "object" }, side: "confirm", execute: () => ({ output: { sent: true } }) });
+
+    it("tells the model and the run goes on to answer", async () => {
+      const h = harness([respondToolCalls([{ callId: "c_send", name: "send" }]), respondText("Not sent.")], [sendTool()]);
+      const events = await collect(runAgent([userMessage("go")], { ...config(h), onUserDecision: decline, stopWhen: DEFAULT_STOP_CONDITIONS }));
+
+      expect(results(events)[0]).toMatchObject({ failure: "denied", output: { error: USER_DECLINED } });
+      expect(h.transport.sent).toHaveLength(2);
+      expect(events.at(-1)).toMatchObject({ type: "run-finish", finishReason: "stop", steps: 2 });
+    });
+
+    it("ends the run only when the host adds userDeclined", async () => {
+      const h = harness([respondToolCalls([{ callId: "c_send", name: "send" }]), respondText("Not sent.")], [sendTool()]);
+      const events = await collect(runAgent([userMessage("go")], { ...config(h), onUserDecision: decline, stopWhen: [userDeclined] }));
+
+      expect(h.transport.sent).toHaveLength(1);
+      expect(events.at(-1)).toMatchObject({ type: "run-finish", finishReason: "stop", steps: 1 });
+    });
   });
 
   it("does not drop or repeat results when the run is aborted mid-step", async () => {
