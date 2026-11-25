@@ -222,3 +222,19 @@ describe("renderMarkdownBlocks", () => {
     expect(b.join("")).not.toContain("sc-tok");
   });
 });
+
+// A citation marker is a link whose text has brackets in it: `[[1]](ref:…)`.
+describe("citation markers", () => {
+  it("reads [[1]](ref:…) as a reference whose text is [1]", () => {
+    const html = renderMarkdown("Not entirely [[1]](ref:authority?cite=photo), and [[2]](ref:authority?cite=2).");
+    expect(html).toContain('data-ref="ref:authority?cite=photo"');
+    expect(html).toContain(">[1]</span>");
+    expect(html).toContain('data-ref="ref:authority?cite=2"');
+    expect(html).not.toContain("](ref:");
+  });
+
+  it("still ends a link at the first unbalanced bracket", () => {
+    expect(renderMarkdown("[a [b](https://example.com/x)")).toContain('[a <a href="https://example.com/x"');
+    expect(renderMarkdown("[[1]](https://example.com/x)")).toContain(">[1]</a>");
+  });
+});

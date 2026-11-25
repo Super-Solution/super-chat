@@ -277,3 +277,34 @@ test("the zh-TW preset reaches the thread, the composer and the announcer", asyn
   await expect(page.locator("[data-sc-announcer]")).toHaveText("助理正在回覆…", { timeout: 15_000 });
   await expect(page.locator("[data-sc-announcer]")).toHaveText("助理已回覆。", { timeout: 60_000 });
 });
+
+test("a citation in an answer points at its source: hover shows it, a keyboard names it, choosing it goes there", async ({ page }) => {
+  await settle(page);
+  await ask(page, "Can we exclude liability entirely in our standard terms?");
+  await finished(page);
+
+  const mark = page.locator(".sc-ref[data-ref*='cite=photo-production']");
+  await expect(mark).toHaveText("[1]");
+  await expect(mark).toHaveAttribute("data-ref-live", /.+/);
+  await expect(mark).toHaveAttribute("role", "button");
+  const source = page.locator(".sc-cite[data-cite='photo-production']");
+  await expect(source).not.toHaveAttribute("data-pointed", "");
+
+  await mark.hover();
+  await expect(source).toHaveAttribute("data-pointed", "");
+  // The other source is not the one pointed at.
+  await expect(page.locator(".sc-cite[data-pointed]")).toHaveCount(1);
+  await page.mouse.move(0, 0);
+  await expect(page.locator(".sc-cite[data-pointed]")).toHaveCount(0);
+
+  // A keyboard reaches it, and a screen reader is told which source it is.
+  await mark.focus();
+  await expect(page.locator(".sc-cite[data-pointed]")).toHaveCount(1);
+  await expect(page.getByRole("status").filter({ hasText: "Photo Production" })).toBeVisible();
+  await page.keyboard.press("Enter");
+  await expect(source).toBeFocused();
+
+  // The second marker names the second source by its own id.
+  await page.locator(".sc-ref[data-ref*='cite=ucta-s3']").hover();
+  await expect(page.locator(".sc-cite[data-cite='ucta-s3'][data-pointed]")).toHaveCount(1);
+});

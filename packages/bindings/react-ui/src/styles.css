@@ -701,7 +701,14 @@
 
 /* citations */
 .sc-cites { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sc-sp-12); counter-reset: cite; }
-.sc-cite { display: flex; gap: var(--sc-sp-10); font-size: var(--sc-fs-ui); }
+.sc-cite {
+  display: flex; gap: var(--sc-sp-10); font-size: var(--sc-fs-ui);
+  /* Room for the highlight a sentence gives the source it points at, without moving the list. */
+  padding: var(--sc-sp-4) var(--sc-sp-6); margin: calc(-1 * var(--sc-sp-4)) calc(-1 * var(--sc-sp-6));
+  border-radius: var(--sc-radius-sm);
+}
+.sc-cite[data-pointed] { background: color-mix(in srgb, var(--sc-live-accent-strong) 12%, transparent); }
+.sc-cite:focus-visible { outline: 2px solid var(--sc-live-accent-strong); outline-offset: 2px; }
 .sc-cite__n {
   flex: none;
   width: 19px; height: 19px;
@@ -1044,6 +1051,9 @@
   border-radius: var(--sc-radius-xs);
 }
 .sc-prose .sc-ref[data-ref-live]:hover { background: var(--sc-surface-2); text-decoration-style: solid; }
+/* A citation marker, [1]: set small and raised, like a footnote, and quiet until it is live. */
+.sc-prose .sc-ref[data-ref*="?cite="] { font-size: 0.78em; vertical-align: super; line-height: 0; font-variant-numeric: tabular-nums; }
+.sc-prose .sc-ref[data-ref-live][data-ref*="?cite="] { text-decoration: none; color: var(--sc-live-accent-strong); padding: 0 var(--sc-sp-2); border-radius: var(--sc-radius-xs); }
 .sc-prose .sc-ref[data-ref-live]:focus-visible { outline: 2px solid var(--sc-live-accent-strong); outline-offset: 2px; }
 
 

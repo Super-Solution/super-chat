@@ -65,6 +65,7 @@ export { AgentSurface, SurfaceCardView, type AgentSurfaceProps } from "./surface
 export { ContextInspector } from "./ContextInspector.js";
 export { ToastProvider, ConnectionBanner, useToast, type Toast } from "./Toast.js";
 export { CardRefProvider, ProseHtml, useCardRefHost } from "./card-refs.js";
+export { builtinCardRefHost, chainCardRefHosts, useCardRefTarget, type CardRefHandler } from "./card-ref-targets.js";
 export {
   LabelsProvider,
   useLabels,

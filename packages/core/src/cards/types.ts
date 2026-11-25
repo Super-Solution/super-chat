@@ -220,8 +220,15 @@ export type CalloutCard = {
  */
 export type CitationsCard = {
   kind: "citations";
+  /**
+   * Lets prose point at this card: `[[1]](ref:<id>?cite=<item id or number>)`. Optional; without
+   * it the card is read as a list and nothing in the answer can point into it.
+   */
+  id?: string;
   title?: string;
   items: {
+    /** Names this source in a citation (`cite=<id>`). Optional: the 1-based position works too. */
+    id?: string;
     title: string;
     /** Publication, court, statute, dataset, site — whatever the source is. */
     source?: string;

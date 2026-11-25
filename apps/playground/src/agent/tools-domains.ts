@@ -132,6 +132,7 @@ export const checkCompliance: ToolDefinition = {
 
 const PRECEDENTS = [
   {
+    id: "photo-production",
     title: "Photo Production Ltd v Securicor Transport Ltd",
     source: "House of Lords",
     date: "1980",
@@ -140,6 +141,7 @@ const PRECEDENTS = [
     relevance: "high" as const,
   },
   {
+    id: "ucta-s3",
     title: "Unfair Contract Terms Act 1977, s.3",
     source: "UK statute",
     date: "1977",
@@ -148,6 +150,7 @@ const PRECEDENTS = [
     relevance: "high" as const,
   },
   {
+    id: "gdpr-33",
     title: "Regulation (EU) 2016/679 (GDPR)",
     source: "EU regulation",
     date: "2016",
@@ -161,7 +164,7 @@ export const findPrecedent: ToolDefinition = {
   name: "findPrecedent",
   side: "read",
   description:
-    "Find authority supporting or limiting a legal position. ALWAYS render the result as a `citations` card — an unsourced legal claim is worse than no answer.",
+    "Find authority supporting or limiting a legal position. ALWAYS render the result as a `citations` card — an unsourced legal claim is worse than no answer. In your answer, cite each authority where you rely on it: [[1]](ref:authority?cite=photo-production).",
   inputSchema: {
     type: "object",
     required: ["question"],
@@ -180,7 +183,7 @@ export const findPrecedent: ToolDefinition = {
     return {
       output: withCard(
         { matched: hits.length, authorities: items.map((i) => `${i.title} ${i.locator}`) },
-        { kind: "citations", title: "Authority relied on", items },
+        { kind: "citations", id: "authority", title: "Authority relied on", items },
       ),
     };
   },

@@ -714,13 +714,14 @@ export const calloutCard: CardKindDefinition = {
 export const citationsCard: CardKindDefinition = {
   kind: "citations",
   summary:
-    "The sources behind what you just said. Use whenever a claim rests on specific documents — case law, statutes, papers, filings, articles, internal docs. Quote the passage relied on in `snippet`.",
+    "The sources behind what you just said. Use whenever a claim rests on specific documents — case law, statutes, papers, filings, articles, internal docs. Quote the passage relied on in `snippet`. To cite a source inside your answer, give the card an `id` and write `[[1]](ref:<card id>?cite=<item id or its number>)` where the claim is made; the reader can hover or press it to see the source.",
   estimateTokens: tokensOf,
   schema: {
     type: "object",
     required: ["kind", "items"],
     properties: {
       kind: { const: "citations" },
+      id: { type: "string", description: "Short name, so the answer can cite into this card with ref:<id>?cite=<n>." },
       title: { type: "string" },
       items: {
         type: "array",
@@ -728,6 +729,7 @@ export const citationsCard: CardKindDefinition = {
           type: "object",
           required: ["title"],
           properties: {
+            id: { type: "string", description: "Short name of this source for `cite=`; unique in the card." },
             title: { type: "string" },
             source: { type: "string", description: "Publication, court, statute, dataset, site." },
             url: { type: "string" },
@@ -745,10 +747,23 @@ export const citationsCard: CardKindDefinition = {
     if (failed(s)) return s;
     const items = check.arrayField(s as Record<string, unknown>, "items", "citations");
     if (failed(items)) return items;
+    const named = new Set<string>();
     for (const i of items as unknown[]) {
       if (!isObj(i) || typeof i["title"] !== "string") {
         return { ok: false, error: "Each citation needs a `title`." };
       }
+      if (i["id"] !== undefined) {
+        // `cite=<id>` travels in a link, so an id must be something a link can carry.
+        if (typeof i["id"] !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._~-]{0,63}$/.test(i["id"])) {
+          return { ok: false, error: "A citation `id` is 1 to 64 letters, digits, dot, dash, underscore or tilde, starting with a letter or digit." };
+        }
+        if (named.has(i["id"])) return { ok: false, error: `Two citations share the id "${i["id"]}"; ids must be unique in a card.` };
+        named.add(i["id"]);
+      }
+    }
+    const cardId = (s as Record<string, unknown>)["id"];
+    if (cardId !== undefined && (typeof cardId !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(cardId))) {
+      return { ok: false, error: "citations.id is 1 to 128 letters, digits, dot, underscore, colon or dash, starting with a letter or digit." };
     }
     return ok;
   },

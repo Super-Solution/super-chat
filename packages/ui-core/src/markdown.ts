@@ -154,7 +154,7 @@ const escapeHtml = (s: string) =>
 // that escaping gives `&`, so nothing in it can close an attribute or open a tag. The limits
 // are the parser's to enforce (a ref that breaks them degrades where it is used), not this
 // regex's; the bound here only keeps a hostile string from costing a long scan.
-const LINK = /\[([^\]]+)\]\((https?:\/\/(?:[^()\s]|\([^()\s]*\))+|ref:[A-Za-z0-9._:~%=&;?-]{1,3000})\)/g;
+const LINK = /\[((?:[^\[\]]|\[[^\[\]]*\])+)\]\((https?:\/\/(?:[^()\s]|\([^()\s]*\))+|ref:[A-Za-z0-9._:~%=&;?-]{1,3000})\)/g;
 
 // An image: the destination follows the same rules as a link's, and only http(s) is one.
 const IMAGE = /!\[([^\]]*)\]\((https?:\/\/(?:[^()\s]|\([^()\s]*\))+)\)/g;

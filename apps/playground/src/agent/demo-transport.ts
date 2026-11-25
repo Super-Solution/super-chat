@@ -179,7 +179,7 @@ const SCRIPTS: { match: RegExp; steps: Step[] }[] = [
       {
         kind: "text",
         text:
-          "Not entirely, no — not on your own standard terms. A clearly drafted exclusion can survive even a fundamental breach, but where you are contracting on written standard terms it still has to pass a reasonableness test, and a total exclusion rarely does.\n\n" +
+          "Not entirely, no — not on your own standard terms. A clearly drafted exclusion can survive even a fundamental breach [[1]](ref:authority?cite=photo-production), but where you are contracting on written standard terms it still has to pass a reasonableness test [[2]](ref:authority?cite=ucta-s3), and a total exclusion rarely does.\n\n" +
           "A mutual cap at 12 months' fees, with carve-outs for death, personal injury and fraud, is the shape that normally holds.",
       },
     ],

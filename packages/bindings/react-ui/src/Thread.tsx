@@ -37,7 +37,8 @@ import { CardRenderer, CardSkeleton, useInteractiveKinds } from "./renderer-regi
 import { AttachIcon, Chevron, FileIcon, ImageIcon, StatusMark, ToolIcon, SpeakerIcon } from "./cards/icons.js";
 import { newMarkdownStream, renderMarkdown, renderMarkdownBlocks } from "@supersolutions/super-chat-ui-core";
 import { useMarkdownOptions } from "./markdown-options.js";
-import { ProseHtml } from "./card-refs.js";
+import { CardRefProvider, ProseHtml, useCardRefHost } from "./card-refs.js";
+import { builtinCardRefHost } from "./card-ref-targets.js";
 import { useDocumentQuotes } from "./quotes.js";
 import {
   applyPick,
@@ -885,7 +886,18 @@ export type ThreadProps = {
   suggestions?: readonly Suggestion[];
 };
 
-export function Thread({ empty, suggestions }: ThreadProps) {
+/**
+ * The conversation. Citations an answer makes into its own cards (`[[1]](ref:authority?cite=2)`)
+ * are live without any setup; a host that wraps the thread in its own `<CardRefProvider>` answers
+ * for them instead, and chains `builtinCardRefHost` in if it still wants these.
+ */
+export function Thread(props: ThreadProps) {
+  const host = useCardRefHost();
+  const body = <ThreadBody {...props} />;
+  return host ? body : <CardRefProvider host={builtinCardRefHost}>{body}</CardRefProvider>;
+}
+
+function ThreadBody({ empty, suggestions }: ThreadProps) {
   const labels = useLabels();
   const { messages, status, error, regenerate, isRunning } = useThread();
   const { respond } = useCardAction();
