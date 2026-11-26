@@ -83,4 +83,4 @@ export function shouldStop(conditions: readonly StopCondition[] | undefined, ctx
  * A sane default set for an interactive chat agent. A person's "no" is not here:
  * it is told to the model and the run continues (see `userDeclined`).
  */
-export const DEFAULT_STOP_CONDITIONS: StopCondition[] = [consecutiveFailures(3)];
+export const DEFAULT_STOP_CONDITIONS: StopCondition[] = [/* @__PURE__ */ consecutiveFailures(3)];

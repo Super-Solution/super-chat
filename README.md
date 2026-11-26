@@ -69,7 +69,7 @@ and execute portfolio operations through validated cards.
 
 | | |
 | --- | --- |
-| [docs/guide](docs/guide/README.md) | How to build with it — install, proxy route, first turn, context assembly |
+| [docs/guide](docs/guide/README.md) | How to build with it — install, proxy route, first turn, context assembly, language, Markdown, citations |
 | [docs/HANDOFF.md](docs/HANDOFF.md) | Changing superchat itself: load-bearing decisions, and what will bite you |
 | [docs/UI-SPEC.md](docs/UI-SPEC.md) | Design tokens, breakpoints, theming — the spec `packages/bindings/react-ui` implements |
 | [packages/bindings/react-ui/MOBILE-AGENT.md](packages/bindings/react-ui/MOBILE-AGENT.md) | Native port contract — RN layout, loading states, actions and Orb motion assets |
@@ -477,7 +477,7 @@ proxy streaming are all exercised with no key and no network.
 
 ## Status
 
-v0.4.4. Working and tested; API not frozen.
+v0.5.0. Working and tested; API not frozen.
 
 **Built:** OpenAI adapter (Responses + Chat Completions + background jobs) and
 Anthropic adapter (`/v1/messages`, thinking-signature replay), transport layer
@@ -501,7 +501,13 @@ quotable previewer, an anchored edit protocol with hunk-by-hunk approval, and
 `.eml` as the way out), **provider profiles** for official and OpenAI-compatible
 endpoints, **per-step and per-run metering**, an OpenAI-compatible image provider
 with agent-tool bridge, stable geometry-aware loading states, and three complete
-product-shaped playground experiences backed by the same runtime.
+product-shaped playground experiences backed by the same runtime. The transcript
+UI is accessible (a labelled live log, forced-colours styles), keeps text
+selectable while an answer streams, renders the Markdown models write with
+slots for a highlighter and a typesetter, speaks a table of labels (English and
+a zh-TW preset), points citations into a citations card, and costs a consumer
+only what it imports (a size budget in `pnpm verify`). See
+[Make the transcript yours](docs/guide/ui.md).
 
 **Not built yet:** a Gemini adapter, speech/transcription provider adapters,
 and video-generation provider adapters. Image generation is available through
@@ -509,7 +515,9 @@ the OpenAI-compatible media provider and agent-tool bridge.
 
 **Known gaps**, kept here rather than in a tracker so they are read: nobody has
 driven the document tools against a live model or looked at the document
-surfaces on a real phone. `docs/HANDOFF.md` has the detail.
+surfaces on a real phone; the UI's screen-reader behaviour is asserted through
+roles and live regions in Chromium, not heard in a screen reader, and Safari and
+Firefox are untested. `docs/HANDOFF.md` has the detail.
 
 Prior art read closely: Open WebUI's tools/functions/knowledge split, and
 LibreChat's multi-provider handling.

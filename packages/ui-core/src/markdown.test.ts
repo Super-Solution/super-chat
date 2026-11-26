@@ -37,7 +37,7 @@ describe("renderMarkdown", () => {
 
   it("does not paragraph-wrap or <br/>-ify fenced code content spanning multiple lines", () => {
     const html = renderMarkdown("```js\nline one\n\nline two\n```");
-    expect(html).toContain("<pre><code>line one\n\nline two</code></pre>");
+    expect(html).toContain('<pre data-lang="js"><code class="language-js">line one\n\nline two</code></pre>');
     expect(html).not.toContain("<br/>");
     expect(html).not.toContain("<p>line");
   });

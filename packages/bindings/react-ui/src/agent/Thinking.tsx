@@ -11,9 +11,12 @@
 // arrives token by token, so the reveal follows the stream instead of a timer.
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useLabels } from "../labels.js";
 
 /** Bare shimmering label. Use when there is nothing to show but the wait. */
-export function ThinkingState({ label = "Thinking" }: { label?: string }) {
+export function ThinkingState({ label }: { label?: string }) {
+  const labels = useLabels();
+  label ??= labels.thinking.replace(/…$/, "");
   return (
     <span className="sc-shimmer" role="status">
       {label}
@@ -27,33 +30,61 @@ const GAP = 4;
 const MAX_H = 180; // the viewport grows with content to here, then scrolls
 const FADE = 16; // top/bottom fade once the viewport is capped
 
+/** A CJK character is as wide as two Latin ones, so a line of it is "long" at half the count. */
+const WIDE = /[\u1100-\u115f\u2e80-\ua4cf\uac00-\ud7a3\uf900-\ufaff\ufe30-\ufe6f\uff00-\uff60\uffe0-\uffe6]/g;
+const width = (s: string) => s.length + (s.match(WIDE)?.length ?? 0);
+
+let segmenter: Intl.Segmenter | null | undefined;
+/**
+ * Sentences of one paragraph. `Intl.Segmenter` knows where a sentence ends in every language
+ * (the full stop of Chinese and Japanese, abbreviations in English) where a regex over `.!?`
+ * knows one; browsers without it get a regex that also knows the CJK terminators.
+ */
+function sentences(para: string): string[] {
+  if (segmenter === undefined) {
+    try {
+      segmenter = typeof Intl !== "undefined" && "Segmenter" in Intl ? new Intl.Segmenter(undefined, { granularity: "sentence" }) : null;
+    } catch {
+      segmenter = null;
+    }
+  }
+  if (segmenter) return [...segmenter.segment(para)].map((s) => s.segment);
+  return para.match(/[^.!?。！？]+(?:[.!?]+|[。！？]+)(?:\s|$)?|[^.!?。！？]+$/g) ?? [para];
+}
+
 /**
  * Split raw reasoning into display lines. Models emit reasoning as prose, so
  * paragraph breaks come first and sentences are the fallback — one long
  * paragraph should still scroll as several lines rather than one clamped blob.
  */
-function toLines(text: string): string[] {
+export function thinkingLines(text: string): string[] {
   const paras = text
     .split(/\n{2,}/)
     .map((p) => p.trim())
     .filter(Boolean);
   const out: string[] = [];
   for (const para of paras) {
-    if (para.length <= 160) {
+    if (width(para) <= 160) {
       out.push(para);
       continue;
     }
-    const sentences = para.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g);
-    if (!sentences) {
-      out.push(para);
-      continue;
-    }
-    for (const s of sentences) {
+    for (const s of sentences(para)) {
       const t = s.trim();
       if (t) out.push(t);
     }
   }
   return out;
+}
+
+/** "Thought for 3s" with its first word set apart; any other wording is shown whole. */
+function ThoughtFor({ text, verb }: { text: string; verb: string }) {
+  if (!text.startsWith(verb)) return <>{text}</>;
+  return (
+    <>
+      <span className="sc-think__verb">{verb}</span>
+      {text.slice(verb.length)}
+    </>
+  );
 }
 
 export interface ThinkingProps {
@@ -68,7 +99,8 @@ export interface ThinkingProps {
 }
 
 export function Thinking({ text, streaming = false, elapsedMs, defaultOpen = false }: ThinkingProps) {
-  const lines = useMemo(() => toLines(text), [text]);
+  const labels = useLabels();
+  const lines = useMemo(() => thinkingLines(text), [text]);
 
   // While streaming the reasoning is always open; once done it folds into the
   // summary and the user can toggle it back.
@@ -137,16 +169,19 @@ export function Thinking({ text, streaming = false, elapsedMs, defaultOpen = fal
         type="button"
         className={"sc-think__head" + (done ? " sc-think__head--clickable" : "")}
         aria-expanded={expanded}
-        aria-label="Toggle thought"
+        aria-label={labels.toggleThought}
         onClick={done ? toggle : undefined}
       >
         {done ? (
           <span className="sc-think__label">
-            <span className="sc-think__verb">Thought</span>
-            {seconds !== null ? ` for ${seconds}s` : ""}
+            {seconds !== null ? (
+              <ThoughtFor text={labels.thoughtFor(String(seconds))} verb={labels.thought} />
+            ) : (
+              <span className="sc-think__verb">{labels.thought}</span>
+            )}
           </span>
         ) : (
-          <span className="sc-think__label sc-shimmer">Thinking…</span>
+          <span className="sc-think__label sc-shimmer">{labels.thinking}</span>
         )}
         {done ? (
           <svg className="sc-think__chevron" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true">

@@ -8,7 +8,7 @@
 // charts; if the kit only ships charts, every agent built on it looks like an
 // analytics agent.
 
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import type {
   CalloutCard,
   ChecklistCard,
@@ -20,11 +20,14 @@ import type {
   TreeNode,
 } from "@supersolutions/super-chat-core";
 import type { CardRendererProps } from "../renderer-registry.js";
-import { formatValue, safeHref } from "@supersolutions/super-chat-ui-core";
+import { formatValue, safeHref, type FormatOptions } from "@supersolutions/super-chat-ui-core";
 import { FormattedValue, useFormatOptions } from "./FormattedValue.js";
 import { StatusMark, ToneIcon, type StatusMarkKind } from "./icons.js";
+import { useLabels } from "../labels.js";
+import { useCardRefTarget } from "../card-ref-targets.js";
 
 export function ComparisonCardView({ spec }: CardRendererProps<ComparisonCard>) {
+  const labels = useLabels();
   return (
     <div className="sc-card">
       {spec.title ? <div className="sc-card__title">{spec.title}</div> : null}
@@ -32,7 +35,8 @@ export function ComparisonCardView({ spec }: CardRendererProps<ComparisonCard>) 
         <table className="sc-table sc-compare">
           <thead>
             <tr>
-              <th />
+              {/* The corner cell heads the row labels: named for a screen reader, empty to the eye. */}
+              <th scope="col"><span className="sc-sr-only">{labels.criterion}</span></th>
               {spec.options.map((o) => (
                 <th key={o.id} className={o.highlight ? "sc-compare__best" : undefined}>
                   <div>{o.label}</div>
@@ -145,14 +149,63 @@ export function CalloutCardView({ spec }: CardRendererProps<CalloutCard>) {
   );
 }
 
+/**
+ * Which source `cite=` names: an item's own `id`, else its 1-based position. An id wins, so a
+ * source called "2" is found before the second source is.
+ */
+export function citedIndex(items: readonly { id?: string }[], cite: string): number {
+  const byId = items.findIndex((item) => item.id === cite);
+  if (byId >= 0) return byId;
+  return /^[1-9]\d{0,5}$/.test(cite) && Number(cite) <= items.length ? Number(cite) - 1 : -1;
+}
+
+/**
+ * A date such as `1980-01-01` is a day, not a moment: shown as a datetime it reads "12:00:00 AM",
+ * and in a zone west of UTC it would read the day before. A day is formatted as a day, in UTC,
+ * and a bare year (`1980`, how a case is cited) stays a year.
+ */
+export function citedDate(date: string | number, options: FormatOptions | undefined): string {
+  if (typeof date === "string" && /^\d{4}$/.test(date)) return date;
+  if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    const d = new Date(`${date}T00:00:00Z`);
+    if (!Number.isNaN(d.getTime())) return d.toLocaleDateString(options?.locale, { timeZone: "UTC" });
+  }
+  return formatValue(date, "datetime", options);
+}
+
 export function CitationsCardView({ spec }: CardRendererProps<CitationsCard>) {
+  const labels = useLabels();
   const formatOptions = useFormatOptions();
+  const list = useRef<HTMLOListElement>(null);
+  // Which source a sentence is pointing at right now. State, so it shows; cleared on leave.
+  const [pointed, setPointed] = useState<number | null>(null);
+  useCardRefTarget(spec.id, (ref, event) => {
+    if (ref === null) {
+      setPointed(null);
+      return { ok: true };
+    }
+    const cite = ref.params["cite"]?.[0];
+    if (cite === undefined) return { ok: false, code: "ref_no_cite", reason: "a citation link names its source with cite=." };
+    const index = citedIndex(spec.items, cite);
+    if (index < 0) return { ok: false, code: "ref_no_source", reason: `this card has no source "${cite}".` };
+    const item = spec.items[index]!;
+    const label = [item.title, item.locator].filter(Boolean).join(", ");
+    if (event === "leave") setPointed(null);
+    else setPointed(index);
+    if (event === "activate") {
+      // Bring it into view, and give a keyboard user somewhere to be: the source itself.
+      const row = list.current?.children[index] as HTMLElement | undefined;
+      row?.scrollIntoView({ block: "nearest", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+      row?.focus({ preventScroll: true });
+    }
+    return { ok: true, label };
+  });
   return (
-    <div className="sc-card">
-      <div className="sc-card__title">{spec.title ?? "Sources"}</div>
-      <ol className="sc-cites">
+    <div className="sc-card" data-card-id={spec.id}>
+      <div className="sc-card__title">{spec.title ?? labels.sources}</div>
+      <ol className="sc-cites" ref={list}>
         {spec.items.map((item, i) => (
-          <li key={i} className="sc-cite">
+          <li key={i} className="sc-cite" tabIndex={-1} data-cite={item.id ?? String(i + 1)} data-pointed={pointed === i ? "" : undefined}>
             <span className="sc-cite__n" aria-hidden>
               {i + 1}
             </span>
@@ -173,7 +226,7 @@ export function CitationsCardView({ spec }: CardRendererProps<CitationsCard>) {
                 {item.relevance ? <span className="sc-pill">{item.relevance}</span> : null}
               </div>
               <div className="sc-muted sc-cite__meta">
-                {[item.source, item.locator, item.date ? formatValue(item.date, "datetime", formatOptions) : null]
+                {[item.source, item.locator, item.date ? citedDate(item.date, formatOptions) : null]
                   .filter(Boolean)
                   .join(" · ")}
               </div>
@@ -240,6 +293,7 @@ export function FunnelCardView({ spec }: CardRendererProps<FunnelCard>) {
 }
 
 export function GaugeCardView({ spec }: CardRendererProps<GaugeCard>) {
+  const labels = useLabels();
   const min = spec.min ?? 0;
   const max = spec.max ?? 100;
   const clamped = Math.min(max, Math.max(min, spec.value));
@@ -256,7 +310,7 @@ export function GaugeCardView({ spec }: CardRendererProps<GaugeCard>) {
         <div className="sc-gauge__value"><FormattedValue value={spec.value} format={spec.format ?? "number"} /></div>
         {band || spec.label ? <div className="sc-gauge__label">{spec.label ?? band?.label}</div> : null}
       </div>
-      <div className="sc-gauge__track" role="meter" aria-valuenow={clamped} aria-valuemin={min} aria-valuemax={max}>
+      <div className="sc-gauge__track" role="meter" aria-label={spec.title ?? spec.label ?? labels.gauge} aria-valuenow={clamped} aria-valuemin={min} aria-valuemax={max}>
         {(spec.bands ?? []).map((b, i) => (
           <div
             key={i}

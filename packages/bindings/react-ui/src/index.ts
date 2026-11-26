@@ -38,7 +38,18 @@ export { DocumentCardView, type DocumentQuote, type DocumentCardViewProps } from
 export { EditReviewCardView } from "./cards/EditReview.js";
 export { EmailCardView, type EmailCardViewProps } from "./cards/Email.js";
 
-export { Thread, Composer, MessageView, LiveTurn } from "./Thread.js";
+export {
+  Thread,
+  Composer,
+  MessageView,
+  LiveTurn,
+  matchesAccept,
+  type ThreadProps,
+  type ComposerProps,
+  type MessageViewProps,
+  type MessageFeedback,
+} from "./Thread.js";
+export { Suggestions, EmptyThread, type Suggestion, type SuggestionsProps } from "./Suggestions.js";
 export {
   ChatPanel,
   ChatPanelProvider,
@@ -64,6 +75,17 @@ export { AgentSurface, SurfaceCardView, type AgentSurfaceProps } from "./surface
 export { ContextInspector } from "./ContextInspector.js";
 export { ToastProvider, ConnectionBanner, useToast, type Toast } from "./Toast.js";
 export { CardRefProvider, ProseHtml, useCardRefHost } from "./card-refs.js";
+export { builtinCardRefHost, chainCardRefHosts, useCardRefTarget, type CardRefHandler } from "./card-ref-targets.js";
+export {
+  LabelsProvider,
+  useLabels,
+  enLabels,
+  zhTW,
+  formatBytes,
+  type Labels,
+  type LabelsOverride,
+} from "./labels.js";
+export { MarkdownProvider, useMarkdownOptions, type MarkdownProviderProps } from "./markdown-options.js";
 export type { CardRef, CardRefEvent, CardRefHost, CardRefResult } from "@supersolutions/super-chat-core";
 export { DocumentQuoteProvider, useDocumentQuotes, type QuoteBus } from "./quotes.js";
 

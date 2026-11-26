@@ -314,13 +314,18 @@ test("a wide table scrolls inside its own box, never the page", async ({ page })
   const overflow = await page.evaluate(() => {
     const de = document.documentElement;
     const table = document.querySelector<HTMLElement>(".sc-doc__body table")!;
+    // The box around the table scrolls, not the table: a `display: block` table stops being a
+    // table to some assistive technology, so the table stays one and its box is the scroller.
+    const box = table.closest<HTMLElement>(".sc-md-scroll");
     return {
       page: de.scrollWidth > de.clientWidth,
-      containedX: getComputedStyle(table).overflowX,
+      boxX: box ? getComputedStyle(box).overflowX : "no scroll box around the table",
+      tableDisplay: getComputedStyle(table).display,
     };
   });
   expect(overflow.page).toBe(false);
-  expect(overflow.containedX).toBe("auto");
+  expect(overflow.boxX).toBe("auto");
+  expect(overflow.tableDisplay).toBe("table");
 });
 
 test("an ambiguous anchor is refused with its reason, and nothing is written", async ({ page }) => {

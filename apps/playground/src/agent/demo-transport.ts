@@ -33,6 +33,73 @@ export type DemoScript = { match: RegExp; steps: DemoStep[] };
 
 /** Scripts are keyed by a matcher over the user's message. First match wins. */
 const SCRIPTS: { match: RegExp; steps: Step[] }[] = [
+  // ── rich prose ───────────────────────────────────────────────────────────
+  // What a model writes when it is not using a card: headings, nested emphasis, lists, a task
+  // list, a table, quotes, several kinds of code, links and a picture. Long enough to stream for a
+  // few seconds, with the table and the code arriving after the opening paragraphs, which is when
+  // selecting text and reading it back is hardest.
+  {
+    match: /markdown|rich answer|rich text|排版/i,
+    steps: [
+      {
+        kind: "text",
+        text:
+          "## Rolling out the new billing flow\n\n" +
+          "Short version: **ship it behind a flag, watch *three* numbers for a week, then remove the flag.** " +
+          "The rest of this is the detail, with the commands you will need and what to expect. _Nothing here is irreversible_ until the last step.\n\n" +
+          "### Before you start\n\n" +
+          "- [x] Migration `0042_add_invoice_status` merged\n" +
+          "- [x] Staging has the flag, default **off**\n" +
+          "- [ ] On-call knows the rollback command\n" +
+          "- [ ] Finance has seen the new invoice layout\n\n" +
+          "### What to watch\n\n" +
+          "| Metric | Healthy | Alarm | Owner |\n" +
+          "|:--|--:|--:|:--|\n" +
+          "| Checkout success rate | above 98.5% | below 97% | Payments |\n" +
+          "| Invoice generation p95 | under 800 ms | over 2 s | Billing |\n" +
+          "| Support tickets tagged `billing` | under 40 / day | over 90 / day | Support |\n\n" +
+          "### Turn it on\n\n" +
+          "```sh\n" +
+          "# enable for 5% of accounts, then check the dashboard\n" +
+          "flagctl set billing-v2 --percent 5 --env production\n" +
+          "flagctl status billing-v2\n" +
+          "```\n\n" +
+          "The flag reads its rollout from this config, so a typo here is the usual cause of \"nothing happened\":\n\n" +
+          "```json\n" +
+          "{\n  \"flag\": \"billing-v2\",\n  \"rollout\": { \"percent\": 5, \"sticky\": true },\n  \"fallback\": null\n}\n" +
+          "```\n\n" +
+          "And the one code change, in TypeScript:\n\n" +
+          "```ts\n" +
+          "export async function createInvoice(account: Account): Promise<Invoice> {\n" +
+          "  // Fall back to the old path for accounts outside the rollout.\n" +
+          "  if (!flags.isOn(\"billing-v2\", account.id)) return legacyInvoice(account);\n" +
+          "  const lines = await priceLines(account, { currency: \"USD\", rounding: 2 });\n" +
+          "  return { id: nextId(), status: \"open\", lines, total: sum(lines) };\n" +
+          "}\n" +
+          "```\n\n" +
+          "> A flag that is never removed is a second code path forever. Put the removal in the same ticket as the rollout.\n\n" +
+          "Details live in the [runbook](https://example.com/runbooks/billing-v2) and in https://example.com/status. " +
+          "The invoice mock-up is here: ![invoice layout](https://example.com/invoice.png). " +
+          "If you change the rounding, the total is $T = \\sum_i p_i q_i$ and nothing else moves.\n\n" +
+          "1. Turn it on for 5%.\n2. Wait a day, check the three numbers.\n3. Go to 25%, then 100%.\n4. Remove the flag.\n",
+      },
+    ],
+  },
+  {
+    match: /中文|繁體|思考/i,
+    steps: [
+      {
+        kind: "text",
+        text:
+          "先說結論：**可以上線，但要用旗標分批放量。** 我建議先放 5% 的帳號，觀察一天，再逐步放到全部。\n\n" +
+          "### 為什麼這樣做\n\n" +
+          "新的計費流程改動了發票產生的順序，舊流程的帳號不應該被影響。分批放量可以在出問題時快速回復，也能把客服的負擔分散開來。\n\n" +
+          "- 第一天：5% 帳號，確認結帳成功率沒有下降\n- 第二到三天：25% 帳號，留意客服標記為「帳單」的案件數\n- 第四天起：全部帳號，並移除旗標\n\n" +
+          "| 指標 | 正常 | 警戒 |\n|:--|--:|--:|\n| 結帳成功率 | 高於 98.5% | 低於 97% |\n| 發票產生 p95 | 低於 800 毫秒 | 高於 2 秒 |\n\n" +
+          "```sh\nflagctl set billing-v2 --percent 5 --env production\n```\n",
+      },
+    ],
+  },
   // ── streaming card ───────────────────────────────────────────────────────
   // Big enough that its arguments take a few seconds to arrive, so the table
   // visibly fills row by row instead of appearing whole at the end.
@@ -112,7 +179,7 @@ const SCRIPTS: { match: RegExp; steps: Step[] }[] = [
       {
         kind: "text",
         text:
-          "Not entirely, no — not on your own standard terms. A clearly drafted exclusion can survive even a fundamental breach, but where you are contracting on written standard terms it still has to pass a reasonableness test, and a total exclusion rarely does.\n\n" +
+          "Not entirely, no — not on your own standard terms. A clearly drafted exclusion can survive even a fundamental breach [[1]](ref:authority?cite=photo-production), but where you are contracting on written standard terms it still has to pass a reasonableness test [[2]](ref:authority?cite=ucta-s3), and a total exclusion rarely does.\n\n" +
           "A mutual cap at 12 months' fees, with carve-outs for death, personal injury and fraud, is the shape that normally holds.",
       },
     ],

@@ -87,7 +87,7 @@ const PITCH = 6; // centre-to-centre spacing in stage px; the dot size is CSS
 const MID = (N - 1) / 2;
 
 /** Clockwise walk of the lattice perimeter — the track the comets run on. */
-const RING: [number, number][] = (() => {
+const RING: [number, number][] = /* @__PURE__ */ (() => {
   const ring: [number, number][] = [];
   for (let x = 0; x < N; x++) ring.push([x, 0]);
   for (let y = 1; y < N; y++) ring.push([N - 1, y]);
@@ -96,7 +96,7 @@ const RING: [number, number][] = (() => {
   return ring;
 })();
 
-const RING_INDEX = new Map(RING.map(([x, y], i) => [x + "," + y, i]));
+const RING_INDEX = /* @__PURE__ */ new Map(RING.map(([x, y], i) => [x + "," + y, i]));
 
 /**
  * Per-cell `animation-delay` in ms. Negative values seed a cell partway into
@@ -291,7 +291,7 @@ const RING_ARC = 3;
 
 const ringDir = (ring: number) => (ring % 2 === 0 ? -1 : 1);
 
-const G3_MOVES: RingMove[] = (() => {
+const G3_MOVES: RingMove[] = /* @__PURE__ */ (() => {
   const moves: RingMove[] = [];
   for (let pass = 0; pass < 2; pass++) {
     for (let r = 0; r < GLOBE_RINGS.length; r++) moves.push({ ring: r, angle: ringDir(r) * RING_HALF });
@@ -299,7 +299,7 @@ const G3_MOVES: RingMove[] = (() => {
   return moves;
 })();
 
-const G4_MOVES: RingMove[] = [2, 1, 3, 0, 4, 2, 1, 3, 0, 4].map((ring) => ({
+const G4_MOVES: RingMove[] = /* @__PURE__ */ [2, 1, 3, 0, 4, 2, 1, 3, 0, 4].map((ring) => ({
   ring,
   angle: ringDir(ring) * RING_HALF,
 }));
@@ -337,7 +337,7 @@ function ringTurnPoses(
 
 const G5_SLOW = 0.4;
 const G5_BURST = (Math.PI * 2 - G5_SLOW * 4) / 4;
-const G5_POSES: { s: number; spin: number }[] = (() => {
+const G5_POSES: { s: number; spin: number }[] = /* @__PURE__ */ (() => {
   const poses: { s: number; spin: number }[] = [{ s: 1.0, spin: 0 }];
   let spin = 0;
   const steps: { s: number; kind: "slow" | "burst" }[] = [

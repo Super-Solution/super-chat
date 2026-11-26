@@ -9,7 +9,7 @@
 
 export const CARD_REF_SCHEME = "ref";
 
-export const CARD_REF_LIMITS = Object.freeze({
+export const CARD_REF_LIMITS = /* @__PURE__ */ Object.freeze({
   /** The whole link, in UTF-16 code units. */
   length: 512,
   /** The target (the card's id). */

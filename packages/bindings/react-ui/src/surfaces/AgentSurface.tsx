@@ -10,6 +10,7 @@ import type { SurfaceSpec } from "@supersolutions/super-chat-core";
 import { useOptionalAgentClient, useSurface } from "@supersolutions/super-chat-react";
 import type { CardRendererProps } from "../renderer-registry.js";
 import { SurfaceView, useSurfaceHost } from "./SurfaceView.js";
+import { useLabels } from "../labels.js";
 
 export type AgentSurfaceProps = {
   surfaceId: string;
@@ -45,8 +46,9 @@ export function AgentSurface({ surfaceId, fallback, streaming, className }: Agen
 }
 
 function SurfaceReference({ spec, placedElsewhere }: { spec: SurfaceSpec; placedElsewhere: boolean }) {
-  const name = spec.title ?? "the interface";
-  const label = spec.deleted ? `Removed ${name}` : placedElsewhere ? `${name} is open beside the conversation` : `Updated ${name}`;
+  const labels = useLabels();
+  const name = spec.title ?? labels.surfaceFallbackName;
+  const label = spec.deleted ? labels.surfaceRemoved(name) : placedElsewhere ? labels.surfaceBeside(name) : labels.surfaceUpdated(name);
   const show = () => {
     const target = document.querySelector<HTMLElement>(`[data-surface-id="${CSS.escape(spec.surfaceId)}"]`);
     target?.scrollIntoView({ block: "center" });

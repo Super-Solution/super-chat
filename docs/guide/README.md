@@ -17,6 +17,7 @@ This guide is the other axis: one page per subsystem, in the order you meet them
 | 4 | [Surfaces](surfaces.md) | An agent that assembles working interfaces |
 | 5 | [Run the agent on your server](server-run.md) | The same client and UI following a turn that runs on your server |
 | 6 | [Cards beside the chat](panel.md) | An agent that opens a chart or a document in a side panel |
+| 7 | [Make the transcript yours](ui.md) | Your language, highlighter, starting prompts, ratings, citations and reading width |
 
 Still being written: requests & transports, skills, tools, cards, React. Until
 they land, the package READMEs ([core](../../packages/core/README.md),

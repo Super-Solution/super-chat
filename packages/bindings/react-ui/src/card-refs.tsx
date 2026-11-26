@@ -13,6 +13,9 @@ import {
   type ReactNode,
 } from "react";
 import { parseCardRef, type CardRef, type CardRefHost, type CardRefResult } from "@supersolutions/super-chat-core";
+import { useLabels } from "./labels.js";
+import { newProseState, showBlocks, type ProseState } from "./prose-dom.js";
+import { decorateActions, runAction } from "./prose-actions.js";
 
 // Card references in prose: `[the support level](ref:btc?key=support)`.
 //
@@ -28,7 +31,7 @@ import { parseCardRef, type CardRef, type CardRefHost, type CardRefResult } from
 
 type RefContext = { host: CardRefHost; announce: (text: string) => void };
 
-const Context = createContext<RefContext | undefined>(undefined);
+const Context = /* @__PURE__ */ createContext<RefContext | undefined>(undefined);
 
 /** The host in force, if any. Without one, refs render as plain text. */
 export function useCardRefHost(): CardRefHost | undefined {
@@ -64,6 +67,7 @@ function readRef(el: HTMLElement): CardRef | undefined {
 /** A reference nobody can answer reads as the text it is, with the reason on hover. */
 function degrade(el: HTMLElement, reason: string) {
   el.setAttribute("data-ref-state", "unavailable");
+  el.setAttribute("data-ui-dead", el.getAttribute("data-ref") ?? "");
   el.setAttribute("title", reason);
   el.removeAttribute("tabindex");
   el.removeAttribute("role");
@@ -71,42 +75,79 @@ function degrade(el: HTMLElement, reason: string) {
 }
 
 /**
- * Rendered Markdown, with its card references live when a <CardRefProvider> is above it.
+ * Rendered Markdown, with its card references live when a <CardRefProvider> is above it, and
+ * the copy / wrap / show-all buttons of code blocks and tables working.
  * The one place prose HTML is injected, so a surface that shows assistant text gets
  * references by using this instead of `dangerouslySetInnerHTML`.
+ *
+ * `html` is a string, or the blocks of one answer (`renderMarkdownBlocks`). It is shown by
+ * editing the DOM rather than replacing it, block by block, and a block whose string did not
+ * change is not touched. That is what lets someone select, hover or focus inside an answer
+ * while it is still being written; see `prose-dom.ts`. The markup is rendered once and left in
+ * place: React never re-applies it, and every later change goes through the editor.
  */
-export function ProseHtml({ html, className }: { html: string; className?: string }) {
+export function ProseHtml({ html, className }: { html: string | readonly string[]; className?: string }) {
   const context = useContext(Context);
+  const words = useLabels();
   const box = useRef<HTMLDivElement>(null);
-  const inner = useMemo(() => ({ __html: html }), [html]);
+  const parts = typeof html === "string" ? [html] : html;
+  // The first markup, for the server and the first client render. Held still, so React finds the
+  // same string on every later render and leaves the children to `showBlocks`.
+  const [first] = useState(() => ({ __html: parts.join("") }));
+  const shown = useRef<ProseState>(newProseState());
   const tracked = useRef<Tracked>({});
   const host = context?.host;
   const announce = context?.announce;
+  const decorated = useRef<{ words: unknown; host: unknown } | null>(null);
 
-  // Decorate after every change of the HTML: React replaces the markup wholesale, so what a
-  // previous pass added is gone. A ref that does not parse is dead from the start.
+  // Bring the DOM up to date, then decorate what is new: the words on the buttons, and the
+  // references a host answers for. Decoration is attributes on nodes that stay, so it is
+  // cheap to repeat and is never lost to the next frame.
   useLayoutEffect(() => {
     const root = box.current;
-    if (!root || !host) return;
+    if (!root) return;
+    const edited = showBlocks(root, shown.current, parts, "data-sc-new");
+    // Also when the words or the host changed under markup that did not: a new language, a new host.
+    const changed = edited || decorated.current?.words !== words || decorated.current?.host !== host;
+    decorated.current = { words, host };
+    if (!changed) return;
+    decorateActions(root, words);
+    if (!host) return;
     for (const el of root.querySelectorAll<HTMLElement>(".sc-ref")) {
-      const parsed = parseCardRef(el.getAttribute("data-ref"));
+      const ref = el.getAttribute("data-ref") ?? "";
+      // Already decided for this very reference (the node outlives a frame, its text may not).
+      if (el.getAttribute("data-ref-live") === ref || el.getAttribute("data-ui-dead") === ref) continue;
+      el.removeAttribute("data-ref-state");
+      el.removeAttribute("title");
+      const parsed = parseCardRef(ref);
       if (!parsed.ok) {
         degrade(el, parsed.error);
         continue;
       }
-      el.setAttribute("data-ref-live", "");
+      el.setAttribute("data-ref-live", ref);
       el.setAttribute("tabindex", "0");
       el.setAttribute("role", "button");
     }
+    // Whatever was being shown for a reference that is no longer here goes with it.
     const state = tracked.current;
-    return () => {
-      // The elements this pass decorated are about to go; so is whatever they were showing.
-      if (state.shown) host.ref(null, "leave");
+    if (state.shown && !root.contains(state.shown)) {
+      host.ref(null, "leave");
       tracked.current = {};
-    };
-  }, [html, host]);
+    }
+  });
+  useLayoutEffect(
+    () => () => {
+      if (tracked.current.shown) host?.ref(null, "leave");
+      tracked.current = {};
+    },
+    [host],
+  );
 
-  if (!host || !announce) return <div ref={box} className={className} dangerouslySetInnerHTML={inner} />;
+  const press = (event: MouseEvent) => {
+    if (runAction(event.target, words)) event.preventDefault();
+  };
+
+  if (!host || !announce) return <div ref={box} className={className} dangerouslySetInnerHTML={first} onClick={press} />;
 
   // Narrowed bindings: the function declarations below are hoisted, so they cannot see the
   // narrowing the early return gave `host` and `announce`.
@@ -184,6 +225,10 @@ export function ProseHtml({ html, className }: { html: string; className?: strin
     if (ref) settle(el, live.ref(ref, "activate"), true);
   };
   const click = (event: MouseEvent) => {
+    if (runAction(event.target, words)) {
+      event.preventDefault();
+      return;
+    }
     const el = refOfTarget(event.target);
     if (!el) return;
     event.preventDefault();
@@ -210,7 +255,7 @@ export function ProseHtml({ html, className }: { html: string; className?: strin
     <div
       ref={box}
       className={className}
-      dangerouslySetInnerHTML={inner}
+      dangerouslySetInnerHTML={first}
       onMouseOver={over}
       onMouseOut={out}
       onFocus={focusIn}

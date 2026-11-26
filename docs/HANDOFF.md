@@ -33,8 +33,8 @@ apps/playground   Next.js dev panels. runs with NO API key.
 
 ```bash
 pnpm install && pnpm build && pnpm dev     # → http://localhost:3210
-pnpm test                                  # 359 tests, ~4s
-pnpm test:rwd                              # 152 browser checks, 4 viewports
+pnpm test                                  # ~1,090 tests, ~30s
+pnpm test:rwd                              # ~250 browser checks, 4 viewports
 ```
 
 The playground is **not a product**. It is one panel per capability, aimed at a
@@ -47,11 +47,11 @@ panel; it does not get a feature in an app that happens to live here.
 `sc-`, storage keys `superchat:*`. Keep both consistent when you add a surface:
 a stray prefix is how a theme override silently stops applying.
 
-**Publish scope**: the three publishable packages (`core`, `react`, `ui`) are
+**Publish scope**: the publishable packages (`core`, `react`, `ui`, and the others listed in `docs/PACKAGES.md`) are
 scoped `@supersolutions/super-chat-*` and publish to the **public npm registry**
 under the supersolutions org. `apps/playground` stays `@superchat/playground`: it's
 `private: true` and never published. "superchat" the *project* is still called
-superchat everywhere else (README, CSS prefix, storage keys) — only the three
+superchat everywhere else (README, CSS prefix, storage keys) — only the
 registry-facing package names carry the scope.
 
 **Publish with `pnpm`, never `npm`.** `react` and `ui` depend on `core` through
@@ -197,6 +197,16 @@ has a regression test now; the test names spell out the failure.
   that a message can be sent, and that touch targets are big enough — which
   is a real floor, and is not the same as design review. Proportion, rhythm
   and colour remain unexamined. Open it before trusting the visual design.
+- **A top-level statement that runs at load keeps everything it touches in a consumer's bundle.** One
+  `{ ...register() }` in `BUILTIN_RENDERERS` made `import { CodeBlock }` cost 40 KB gzip (it is 3 KB now).
+  `/* @__PURE__ */` on a `createContext(...)` or a table built by a call helps, but a spread of a call
+  does not take it back. `pnpm check:size` (in `pnpm verify`, after the build) bundles single imports
+  the way an app would and fails past a budget; run it after touching an index file or a module with
+  top-level work. Budgets are proposals: raise one in the same commit that says why.
+- **Selection survives streaming because the live answer is morphed, not replaced.** `ProseHtml` patches
+  only the block that changed (`prose-dom.ts`); anything you add to a rendered node that a morph
+  must leave alone (`data-sc-new`, the action buttons) goes in its KEEP list. Putting the HTML back
+  with `innerHTML` brings the old bug back, and `tests/thread.spec.ts` ("text selected while an answer streams stays selected") is what notices.
 - **`pnpm test:rwd` needs a Chromium the runner can launch.** The version
   Playwright expects and the one installed here are usually different builds;
   `playwright.config.ts` points at a preinstalled binary and

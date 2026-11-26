@@ -8,6 +8,7 @@
 // can be collapsed without losing the thread.
 
 import { useState } from "react";
+import { useLabels } from "../labels.js";
 import { RollingCount } from "./RollingCount.js";
 
 export type TodoStatus = "todo" | "active" | "done" | "blocked";
@@ -91,7 +92,9 @@ export interface TodoListProps {
   defaultCollapsed?: boolean;
 }
 
-export function TodoList({ items, title = "To-dos", defaultCollapsed = false }: TodoListProps) {
+export function TodoList({ items, title: given, defaultCollapsed = false }: TodoListProps) {
+  const labels = useLabels();
+  const title = given ?? labels.todos;
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
   const total = items.length;
@@ -107,7 +110,7 @@ export function TodoList({ items, title = "To-dos", defaultCollapsed = false }: 
         type="button"
         className="sc-todo__head"
         aria-expanded={!collapsed}
-        aria-label={`Toggle ${title}`}
+        aria-label={labels.toggle(title)}
         onClick={() => setCollapsed((c) => !c)}
       >
         <span className="sc-todo__headicon">

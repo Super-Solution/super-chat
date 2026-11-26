@@ -32,7 +32,7 @@ import {
 } from "@supersolutions/super-chat-core";
 import { AgentClient, type AgentClientConfig, type ThreadState } from "@supersolutions/super-chat-client";
 
-const AgentContext = createContext<AgentClient | null>(null);
+const AgentContext = /* @__PURE__ */ createContext<AgentClient | null>(null);
 
 export function AgentProvider({ client, children }: { client: AgentClient; children: ReactNode }) {
   return <AgentContext.Provider value={client}>{children}</AgentContext.Provider>;

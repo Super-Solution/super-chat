@@ -13,7 +13,7 @@ const GAPS = ["none", "xs", "sm", "md", "lg"];
 
 /** Structural props are never bindings: the graph must be knowable before any data arrives. */
 const fixed = (schema: JSONSchema): JSONSchema => ({ ...schema, "x-static": true });
-const childIds: JSONSchema = fixed({ type: "array", items: { type: "string" }, description: "Component ids, in display order." });
+const childIds: JSONSchema = /* @__PURE__ */ fixed({ type: "array", items: { type: "string" }, description: "Component ids, in display order." });
 const childId = (description: string): JSONSchema => fixed({ type: "string", description });
 
 /** A control's value must be a `$path`: it has to know where to write. */
@@ -26,7 +26,7 @@ const boundValue: JSONSchema = {
   "x-static": true,
 };
 
-export const CONDITION_SCHEMA: JSONSchema = fixed({
+export const CONDITION_SCHEMA: JSONSchema = /* @__PURE__ */ fixed({
   type: "object",
   required: ["path"],
   properties: {
@@ -37,7 +37,7 @@ export const CONDITION_SCHEMA: JSONSchema = fixed({
   additionalProperties: false,
 });
 
-export const ACTION_SCHEMA: JSONSchema = fixed({
+export const ACTION_SCHEMA: JSONSchema = /* @__PURE__ */ fixed({
   type: "object",
   required: ["type"],
   description:

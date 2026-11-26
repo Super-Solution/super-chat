@@ -22,6 +22,7 @@ import type { MarkdownBlock } from "@supersolutions/super-chat-core";
 import { renderMarkdownWithAnchors } from "@supersolutions/super-chat-ui-core";
 import type { CardRendererProps } from "../renderer-registry.js";
 import { useDocumentQuotes } from "../quotes.js";
+import { useLabels } from "../labels.js";
 import { CardActions } from "./CardActions.js";
 
 /**
@@ -111,6 +112,7 @@ export function DocumentCardView({ spec, onQuote: onQuoteProp }: DocumentCardVie
   const [expanded, setExpanded] = useState(false);
   const [pending, setPending] = useState<Omit<DocumentQuote, "docId" | "title" | "revision"> | null>(null);
   const bodyRef = useRef<HTMLDivElement | null>(null);
+  const labels = useLabels();
 
   const { html, blocks } = useMemo(() => renderMarkdownWithAnchors(spec.markdown), [spec.markdown]);
   // Memoised for IDENTITY, not for the cost of building an object literal.
@@ -168,7 +170,7 @@ export function DocumentCardView({ spec, onQuote: onQuoteProp }: DocumentCardVie
     <>
       <div className="sc-doc__head">
         <span className="sc-doc__title">{spec.title}</span>
-        <span className="sc-doc__rev sc-mono" title="Document revision">
+        <span className="sc-doc__rev sc-mono" title={labels.documentRevision}>
           v{spec.revision}
         </span>
         <button
@@ -177,13 +179,18 @@ export function DocumentCardView({ spec, onQuote: onQuoteProp }: DocumentCardVie
           onClick={() => setExpanded((e) => !e)}
           aria-expanded={expanded}
         >
-          {expanded ? "Close" : "Open"}
+          {expanded ? labels.collapse : labels.expand}
         </button>
       </div>
 
       <div
         ref={bodyRef}
         className="sc-doc__body sc-prose"
+        // The body scrolls, so a keyboard has to be able to land on it; a named region tells a
+        // screen reader what it landed on.
+        role="region"
+        aria-label={labels.documentBody}
+        tabIndex={0}
         dangerouslySetInnerHTML={inner}
       />
 
@@ -196,12 +203,12 @@ export function DocumentCardView({ spec, onQuote: onQuoteProp }: DocumentCardVie
         <div className="sc-doc__quotebar">
           <span className="sc-doc__quotetext">{pending.text.trim().slice(0, 90)}</span>
           <button type="button" className="sc-btn sc-btn--sm sc-btn--primary" onClick={quote}>
-            Ask about this
+            {labels.askAboutThis}
           </button>
           <button
             type="button"
             className="sc-doc__quotedismiss"
-            aria-label="Dismiss quote"
+            aria-label={labels.dismissQuote}
             onClick={() => setPending(null)}
           >
             ✕

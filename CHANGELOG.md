@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.5.0
+
+Requires `@supersolutions/super-protocol` 0.4.1 (unchanged; the plugin and router packages pin it). No change to super-protocol: every shared shape stays as it was. Everything below is additive unless it is under Changed.
+
+### Added
+
+- **Accessibility.** The thread is `role="log"` with `aria-busy` while a turn streams, and a polite live region announces that an answer started and finished (not each token). Icon-only controls have names, and `forced-colors: active` (Windows high contrast) keeps borders, focus rings and the selected, pointed and rated states visible without colour.
+- **Selection survives streaming.** The live answer is patched block by block instead of replaced, so text selected in an answer that is still arriving stays selected (a Playwright test holds this). One loss remains: the selection is lost once, at the moment the turn commits.
+- **Markdown renders what models write** (`@supersolutions/super-chat-ui-core`): task lists, bare links, safe images (a link unless the host opts in), and `$…$` / `$$…$$` maths. Fenced code is coloured by a small built-in highlighter (JS/TS, Python, JSON, shell, SQL, HTML/CSS, YAML, diff). Slots, through `MarkdownProvider` or `MarkdownOptions`: `highlight` (replace the highlighter, or `false`), `math` (a typesetter; off by default so a price is never maths) and `images` (`"link"` by default, which fetches nothing; `"embed"` loads them). `highlightCode`, `HIGHLIGHT_LANGUAGES`, `tableToTsv` and `tableToMarkdown` are exported. No new dependency.
+- **Code block and table actions.** Copy on a fenced block; copy as TSV and as Markdown on a table, in rendered Markdown and on the `table` card.
+- **`Suggestions` and `EmptyThread`**, and `Thread` props `suggestions` and `empty`. Nothing is invented: the host supplies every prompt.
+- **`Composer` `accept` and `maxFileBytes`.** A refused file is listed under the composer (`role="alert"`) with the reason, never dropped silently.
+- **`LabelsProvider`, `useLabels`, `enLabels`, `zhTW`, `formatBytes`.** Every word the kit writes comes from one typed table, with a zh-TW preset (a first translation) and nested partial overrides. Subpath `/labels`.
+- **`Thinking` splits CJK sentences** with `Intl.Segmenter` (a CJK-aware fallback where it is missing).
+- **Inline citations.** `[[1]](ref:<card id>?cite=<item id or number>)` points into a citations card through the existing card-ref mechanism. `CitationsCard` gains an optional `id`, and each item an optional `id` (validated; duplicates refused). New: `builtinCardRefHost`, `chainCardRefHosts`, `useCardRefTarget`. `Thread` installs `builtinCardRefHost` when no host is above it; to keep another host as well, chain them.
+- **Per-answer controls.** `Thread` / `MessageView` props `onFeedback` (thumbs, `aria-pressed`; not drawn without a handler), `actions` (extra controls beside copy and regenerate) and `formatError`.
+- **`ToolDefinition.display`** (`label(input)`, `summary(output)`): how a call reads on its row. A throw falls back to the tool name; text is clamped to 140 characters. A finished call also shows a duration bar.
+- **Reading tokens:** `--sc-measure` (72ch), `--sc-density` with `[data-sc-density="compact"]`, `--sc-fade-in` (0ms: off; the fade is CSS-only and never runs under reduced motion), and a heading ramp (`--sc-fs-h2`, `--sc-fs-h3`).
+- **Subpath exports** of `@supersolutions/super-chat-ui`: `/cards`, `/agent`, `/surfaces`, `/labels`.
+- **`pnpm check:size`** (`scripts/check-size.mjs`, part of `pnpm verify` after the build): bundles single imports the way an app would and fails past a budget. The budgets are proposals, not decisions.
+- A guide page, [Make the transcript yours](docs/guide/ui.md).
+
+### Changed
+
+- **Tree-shaking works again.** `import { CodeBlock }` was 40.1 KB gzip and is 3.0 KB; `{ Thread, Composer }` went from 51.5 KB to 35.7 KB. The cause was a spread of a call in `BUILTIN_RENDERERS` that ran at load and kept every card view; `BUILTIN_RENDERERS` is now a plain object and the default registry is built on first use (`getDefaultRegistry()`). Pure annotations were added where a `createContext` or a table was built at load. The Markdown renderer grew from 5.2 KB to 8.1 KB (the highlighter, task lists, maths and image handling), and `styles.css` from 32.7 KB to 36.1 KB.
+- `Thread` shows a default empty state (title, one line, any suggestions) before the first message. Pass `empty={null}` for none.
+- `thoughtFor(seconds)` in the labels receives the number only; the label owns the unit.
+- Heading levels in rendered Markdown are unchanged (`#` is still `h2`); sizes now follow a ramp.
+- `Copy` on an answer copies its Markdown source, not its rendered text.
+
+### Fixed
+
+- **The file picker attached nothing.** The input's live `FileList` was emptied (`value = ""`) before it was read. It is copied first, and a file the reader cannot read is reported rather than lost.
+- Editing a sent message dropped its non-text parts (attachments). They are kept, and the editor takes focus, closes on Escape and sends on Ctrl or Cmd+Enter.
+
 ## 0.4.4
 
 Requires `@supersolutions/super-protocol` 0.4.1 (the plugin and router packages pin it).

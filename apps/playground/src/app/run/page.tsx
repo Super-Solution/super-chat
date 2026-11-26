@@ -39,6 +39,8 @@ const EXAMPLES = [
   { title: "Markets — chart", prompt: "Show me SUI price action over the last 60 days." },
   { title: "Interactive — confirm", prompt: "Set an alert for when SUI goes above $5." },
   { title: "Manual skill", prompt: "Do a deep research pass on the market structure." },
+  { title: "Rich answer — Markdown", prompt: "Give me a rich answer in Markdown: how do we roll out the new billing flow?" },
+  { title: "繁體中文", prompt: "請用繁體中文說明新的計費流程要怎麼上線。" },
 ];
 
 export default function RunPanel() {
@@ -323,7 +325,7 @@ export default function RunPanel() {
               <p className="dev__banner">Enter an API key before sending a BYOK request.</p>
             ) : null}
 
-            <Thread empty={<Examples />} />
+            <Thread empty={<Examples />} onFeedback={recordFeedback} />
             <Composer placeholder="Ask about a contract, a funnel, or a market…" onAttachFile={attachFile} />
           </div>
 
@@ -337,6 +339,22 @@ export default function RunPanel() {
       </CardRendererProvider>
     </AgentProvider>
   );
+}
+
+/**
+ * What a host does with a thumb: keep it. The playground writes it to this browser; a product
+ * would send it to its own analytics. The kit only reports the press.
+ */
+function recordFeedback(message: { id: string }, value: "up" | "down" | null) {
+  try {
+    const key = "superchat.playground.feedback";
+    const all = JSON.parse(localStorage.getItem(key) ?? "{}") as Record<string, string>;
+    if (value) all[message.id] = value;
+    else delete all[message.id];
+    localStorage.setItem(key, JSON.stringify(all));
+  } catch {
+    // Storage can be unavailable; the thumb still shows, nothing is kept.
+  }
 }
 
 const THREADS_PAGE_SIZE = 20;

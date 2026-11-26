@@ -19,27 +19,9 @@ import type { Card } from "@supersolutions/super-chat-core";
 import { useOptionalAgentClient } from "@supersolutions/super-chat-react";
 // Used only while rendering, so the two modules may import each other.
 import { CardRenderer } from "./renderer-registry.js";
+import { useLabels, type ChatPanelLabels } from "./labels.js";
 
-export type ChatPanelLabels = {
-  /** The line left in the chat for a card shown in the panel. */
-  opened: string;
-  /** Its button when the card is not the one in the panel. */
-  open: string;
-  /** Its state when the card is the one in the panel. */
-  showing: string;
-  /** The panel's close button. */
-  close: string;
-  /** The panel's heading for a card without a title. */
-  untitled: string;
-};
-
-const DEFAULT_LABELS: ChatPanelLabels = {
-  opened: "Opened beside the chat",
-  open: "Open",
-  showing: "Showing",
-  close: "Close panel",
-  untitled: "Panel",
-};
+export type { ChatPanelLabels };
 
 export type ChatPanelState = {
   /** The card in the panel, or `null` when it is closed. */
@@ -49,7 +31,7 @@ export type ChatPanelState = {
   labels: ChatPanelLabels;
 };
 
-const ChatPanelContext = createContext<ChatPanelState | null>(null);
+const ChatPanelContext = /* @__PURE__ */ createContext<ChatPanelState | null>(null);
 
 /** The panel, inside a `ChatPanelProvider`. Throws outside one. */
 export function useChatPanel(): ChatPanelState {
@@ -120,7 +102,8 @@ export function ChatPanelProvider({ children, initialCard = null, autoOpen = tru
     });
   }, [client, autoOpen, open]);
 
-  const words = useMemo(() => ({ ...DEFAULT_LABELS, ...labels }), [labels]);
+  const inherited = useLabels().panel;
+  const words = useMemo(() => ({ ...inherited, ...labels }), [inherited, labels]);
   const value = useMemo(() => ({ card, open, close, labels: words }), [card, open, close, words]);
   return <ChatPanelContext.Provider value={value}>{children}</ChatPanelContext.Provider>;
 }

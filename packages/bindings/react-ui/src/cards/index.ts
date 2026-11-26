@@ -35,43 +35,43 @@ import {
 import { ChoiceCardView, ConfirmCardView, FormCardView } from "./Interactive.js";
 import { SurfaceCardView } from "../surfaces/AgentSurface.js";
 
-// One cast lives here instead of once per entry below: `register` still needs
-// to widen a `ComponentType<CardRendererProps<SpecificCard>>` into the map's
-// `ComponentType<CardRendererProps<never>>` value type (the map has to hold
-// every card's renderer, so it cannot know any one of them specifically), but
-// the call site stays checked — passing e.g. ChartCardView for "table" is a
-// type error because ChartCardView doesn't accept a TableCard spec.
-function register<K extends BuiltinCardKind>(
-  kind: K,
-  Renderer: ComponentType<CardRendererProps<Extract<BuiltinCard, { kind: K }>>>,
-): CardRendererMap {
-  return { [kind]: Renderer as CardRendererMap[string] };
-}
-
-export const BUILTIN_RENDERERS: CardRendererMap = {
-  ...register("table", TableCardView),
-  ...register("stats", StatsCardView),
-  ...register("comparison", ComparisonCardView),
-  ...register("keyvalue", KeyValueCardView),
-  ...register("tree", TreeCardView),
-  ...register("chart", ChartCardView),
-  ...register("funnel", FunnelCardView),
-  ...register("gauge", GaugeCardView),
-  ...register("timeline", TimelineCardView),
-  ...register("progress", ProgressCardView),
-  ...register("checklist", ChecklistCardView),
-  ...register("markdown", MarkdownCardView),
-  ...register("document", DocumentCardView),
-  ...register("callout", CalloutCardView),
-  ...register("citations", CitationsCardView),
-  ...register("code", CodeCardView),
-  ...register("diff", DiffCardView),
-  ...register("media", MediaCardView),
-  ...register("choice", ChoiceCardView),
-  ...register("form", FormCardView),
-  ...register("confirm", ConfirmCardView),
-  ...register("editreview", EditReviewCardView),
-  ...register("email", EmailCardView),
+// Each renderer is checked against its kind (passing ChartCardView for "table" is a type error,
+// because it does not accept a TableCard), and a kind with no renderer is one too. The map is a
+// plain object of identifiers on purpose: a call or a spread here would be a statement a bundler
+// must run, which keeps every card view in a page that imported none of them.
+type Renderers = {
+  [K in BuiltinCardKind]: ComponentType<CardRendererProps<Extract<BuiltinCard, { kind: K }>>>;
+} & {
   // Not a kind `visualize` can pick: surfaces arrive through their own tools.
-  surface: SurfaceCardView as CardRendererMap[string],
+  surface: ComponentType<CardRendererProps<never>>;
 };
+
+const RENDERERS: Renderers = {
+  table: TableCardView,
+  stats: StatsCardView,
+  comparison: ComparisonCardView,
+  keyvalue: KeyValueCardView,
+  tree: TreeCardView,
+  chart: ChartCardView,
+  funnel: FunnelCardView,
+  gauge: GaugeCardView,
+  timeline: TimelineCardView,
+  progress: ProgressCardView,
+  checklist: ChecklistCardView,
+  markdown: MarkdownCardView,
+  document: DocumentCardView,
+  callout: CalloutCardView,
+  citations: CitationsCardView,
+  code: CodeCardView,
+  diff: DiffCardView,
+  media: MediaCardView,
+  choice: ChoiceCardView,
+  form: FormCardView,
+  confirm: ConfirmCardView,
+  editreview: EditReviewCardView,
+  email: EmailCardView,
+  surface: SurfaceCardView as Renderers["surface"],
+};
+
+/** The map's own value type has to hold every card's renderer, so it cannot know any one of them. */
+export const BUILTIN_RENDERERS = RENDERERS as unknown as CardRendererMap;

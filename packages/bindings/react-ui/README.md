@@ -15,8 +15,10 @@ theming and the full component spec live in
 - `cards/` — one renderer per built-in card kind (table, chart, funnel, diff, confirm, …), registered in `cards/index.ts` and validated against `@supersolutions/super-chat-core`'s `BUILTIN_CARDS` (`cards/registry-sync.test.ts` keeps the two in sync).
 - `renderer-registry.tsx` — the `CardRenderer` dispatch + provider for host-supplied renderer overrides.
 - `panel.tsx` — the side panel: `ChatPanelProvider`, `ChatPanel`, `useChatPanel` and the line a panel card leaves in the thread ([guide](../../../docs/guide/panel.md)).
+- `labels.tsx`, `markdown-options.tsx`, `Suggestions.tsx`, `card-ref-targets.tsx` — the host's say: every word the kit writes (`LabelsProvider`, `zhTW`), the Markdown highlighter/maths/images slots (`MarkdownProvider`), starting prompts and the empty state, and the citation marker host ([guide](../../../docs/guide/ui.md)).
+- `entry-cards.ts`, `entry-agent.ts`, `entry-surfaces.ts`, `entry-labels.ts` — the subpaths `/cards`, `/agent`, `/surfaces`, `/labels`: take only the part you use. `pnpm check:size` budgets what a single import costs.
 - `ContextInspector.tsx` — renders a context-build trace (what was included/truncated/dropped and why).
-- `markdown.ts`, `format.ts`, `export.ts` — supporting utilities for message rendering and card export.
+- Markdown, `format.ts`, `export.ts` live in `@supersolutions/super-chat-ui-core` — supporting utilities for message rendering and card export.
 - `styles.css` — the token baseline. Import it from source (`@supersolutions/super-chat-ui/styles.css`), not from `dist`.
 - `mobile-agent` — framework-neutral action, model-selection, loading and Orb
   contracts for native ports.

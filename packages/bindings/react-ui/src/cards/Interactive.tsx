@@ -14,8 +14,10 @@ import type { ChoiceCard, ConfirmCard, FormCard, FormField } from "@supersolutio
 import type { CardRendererProps } from "../renderer-registry.js";
 import { formatValue, toneClass } from "@supersolutions/super-chat-ui-core";
 import { FormattedValue } from "./FormattedValue.js";
+import { useLabels } from "../labels.js";
 
 export function ChoiceCardView({ spec, card, respond, answered }: CardRendererProps<ChoiceCard>) {
+  const labels = useLabels();
   // `card.action` is the durable record; local state only covers the gap between
   // answering and the turn committing.
   const recorded = card.action?.type === "select" ? ((card.action.value as { selected?: string[] })?.selected ?? []) : null;
@@ -81,7 +83,7 @@ export function ChoiceCardView({ spec, card, respond, answered }: CardRendererPr
       {spec.multiple && !done ? (
         <div className="sc-card__actions">
           <button type="button" className="sc-btn sc-btn--primary" disabled={!selected.length} onClick={() => submit(selected)}>
-            Confirm selection ({selected.length})
+            {labels.confirmSelection(selected.length)}
           </button>
           <button
             type="button"
@@ -91,14 +93,14 @@ export function ChoiceCardView({ spec, card, respond, answered }: CardRendererPr
               respond?.({ cardId: card.id, callId: card.callId, kind: "choice", type: "cancel" });
             }}
           >
-            Skip
+            {labels.skip}
           </button>
         </div>
       ) : null}
 
       {done ? (
         <div className="sc-muted sc-card__footnote">
-          {card.action?.type === "cancel" || card.action?.type === "dismiss" ? "Skipped." : "Answered."}
+          {card.action?.type === "cancel" || card.action?.type === "dismiss" ? labels.skipped : labels.answered}
         </div>
       ) : null}
     </div>
@@ -117,6 +119,7 @@ function initialValues(fields: FormField[]): Record<string, unknown> {
 }
 
 export function FormCardView({ spec, card, respond, answered }: CardRendererProps<FormCard>) {
+  const labels = useLabels();
   // Submitted values come from the card once recorded — rendering the spec's
   // defaults after the fact would show values the user never entered.
   const recorded = card.action?.type === "submit" ? (card.action.value as Record<string, unknown> | undefined) : undefined;
@@ -198,7 +201,7 @@ export function FormCardView({ spec, card, respond, answered }: CardRendererProp
       {!done ? (
         <div className="sc-card__actions">
           <button type="submit" className="sc-btn sc-btn--primary" disabled={missing.length > 0}>
-            {spec.submitLabel ?? "Submit"}
+            {spec.submitLabel ?? labels.submit}
           </button>
           <button
             type="button"
@@ -220,6 +223,7 @@ export function FormCardView({ spec, card, respond, answered }: CardRendererProp
 }
 
 export function ConfirmCardView({ spec, card, respond, answered }: CardRendererProps<ConfirmCard>) {
+  const labels = useLabels();
   const [local, setLocal] = useState<"confirm" | "cancel" | null>(null);
   // The recorded action wins: after the turn commits this card re-mounts with no
   // local state, and guessing there once made a confirmed action read "Declined."
@@ -254,10 +258,10 @@ export function ConfirmCardView({ spec, card, respond, answered }: CardRendererP
       {!done ? (
         <div className="sc-card__actions">
           <button type="button" className={`sc-btn ${spec.danger ? "sc-btn--danger" : "sc-btn--primary"}`} onClick={() => decide("confirm")}>
-            {spec.confirmLabel ?? "Confirm"}
+            {spec.confirmLabel ?? labels.confirm}
           </button>
           <button type="button" className="sc-btn sc-btn--ghost" onClick={() => decide("cancel")}>
-            {spec.cancelLabel ?? "Cancel"}
+            {spec.cancelLabel ?? labels.cancel}
           </button>
         </div>
       ) : (
@@ -266,7 +270,7 @@ export function ConfirmCardView({ spec, card, respond, answered }: CardRendererP
         >
           {/* No recorded decision means we genuinely do not know — say so rather
               than asserting one of the two outcomes. */}
-          {decision === "confirm" ? "Confirmed." : decision === "cancel" ? "Declined." : "Answered."}
+          {decision === "confirm" ? labels.confirmed : decision === "cancel" ? labels.declined : labels.answered}
         </div>
       )}
     </div>

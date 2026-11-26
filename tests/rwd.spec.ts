@@ -333,6 +333,10 @@ test("desktop shell keeps the sidebar", async ({ page }, testInfo) => {
   await expect(nav).toBeVisible();
   const box = await nav.boundingBox();
   expect(box!.width, "the sidebar is a column, not a strip").toBeGreaterThan(200);
-  // The per-link hints are hidden in the strip; they belong on desktop.
-  await expect(page.locator(".dev__link-hint").first()).toBeVisible();
+  // Beside its icon each link shows its label; the one-line hint is the link's tooltip (it moved
+  // there when the rail gained a collapsed, icon-only state, where the label is the tooltip).
+  const first = page.locator(".dev__link").first();
+  await expect(first.locator(".dev__link-label")).toBeVisible();
+  await expect(first).toHaveAttribute("title", /.{8,}/);
+  expect(await first.getAttribute("title")).not.toBe(await first.locator(".dev__link-label").textContent());
 });

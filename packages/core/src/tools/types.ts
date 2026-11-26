@@ -97,6 +97,18 @@ export type ToolApproval = {
   danger?: boolean;
 };
 
+/**
+ * How a call of this tool reads in the transcript, in the words of the person reading it.
+ * Plain functions of data to a string, with no markup; never shown to the model. Without it the
+ * row shows the tool's name and, when opened, the raw input and output.
+ */
+export type ToolDisplay = {
+  /** The call, such as `Search “clause 3”`. Replaces the tool's name on its row. */
+  label?: (input: unknown) => string;
+  /** The outcome, such as `4 results`. Shown after the label once the call has finished. */
+  summary?: (output: unknown) => string;
+};
+
 export type ToolDefinition = {
   name: string;
   description: string;
@@ -128,6 +140,8 @@ export type ToolDefinition = {
    * Never shown to the model.
    */
   approval?: (input: unknown) => ToolApproval | undefined;
+  /** How a call reads on its row in the transcript. Optional; see `ToolDisplay`. */
+  display?: ToolDisplay;
   /** Ask the provider to enforce the schema (OpenAI strict mode). */
   strict?: boolean;
   /** Default card renderer key when the result carries no explicit card. */

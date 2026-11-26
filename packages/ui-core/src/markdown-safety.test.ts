@@ -58,10 +58,13 @@ describe("hostile input", () => {
 
   it("cannot close the href attribute with a quote", () => {
     const html = renderMarkdown('[click](https://e.com" onmouseover="alert(1))');
-    expect(html).not.toContain("<a ");
+    // The text is not a link (its destination is malformed), but the URL inside it is a bare
+    // one and is linked as one: up to the quote and no further.
+    expect(html).toBe(
+      '<p>[click](<a href="https://e.com" target="_blank" rel="noopener noreferrer">https://e.com</a>&quot; onmouseover=&quot;alert(1))</p>',
+    );
     // `onmouseover=` survives only as inert text: every quote is escaped, so there is no attribute.
-    expect(html).not.toContain('"');
-    expect(html).toBe("<p>[click](https://e.com&quot; onmouseover=&quot;alert(1))</p>");
+    expect(html).not.toMatch(/<[^>]*onmouseover/);
   });
 
   it("escapes markup in link text and in plain text", () => {
@@ -84,8 +87,19 @@ describe("hostile input", () => {
 
 // ── fuzz ─────────────────────────────────────────────────────────────────────
 
-const ALLOWED_TAGS = new Set(["p", "br", "strong", "em", "del", "code", "pre", "a", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "blockquote", "hr", "table", "thead", "tbody", "tr", "th", "td"]);
-const ALLOWED_ATTRS = new Set(["href", "target", "rel", "class", "start", "data-sc-block"]);
+const ALLOWED_TAGS = new Set([
+  "p", "br", "strong", "em", "del", "code", "pre", "a", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "blockquote", "hr",
+  "table", "thead", "tbody", "tr", "th", "td",
+  // Code boxes, table boxes, task checkboxes, images and the empty buttons a host wires.
+  "div", "span", "button", "input", "label", "img", "svg", "path",
+]);
+const ALLOWED_ATTRS = new Set([
+  "href", "target", "rel", "class", "start", "data-sc-block", "data-ref", "data-lang", "data-sc-act", "tabindex", "type", "aria-label",
+  "src", "alt", "loading", "decoding", "referrerpolicy",
+  "viewBox", "width", "height", "aria-hidden", "d", "fill", "stroke", "stroke-width", "stroke-linecap", "stroke-linejoin",
+]);
+// Attributes that stand alone, with no value.
+const BOOLEAN_ATTRS = new Set(["disabled", "checked"]);
 
 /** Checks every invariant the output must hold; returns the first violation, or null. */
 function violation(html: string): string | null {
@@ -107,9 +121,10 @@ function violation(html: string): string | null {
     for (;;) {
       while (html[j] === " ") j++;
       if (html[j] === ">" || (html[j] === "/" && html[j + 1] === ">")) { j += html[j] === ">" ? 1 : 2; break; }
-      const a = /^[a-z][a-z-]*/.exec(html.slice(j));
+      const a = /^[A-Za-z][A-Za-z-]*/.exec(html.slice(j));
       if (!a) return `malformed tag <${name} at ${j}: ${JSON.stringify(html.slice(j, j + 30))}`;
       if (close) return `attributes on a closing tag </${name}>`;
+      if (BOOLEAN_ATTRS.has(a[0])) { j += a[0].length; continue; }
       if (!ALLOWED_ATTRS.has(a[0])) return `attribute ${a[0]} is not allowed`;
       j += a[0].length;
       if (html[j] !== "=" || html[j + 1] !== '"') return `attribute ${a[0]} has no double-quoted value`;
@@ -118,6 +133,9 @@ function violation(html: string): string | null {
       const value = html.slice(j + 2, end);
       if (/[<>]/.test(value)) return `markup inside ${a[0]}="${value}"`;
       if (a[0] === "href" && !/^https?:\/\//.test(value)) return `href is not http(s): ${value}`;
+      if (a[0] === "src" && !/^https?:\/\//.test(value)) return `src is not http(s): ${value}`;
+      if (a[0] === "type" && value !== "checkbox" && value !== "button") return `type ${value} is not allowed`;
+      if (a[0] === "class" && !/^[\w +#.-]*$/.test(value)) return `odd class: ${value}`;
       j = end + 1;
     }
     i = j;
@@ -141,6 +159,10 @@ function* inputs(count: number): Generator<string> {
     "`", "``", "```", "~~~", "*", "**", "***", "~~", "_", '"', "'", "<", ">", "&", "&amp;", "<script>", "</p>", "<img src=x onerror=1>",
     "\n", "\n\n", "# ", "## ", "- ", "1. ", "> ", "| a | b |", "|---|---|", "---", "===", "\\", "\0", "\t", "    ", " ",
     "a", "b", "x y", "é", "日本", "javascript:alert(1)", "onmouseover=", "\u2028",
+    // Added with images, autolinks, task lists, maths and code boxes.
+    "![a](https://e.com/i.png)", "![\"x](https://e.com/\"i.png)", "[![a](https://e.com/i.png)](https://e.com)", "<https://e.com/a>", "https://e.com/a_b_c.",
+    "(see https://e.com/a)", "- [ ] t\n", "- [x] \n", "\n\n- [x] done *e*\n- [ ] todo\n\n", "$", "$$", "$x_1$", "\n\n$$\nx^2\n$$\n\n",
+    "```js\nconst a = \"b\" // c\n```", "```ts", "```json\n{\"a\": [1, true]}\n```", "```diff\n+a\n-b\n```", "```sh\n$ ls -la # x\n```", "__", "_a_", "&lt;", "&#60;", "&bogus;",
   ];
   for (let n = 0; n < count; n++) {
     let s = "";
@@ -154,7 +176,11 @@ describe("fuzz: whatever the input, the HTML stays inside the allowlist", () => 
     let checked = 0;
     const reached = { link: 0, table: 0, code: 0, list: 0, quote: 0, heading: 0 };
     for (const src of inputs(6000)) {
-      for (const [label, html] of [["renderMarkdown", renderMarkdown(src)], ["anchored", renderMarkdownWithAnchors(src).html]] as const) {
+      for (const [label, html] of [
+        ["renderMarkdown", renderMarkdown(src)],
+        ["anchored", renderMarkdownWithAnchors(src).html],
+        ["with actions, images and maths", renderMarkdown(src, { actions: true, images: "embed", math: (tex, display) => `<span class="sc-math">${display ? "D" : "I"}${tex.length}</span>` })],
+      ] as const) {
         const problem = violation(html);
         if (problem) throw new Error(`${label} broke an invariant: ${problem}\n  source: ${JSON.stringify(src)}\n  html:   ${JSON.stringify(html)}`);
       }

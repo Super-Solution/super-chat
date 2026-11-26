@@ -34,9 +34,11 @@ import {
 } from "@supersolutions/super-chat-react";
 import type { TurnMeta } from "@supersolutions/super-chat-client";
 import { CardRenderer, CardSkeleton, useInteractiveKinds } from "./renderer-registry.js";
-import { AttachIcon, Chevron, FileIcon, ImageIcon, StatusMark } from "./cards/icons.js";
-import { newMarkdownStream, renderMarkdown, renderMarkdownStream } from "@supersolutions/super-chat-ui-core";
-import { ProseHtml } from "./card-refs.js";
+import { AttachIcon, Chevron, FileIcon, ImageIcon, StatusMark, ToolIcon, SpeakerIcon, ThumbIcon } from "./cards/icons.js";
+import { newMarkdownStream, renderMarkdown, renderMarkdownBlocks } from "@supersolutions/super-chat-ui-core";
+import { useMarkdownOptions } from "./markdown-options.js";
+import { CardRefProvider, ProseHtml, useCardRefHost } from "./card-refs.js";
+import { builtinCardRefHost } from "./card-ref-targets.js";
 import { useDocumentQuotes } from "./quotes.js";
 import {
   applyPick,
@@ -50,6 +52,9 @@ import {
 } from "./Autocomplete.js";
 import { Orb } from "./agent/Orb.js";
 import { Thinking } from "./agent/Thinking.js";
+import { formatBytes, useLabels, type Labels } from "./labels.js";
+import { describeCall } from "./tool-display.js";
+import { EmptyThread, type Suggestion } from "./Suggestions.js";
 
 function partsOf(message: Message) {
   const cards: Card[] = [];
@@ -85,22 +90,14 @@ function partsOf(message: Message) {
   return { cards, rest, providerTools };
 }
 
-const PROVIDER_TOOL_LABELS: Record<string, string> = {
-  web_search_call: "Searched the web",
-  web_fetch_tool_result: "Fetched a page",
-  code_interpreter_call: "Ran code",
-  server_tool_use: "Used a hosted tool",
-  web_search_tool_result: "Searched the web",
-  bash_code_execution_tool_result: "Ran code",
-};
-
 /** "Searched the web" chips — provider-side work, shown so answers aren't magic. */
 function ProviderToolChips({ items }: { items: { id: string; kind: string }[] }) {
+  const labels = useLabels();
   return (
-    <div className="sc-providertools" style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "4px 0" }}>
+    <div className="sc-providertools">
       {items.map((t) => (
         <span key={t.id} className="sc-pill" title={t.kind}>
-          ⚙ {PROVIDER_TOOL_LABELS[t.kind] ?? t.kind.replace(/_/g, " ")}
+          <ToolIcon /> {labels.providerTools[t.kind] ?? labels.providerToolFallback}
         </span>
       ))}
     </div>
@@ -112,8 +109,26 @@ function ProviderToolChips({ items }: { items: { id: string; kind: string }[] })
  *
  * Actions are always visible rather than revealed on hover — a hover-only
  * control does not exist on a touch device.
+ *
+ * Copy takes the answer's Markdown source, not what is on screen: copying the rendered text
+ * ran the cells of a table together and dropped a code block's fence and language.
  */
-function MessageMeta({ meta, onRegenerate }: { meta?: TurnMeta; onRegenerate?: () => void }) {
+function MessageMeta({
+  meta,
+  source,
+  onRegenerate,
+  feedback,
+  onFeedback,
+  extra,
+}: {
+  meta?: TurnMeta;
+  source: string;
+  onRegenerate?: () => void;
+  feedback?: MessageFeedback;
+  onFeedback?: (value: MessageFeedback | null) => void;
+  extra?: ReactNode;
+}) {
+  const labels = useLabels();
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const bits = [
     meta?.ms ? formatMs(meta.ms) : null,
@@ -129,32 +144,52 @@ function MessageMeta({ meta, onRegenerate }: { meta?: TurnMeta; onRegenerate?: (
       <button
         type="button"
         className={`sc-btn sc-btn--ghost sc-btn--sm${copyState === "failed" ? " sc-tone--negative" : ""}`}
-        onClick={(e) => {
-          // A turn's text can sit in several blocks, either side of its cards.
-          const blocks = e.currentTarget.closest(".sc-msg")?.querySelectorAll(".sc-msg__text") ?? [];
-          const body = Array.from(blocks, (block) => block.textContent ?? "").join("\n\n");
+        onClick={() => {
           // Report the failure rather than swallowing it — a copy button that
           // does nothing visible is indistinguishable from a broken one.
-          void (navigator.clipboard?.writeText(body) ?? Promise.reject())
+          void (navigator.clipboard?.writeText(source) ?? Promise.reject())
             .then(() => setCopyState("copied"))
             .catch(() => setCopyState("failed"))
             .finally(() => setTimeout(() => setCopyState("idle"), 1500));
         }}
       >
-        {copyState === "copied" ? "Copied" : copyState === "failed" ? "Copy failed" : "Copy"}
+        {copyState === "copied" ? labels.copied : copyState === "failed" ? labels.copyFailed : labels.copy}
       </button>
       {onRegenerate ? (
         <button type="button" className="sc-btn sc-btn--ghost sc-btn--sm" onClick={onRegenerate}>
-          Retry
+          {labels.retry}
         </button>
       ) : null}
+      {/* Only when a host listens: a thumb that records nothing implies a capability that is not there. */}
+      {onFeedback ? (
+        <span className="sc-feedback" role="group" aria-label={labels.feedback}>
+          {(["up", "down"] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              className="sc-btn sc-btn--ghost sc-btn--sm sc-feedback__btn"
+              aria-pressed={feedback === value}
+              aria-label={value === "up" ? labels.feedbackGood : labels.feedbackBad}
+              title={value === "up" ? labels.feedbackGood : labels.feedbackBad}
+              onClick={() => onFeedback(feedback === value ? null : value)}
+            >
+              <ThumbIcon down={value === "down"} />
+            </button>
+          ))}
+        </span>
+      ) : null}
+      {extra}
     </div>
   );
 }
 
+/** A reader's verdict on an answer. Pressing the same thumb again takes it back (`null`). */
+export type MessageFeedback = "up" | "down";
+
 /** A finished block of prose. Memoised for identity: see HANDOFF, bug 8. */
 function SettledText({ text }: { text: string }) {
-  const html = useMemo(() => renderMarkdown(text), [text]);
+  const options = useMarkdownOptions();
+  const html = useMemo(() => renderMarkdown(text, options), [text, options]);
   return <ProseHtml className="sc-prose sc-msg__text" html={html} />;
 }
 
@@ -168,15 +203,20 @@ function SurfaceEventNote({ record }: { record: SurfaceEventRecord }) {
   );
 }
 
-export function MessageView({
-  message,
-  respond,
-  onRegenerate,
-}: {
+export type MessageViewProps = {
   message: Message;
   respond?: ReturnType<typeof useCardAction>["respond"];
   onRegenerate?: () => void;
-}) {
+  /** This answer's current verdict, for the thumbs. The host owns it; the kit only shows it. */
+  feedback?: MessageFeedback;
+  /** Shows thumbs under answers and reports each press. Omit and no thumbs are drawn. */
+  onFeedback?: (message: Message, value: MessageFeedback | null) => void;
+  /** More controls in an answer's row, after Copy, Retry and the thumbs (Share, Pin, Save…). */
+  actions?: (message: Message, source: string) => ReactNode;
+};
+
+export function MessageView({ message, respond, onRegenerate, feedback, onFeedback, actions }: MessageViewProps) {
+  const labels = useLabels();
   const { cards, rest, providerTools } = useMemo(() => partsOf(message), [message]);
   const isInteractive = useInteractiveKinds();
   // Turns saved before order was recorded keep the layout they were written for.
@@ -196,7 +236,14 @@ export function MessageView({
     }
     return { text, reasoning, calls, results };
   }, [rest]);
-  const html = useMemo(() => renderMarkdown(text), [text]);
+  const options = useMarkdownOptions();
+  const html = useMemo(() => renderMarkdown(text, options), [text, options]);
+  // What Copy hands over: the answer's own Markdown, its text parts in the order they were
+  // written (a turn's text can sit in several blocks, either side of its cards).
+  const source = useMemo(
+    () => (segments ? segments.flatMap((segment) => (segment.type === "text" ? [segment.text] : [])).join("\n\n") : text),
+    [segments, text],
+  );
 
   // Split cards: interactive ones stay at top level, read-only ones may sit with
   // the tool activity they came from. One pass rather than a filter whose
@@ -283,9 +330,16 @@ export function MessageView({
           {text ? <ProseHtml className="sc-prose sc-msg__text" html={html} /> : null}
         </>
       )}
-      {!text && !cards.length && !calls.length ? <div className="sc-muted">(no response)</div> : null}
+      {!text && !cards.length && !calls.length ? <div className="sc-muted">{labels.noResponse}</div> : null}
       {(text || cards.length) && (message.metadata as { turn?: TurnMeta } | undefined)?.turn?.origin !== "surface-action" ? (
-        <MessageMeta meta={(message.metadata as { turn?: TurnMeta } | undefined)?.turn} onRegenerate={onRegenerate} />
+        <MessageMeta
+          meta={(message.metadata as { turn?: TurnMeta } | undefined)?.turn}
+          source={source}
+          onRegenerate={onRegenerate}
+          feedback={feedback}
+          onFeedback={onFeedback ? (value) => onFeedback(message, value) : undefined}
+          extra={actions?.(message, source)}
+        />
       ) : null}
       <BranchNav messageId={message.id} />
     </div>
@@ -294,43 +348,75 @@ export function MessageView({
 
 /** "‹ 2/3 ›" — rendered only when the message actually has siblings. */
 function BranchNav({ messageId }: { messageId: string }) {
+  const labels = useLabels();
   const { index, count, prev, next } = useBranches(messageId);
   const { isRunning } = useThread();
   if (count < 2) return null;
   return (
-    <div className="sc-branchnav" style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
-      <button type="button" className="sc-btn sc-btn--ghost sc-btn--sm" disabled={isRunning} onClick={prev} aria-label="Previous branch">
+    <div className="sc-branchnav">
+      <button type="button" className="sc-btn sc-btn--ghost sc-btn--sm" disabled={isRunning} onClick={prev} aria-label={labels.previousBranch}>
         ‹
       </button>
       <span className="sc-muted">
         {index + 1}/{count}
       </span>
-      <button type="button" className="sc-btn sc-btn--ghost sc-btn--sm" disabled={isRunning} onClick={next} aria-label="Next branch">
+      <button type="button" className="sc-btn sc-btn--ghost sc-btn--sm" disabled={isRunning} onClick={next} aria-label={labels.nextBranch}>
         ›
       </button>
     </div>
   );
 }
 
-/** The user bubble, with edit-as-fork: saving runs a sibling branch. */
+/**
+ * The user bubble, with edit-as-fork: saving runs a sibling branch.
+ *
+ * The edit keeps what the message carried besides its words (an attached image or file): the
+ * branch is the same question reworded, not the same question with its evidence taken away.
+ * The box takes focus when it opens; Escape cancels it and Ctrl or Cmd with Enter sends.
+ */
 function UserBubble({ message, text }: { message: Message; text: string }) {
   const client = useAgentClient();
+  const labels = useLabels();
   const { isRunning } = useThread();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(text);
+  const box = useRef<HTMLTextAreaElement>(null);
+  const edit = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const el = box.current;
+    if (!editing || !el) return;
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+  }, [editing]);
 
   if (!text && !editing) return null;
+
+  const close = () => {
+    setEditing(false);
+    // Back to the button that opened the box, so a keyboard user is not dropped at the top of the page.
+    requestAnimationFrame(() => edit.current?.focus());
+  };
+  const save = () => {
+    const words = draft.trim();
+    if (!words || isRunning) return;
+    setEditing(false);
+    const kept = message.parts.filter((p) => p.type !== "text");
+    void client.editMessage(message.id, kept.length ? [...kept, { type: "text", text: words }] : words);
+  };
+
   if (!editing) {
     return (
       <div className="sc-bubblerow">
         {/* Beside the bubble, not in it: the message reads as written, and the
             control shows on hover or focus (always, on touch). */}
         <button
+          ref={edit}
           type="button"
           className="sc-bubble__edit"
           disabled={isRunning}
-          aria-label="Edit message"
-          title="Edit. The original stays as a branch you can switch back to."
+          aria-label={labels.editMessage}
+          title={labels.editHint}
           onClick={() => {
             setDraft(text);
             setEditing(true);
@@ -345,28 +431,32 @@ function UserBubble({ message, text }: { message: Message; text: string }) {
     );
   }
   return (
-    <div className="sc-bubble" style={{ width: "100%" }}>
+    <div className="sc-bubble sc-bubble--editing">
       <textarea
+        ref={box}
         className="sc-composer__input"
         rows={2}
         value={draft}
+        aria-label={labels.editMessage}
         onChange={(e) => setDraft(e.target.value)}
-        style={{ width: "100%" }}
+        onKeyDown={(e) => {
+          // Neither key means anything while an IME candidate is open.
+          if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+          if (e.key === "Escape") {
+            e.preventDefault();
+            close();
+          } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            save();
+          }
+        }}
       />
-      <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-        <button
-          type="button"
-          className="sc-btn sc-btn--primary sc-btn--sm"
-          disabled={!draft.trim() || isRunning}
-          onClick={() => {
-            setEditing(false);
-            void client.editMessage(message.id, draft.trim());
-          }}
-        >
-          Send edited
+      <div className="sc-bubble__editbar">
+        <button type="button" className="sc-btn sc-btn--primary sc-btn--sm" disabled={!draft.trim() || isRunning} onClick={save}>
+          {labels.sendEdited}
         </button>
-        <button type="button" className="sc-btn sc-btn--ghost sc-btn--sm" onClick={() => setEditing(false)}>
-          Cancel
+        <button type="button" className="sc-btn sc-btn--ghost sc-btn--sm" onClick={close}>
+          {labels.cancel}
         </button>
       </div>
     </div>
@@ -374,18 +464,15 @@ function UserBubble({ message, text }: { message: Message; text: string }) {
 }
 
 /** `2026-08-04` → `Today` / `Yesterday` / a written date. */
-function dayLabel(at: number): string {
+function dayLabel(at: number, labels: Labels): string {
   const d = new Date(at);
   const today = new Date();
   const midnight = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
   const diffDays = Math.round((midnight(today) - midnight(d)) / 86_400_000);
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
+  if (diffDays === 0) return labels.today;
+  if (diffDays === 1) return labels.yesterday;
   return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
-
-const formatBytes = (n: number) =>
-  n < 1024 ? `${n} B` : n < 1024 * 1024 ? `${(n / 1024).toFixed(0)} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`;
 
 /** `840ms` under a second, `1.4s` above it — two digits of precision, never more. */
 function formatMs(ms: number): string {
@@ -405,21 +492,22 @@ const mediaSrc = (source: MediaSource, mediaType?: string): string | null => {
  * transcript, including after a reload.
  */
 function MediaParts({ parts }: { parts: Extract<ContentPart, { type: "image" | "file" | "audio" }>[] }) {
+  const labels = useLabels();
   return (
     <div className="sc-media">
       {parts.map((p, i) => {
         if (p.type === "image") {
           const src = mediaSrc(p.source, p.mediaType);
           return src ? (
-            <img key={i} className="sc-media__img" src={src} alt="attached image" style={{ maxWidth: "min(100%, 360px)", borderRadius: 8 }} />
+            <img key={i} className="sc-media__img" src={src} alt={labels.attachedImage} />
           ) : (
             <span key={i} className="sc-pill" title={(p.source as { id?: string }).id}>
-              <ImageIcon /> attached image
+              <ImageIcon /> {labels.attachedImage}
             </span>
           );
         }
         if (p.type === "file") {
-          const name = p.filename ?? (p.source.kind === "providerFile" ? p.source.id : "attachment");
+          const name = p.filename ?? (p.source.kind === "providerFile" ? p.source.id : labels.attachment);
           return (
             <span key={i} className="sc-pill" title={p.mediaType}>
               <FileIcon /> {name}
@@ -429,12 +517,13 @@ function MediaParts({ parts }: { parts: Extract<ContentPart, { type: "image" | "
         const src = mediaSrc(p.source, p.mediaType);
         return src ? (
           <span key={i} className="sc-media__audio">
-            <audio src={src} controls preload="metadata" aria-label="Attached audio" />
+            <audio src={src} controls preload="metadata" aria-label={labels.attachedAudio} />
             {p.transcript ? <span className="sc-muted">{p.transcript.slice(0, 60)}{p.transcript.length > 60 ? "…" : ""}</span> : null}
           </span>
         ) : (
           <span key={i} className="sc-pill">
-            🔊 audio{p.transcript ? ` — “${p.transcript.slice(0, 60)}${p.transcript.length > 60 ? "…" : ""}”` : ""}
+            <SpeakerIcon /> {labels.attachedAudio}
+            {p.transcript ? ` — “${p.transcript.slice(0, 60)}${p.transcript.length > 60 ? "…" : ""}”` : ""}
           </span>
         );
       })}
@@ -449,6 +538,9 @@ function ToolActivity({
   calls: Extract<ContentPart, { type: "tool-call" }>[];
   results: Extract<ContentPart, { type: "tool-result" }>[];
 }) {
+  const labels = useLabels();
+  const { all: tools } = useTools();
+  const toolByName = useMemo(() => new Map(tools.map((t) => [t.name, t])), [tools]);
   const [open, setOpen] = useState(false);
   const { byId, items } = useMemo(() => {
     const byId = new Map(results.map((r) => [r.callId, r]));
@@ -465,22 +557,37 @@ function ToolActivity({
   const totalMs = results.reduce((sum, r) => sum + (r.ms ?? 0), 0);
 
   const summary = isRunning
-    ? `Running tools ${items.length - running.length}/${items.length}${current ? ` · ${current.name}` : ""}…`
-    : `${items.length} tool ${items.length === 1 ? "call" : "calls"}${totalMs ? ` · ${formatMs(totalMs)}` : ""}`;
+    ? labels.toolsRunning(items.length - running.length, items.length, current?.name)
+    : labels.toolCalls(items.length, totalMs ? formatMs(totalMs) : undefined);
+
+  // The longest call sets the scale, so a bar is a share of the slowest one and never of a made-up budget.
+  const slowest = Math.max(0, ...results.map((r) => r.ms ?? 0));
 
   const row = (c: { callId: string; name: string; input?: unknown }) => {
     const result = byId.get(c.callId);
     const state = !result ? "running" : result.failure ? "failed" : "done";
+    // The tool's own words for the call, when it has some; its name is still on hover.
+    const said = describeCall(toolByName.get(c.name), c.input, result?.output, Boolean(result) && !result?.failure);
     return (
       <li key={c.callId} className="sc-tools__item">
         <div className="sc-tools__row">
           <span className="sc-tools__status" aria-hidden>
             {state === "running" ? <span className="sc-spinner" /> : <StatusMark kind={state} />}
           </span>
-          <code className="sc-mono">{c.name}</code>
+          {said.label ? (
+            <span className="sc-tools__label" title={c.name}>
+              {said.label}
+            </span>
+          ) : (
+            <code className="sc-mono">{c.name}</code>
+          )}
+          {said.summary ? <span className="sc-tools__summary-text sc-muted">{said.summary}</span> : null}
           {result?.failure ? <span className="sc-pill sc-pill--negative">{result.failure}</span> : null}
           {result?.ms != null ? <span className="sc-tools__ms sc-muted">{formatMs(result.ms)}</span> : null}
         </div>
+        {result?.ms != null && slowest > 0 && items.length > 1 ? (
+          <div className="sc-tools__bar" aria-hidden style={{ ["--sc-bar" as string]: `${Math.max(2, Math.round((result.ms / slowest) * 100))}%` }} />
+        ) : null}
         {open ? (
           <>
             {c.input !== undefined ? <pre className="sc-pre sc-pre--sm">{JSON.stringify(c.input, null, 2)}</pre> : null}
@@ -502,7 +609,7 @@ function ToolActivity({
           {open ? "▾" : "▸"}
         </span>
         <span className="sc-tools__summary">{summary}</span>
-        {failures ? <span className="sc-pill sc-pill--negative">{failures} failed</span> : null}
+        {failures ? <span className="sc-pill sc-pill--negative">{labels.toolsFailed(failures)}</span> : null}
       </button>
       {/* While running, the in-flight call shows without expanding the group —
           seeing which tool is live is the point; the other rows are history. */}
@@ -645,6 +752,7 @@ function StreamedSurface({ callId, card, spec }: { callId: string; card?: Card; 
 
 /** The live turn: streamed text, cards as they arrive, and any blocking card. */
 export function LiveTurn() {
+  const labels = useLabels();
   const run = useRun();
   const { pending, respond } = useCardAction();
 
@@ -669,7 +777,10 @@ export function LiveTurn() {
   // A new block starts from its own text, not one frame of the block before it.
   const throttledText = liveText.startsWith(throttled) ? throttled : liveText;
   const [markdownStream] = useState(newMarkdownStream);
-  const html = useMemo(() => renderMarkdownStream(throttledText, markdownStream), [throttledText, markdownStream]);
+  const options = useMarkdownOptions();
+  // Block by block: the settled blocks are the same strings from frame to frame, which is what
+  // lets ProseHtml leave their DOM (and a selection in it) alone while the tail grows.
+  const html = useMemo(() => renderMarkdownBlocks(throttledText, markdownStream, options), [throttledText, markdownStream, options]);
   const thoughtFor = useThinkingDuration(run.runId, run.parts.some((p) => p.type === "reasoning"), Boolean(text));
   const streamPhase = useStreamingPulse(text, run.status === "running");
 
@@ -732,7 +843,10 @@ export function LiveTurn() {
   ];
 
   return (
-    <div className="sc-msg sc-msg--assistant">
+    // Busy while the turn is open, so a screen reader holds the growing text back instead
+    // of reading it token by token; the finished message that replaces this is appended to
+    // the log whole, and ThreadAnnouncer says that the turn began and ended.
+    <div className="sc-msg sc-msg--assistant" aria-busy={run.status === "running"}>
       {run.job ? (
         <div className="sc-jobchip">
           <span className="sc-spinner" aria-hidden /> Background job <code className="sc-mono">{run.job.handle.id.slice(0, 18)}…</code>{" "}
@@ -756,7 +870,7 @@ export function LiveTurn() {
           from run state rather than a rotation of invented phrases. */}
       {run.status === "running" && !text && !calls.length && !flow.some(Boolean) ? (
         <div className="sc-status" aria-live="polite">
-          <Orb variant="S1" pill label={statusLine(run)} />
+          <Orb variant="S1" pill label={statusLine(run, labels)} />
         </div>
       ) : null}
       {/* The saved turn shows a meta row; holding its place now keeps the turn from growing when it is saved. */}
@@ -772,44 +886,117 @@ export function LiveTurn() {
  * status line that cycles through plausible-sounding stages while the agent does
  * something else is a lie, and users notice when it never matches the tool list.
  */
-function statusLine(run: RunState): string {
-  if (run.job) return `Working in the background — ${run.job.status}`;
-  if (run.pendingCard) return "Waiting for you";
+function statusLine(run: RunState, labels: Labels): string {
+  if (run.job) return labels.statusBackground(run.job.status);
+  if (run.pendingCard) return labels.statusWaiting;
   const writing = Object.values(run.partialTools ?? {}).find(
     (p) => !run.parts.some((part) => part.type === "tool-call" && part.callId === p.callId),
   );
-  if (writing) return `Preparing ${writing.name}…`;
+  if (writing) return labels.statusPreparing(writing.name);
   const lastCall = [...run.parts].reverse().find((p) => p.type === "tool-call") as
     | Extract<ContentPart, { type: "tool-call" }>
     | undefined;
-  if (lastCall && lastCall.status === "running") return `Running ${lastCall.name}…`;
-  if (run.parts.some((p) => p.type === "reasoning")) return "Thinking…";
-  if (run.steps > 1) return `Working — step ${run.steps}`;
-  return "Thinking…";
+  if (lastCall && lastCall.status === "running") return labels.statusRunning(lastCall.name);
+  if (run.parts.some((p) => p.type === "reasoning")) return labels.thinking;
+  if (run.steps > 1) return labels.statusStep(run.steps);
+  return labels.thinking;
+}
+
+/**
+ * Says, in a polite status region outside the log, that a turn began and that it ended.
+ *
+ * The log itself stays quiet while an answer streams (the live turn is `aria-busy`), so this is
+ * what tells a person using a screen reader that something is happening and when it is done. A
+ * failed turn says nothing here: its error block is a `role="alert"` and speaks for itself.
+ */
+function ThreadAnnouncer({ running, failed }: { running: boolean; failed: boolean }) {
+  const labels = useLabels();
+  const [text, setText] = useState("");
+  const was = useRef(running);
+  useEffect(() => {
+    if (running === was.current) return;
+    was.current = running;
+    setText(running ? labels.responding : failed ? "" : labels.replied);
+  }, [running, failed, labels]);
+  return (
+    <div className="sc-sr-only" role="status" aria-live="polite" data-sc-announcer>
+      {text}
+    </div>
+  );
+}
+
+/**
+ * What an error block says, or `""` for the generic line. A host's `format` replaces the raw
+ * message; if it throws, the generic line is shown, never the raw text the host meant to hide.
+ */
+export function errorDetail(error: unknown, format?: (error: unknown) => string): string {
+  if (format) {
+    try {
+      return format(error) ?? "";
+    } catch {
+      return "";
+    }
+  }
+  return error != null ? (error instanceof Error ? error.message : String(error)) : "";
 }
 
 /** Inline error block for a failed run, with a retry that re-runs the last turn. */
-function ErrorBlock({ error, onRetry }: { error: unknown; onRetry: () => void }) {
-  const detail = error != null ? (error instanceof Error ? error.message : String(error)) : "";
+function ErrorBlock({ error, onRetry, format }: { error: unknown; onRetry: () => void; format?: (error: unknown) => string }) {
+  const labels = useLabels();
+  const detail = errorDetail(error, format);
   return (
     <div className="sc-card sc-card--error" role="alert">
-      {detail || "Something went wrong."}
+      {detail || labels.somethingWrong}
       <div className="sc-card__actions">
         <button type="button" className="sc-btn sc-btn--sm" onClick={onRetry}>
-          Retry
+          {labels.retry}
         </button>
       </div>
     </div>
   );
 }
 
-export function Thread({ empty }: { empty?: ReactNode }) {
+export type ThreadProps = {
+  /**
+   * What to show before the first message. Omit for the built-in empty state (a title, one line
+   * and `suggestions`); pass your own node to replace it, or `null` for nothing at all.
+   */
+  empty?: ReactNode;
+  /** Starting prompts for the built-in empty state. Ignored when `empty` is given. */
+  suggestions?: readonly Suggestion[];
+  /**
+   * What a failed turn says. Default: the error's own message, which for a provider error can be
+   * a raw API response. Return the words a person should read (or a translation); an empty
+   * string falls back to the generic line.
+   */
+  formatError?: (error: unknown) => string;
+  /** Shows thumbs under each answer and reports a press. Omit and none are drawn. */
+  onFeedback?: (message: Message, value: MessageFeedback | null) => void;
+  /** More controls in each answer's row (Share, Pin, Save…). Receives the answer's Markdown source. */
+  actions?: (message: Message, source: string) => ReactNode;
+};
+
+/**
+ * The conversation. Citations an answer makes into its own cards (`[[1]](ref:authority?cite=2)`)
+ * are live without any setup; a host that wraps the thread in its own `<CardRefProvider>` answers
+ * for them instead, and chains `builtinCardRefHost` in if it still wants these.
+ */
+export function Thread(props: ThreadProps) {
+  const host = useCardRefHost();
+  const body = <ThreadBody {...props} />;
+  return host ? body : <CardRefProvider host={builtinCardRefHost}>{body}</CardRefProvider>;
+}
+
+function ThreadBody({ empty, suggestions, formatError, onFeedback, actions }: ThreadProps) {
+  const labels = useLabels();
   const { messages, status, error, regenerate, isRunning } = useThread();
   const { respond } = useCardAction();
   const run = useRun();
   const pendingCardId = useRun((r) => r.pendingCard?.id);
   const bottomRef = useRef<HTMLDivElement>(null);
   const [pinned, setPinned] = useState(true);
+  // What each answer was marked as. Kept here so a press shows at once; the host's callback is what persists it.
+  const [verdicts, setVerdicts] = useState<Record<string, MessageFeedback>>({});
 
   // A question the person has to answer is brought into view wherever they had
   // scrolled to. A button high up a surface can raise one at the bottom of the
@@ -836,14 +1023,20 @@ export function Thread({ empty }: { empty?: ReactNode }) {
     <div className="sc-threadwrap">
       <div
         className="sc-thread"
+        // A log: new messages are only ever added at the end, which is what `role="log"` (polite,
+        // non-atomic) is for. Without it a screen reader is told nothing when an answer arrives.
+        role="log"
+        aria-label={labels.thread}
         onScroll={(e) => {
           const el = e.currentTarget;
           setPinned(el.scrollHeight - el.scrollTop - el.clientHeight < 80);
         }}
       >
-        {messages.length === 0 && run.status === "idle" ? <div className="sc-empty">{empty}</div> : null}
+        {messages.length === 0 && run.status === "idle" ? (
+          <div className="sc-empty">{empty === undefined ? <EmptyThread suggestions={suggestions} /> : empty}</div>
+        ) : null}
         {messages.map((m) => {
-          const day = m.createdAt ? dayLabel(m.createdAt) : "";
+          const day = m.createdAt ? dayLabel(m.createdAt, labels) : "";
           const divider = day && day !== lastDay ? day : "";
           if (day) lastDay = day;
           return (
@@ -857,14 +1050,30 @@ export function Thread({ empty }: { empty?: ReactNode }) {
                 message={m}
                 respond={respond}
                 onRegenerate={m.id === lastAssistant && !isRunning ? () => void regenerate() : undefined}
+                feedback={verdicts[m.id]}
+                onFeedback={
+                  onFeedback
+                    ? (message, value) => {
+                        setVerdicts((prev) => {
+                          const next = { ...prev };
+                          if (value) next[message.id] = value;
+                          else delete next[message.id];
+                          return next;
+                        });
+                        onFeedback(message, value);
+                      }
+                    : undefined
+                }
+                actions={actions}
               />
             </div>
           );
         })}
         <LiveTurn />
-        {status === "error" ? <ErrorBlock error={error} onRetry={() => void regenerate()} /> : null}
+        {status === "error" ? <ErrorBlock error={error} onRetry={() => void regenerate()} format={formatError} /> : null}
         <div ref={bottomRef} />
       </div>
+      <ThreadAnnouncer running={isRunning} failed={status === "error"} />
       {/* Only offered when it does something: pinned means already at the end. */}
       {!pinned ? (
         <button
@@ -875,7 +1084,7 @@ export function Thread({ empty }: { empty?: ReactNode }) {
             bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
           }}
         >
-          <Chevron /> Latest
+          <Chevron /> {labels.latest}
         </button>
       ) : null}
     </div>
@@ -901,17 +1110,42 @@ export type ComposerProps = {
    * read back from `useAttachments()` — the two never both hold a file.
    */
   onAttachFile?: (file: File) => void | Promise<void>;
+  /**
+   * The `accept` list of the file picker, and the rule a dropped or pasted file is held to.
+   * Default: images, PDF and text. A file outside it is refused with a message, not dropped.
+   */
+  accept?: string;
+  /** Refuse a file larger than this many bytes, with a message. Omit for no limit: the kit does not guess. */
+  maxFileBytes?: number;
 };
 
+/** Does `file` match an `accept` list (`image/*,.pdf,text/plain`)? */
+export function matchesAccept(file: { name: string; type: string }, accept: string): boolean {
+  const name = file.name.toLowerCase();
+  const type = file.type.toLowerCase();
+  return accept
+    .split(",")
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean)
+    .some((t) =>
+      t.startsWith(".") ? name.endsWith(t) : t.endsWith("/*") ? type.startsWith(t.slice(0, -1)) : type === t,
+    );
+}
+
+const DEFAULT_ACCEPT = "image/*,application/pdf,text/*";
+
 export function Composer({
-  placeholder = "Ask anything…",
+  placeholder,
   maxInputTokens,
   models,
   model,
   onModelChange,
   toolToggles,
   onAttachFile,
+  accept = DEFAULT_ACCEPT,
+  maxFileBytes,
 }: ComposerProps) {
+  const labels = useLabels();
   const { send, stop, isRunning, stopping, messages } = useThread();
   const quoteBus = useDocumentQuotes();
   const quotes = quoteBus?.quotes ?? [];
@@ -923,6 +1157,9 @@ export function Composer({
   const tokens = useMemo(() => (value ? estimateTokens(value) : 0), [value]);
   const overLimit = maxInputTokens != null && tokens > maxInputTokens;
   const [local, setLocal] = useState<{ id: string; name: string; size: number; part: ContentPart }[]>([]);
+  // Files that were not attached, and why. Said out loud (role="alert"): a file that vanishes with
+  // no word reads as the button being broken.
+  const [rejected, setRejected] = useState<string[]>([]);
 
   // One list to render and to gate "can send", whichever path staged the file.
   const attachments = onAttachFile
@@ -961,19 +1198,38 @@ export function Composer({
   // storage of its own, and `MediaSource` already carries inline data. A host
   // with a file API can swap these for `providerFile` sources before sending.
   const addFiles = async (files: FileList | File[]) => {
-    const accepted = [...files].filter((f) => f.type.startsWith("image/") || f.type === "application/pdf" || f.type.startsWith("text/"));
+    const refusals: string[] = [];
+    const accepted = [...files].filter((f) => {
+      if (!matchesAccept(f, accept)) {
+        refusals.push(labels.fileNotAccepted(f.name));
+        return false;
+      }
+      if (maxFileBytes != null && f.size > maxFileBytes) {
+        refusals.push(labels.fileTooLarge(f.name, formatBytes(maxFileBytes)));
+        return false;
+      }
+      return true;
+    });
+    setRejected(refusals);
     // With a host seam, staging is the host's job — it may need to upload and
     // hand back a providerFile reference, which base64 here cannot produce.
     if (onAttachFile) {
-      for (const f of accepted) await onAttachFile(f);
+      for (const f of accepted) {
+        try {
+          await onAttachFile(f);
+        } catch {
+          refusals.push(labels.fileNotAccepted(f.name));
+          setRejected([...refusals]);
+        }
+      }
       return;
     }
-    const read = await Promise.all(
+    const settled = await Promise.allSettled(
       accepted.map(
         (f) =>
           new Promise<{ id: string; name: string; size: number; part: ContentPart }>((resolve, reject) => {
             const reader = new FileReader();
-            reader.onerror = () => reject(reader.error);
+            reader.onerror = () => reject(new Error(f.name));
             reader.onload = () => {
               const data = String(reader.result).split(",")[1] ?? "";
               const source = { kind: "base64" as const, data };
@@ -990,6 +1246,13 @@ export function Composer({
           }),
       ),
     );
+    // A file the browser could not read is reported like any other refusal.
+    const read: { id: string; name: string; size: number; part: ContentPart }[] = [];
+    settled.forEach((r, i) => {
+      if (r.status === "fulfilled") read.push(r.value);
+      else refusals.push(labels.fileNotAccepted(accepted[i]!.name));
+    });
+    if (refusals.length) setRejected([...refusals]);
     // Dedupe by identity so dropping the same file twice does not send it twice.
     setAttachments((prev) => [...prev, ...read.filter((r) => !prev.some((p) => p.id === r.id))]);
   };
@@ -1010,6 +1273,7 @@ export function Composer({
     ];
     setValue("");
     setAttachments([]);
+    setRejected([]);
     // Cleared before the run, not after: a quote left in the composer would be
     // re-sent with the next message, which is the stale-context bug that keeping
     // quotes off app-state was meant to avoid in the first place.
@@ -1035,18 +1299,21 @@ export function Composer({
   // Drag-and-drop is not discoverable on its own, and does not exist at all on
   // a touch device — so the picker is always offered too.
   const attachButton = (
-    <label className="sc-btn sc-btn--ghost sc-btn--sm" title="Attach a file" aria-disabled={isRunning}>
+    <label className="sc-btn sc-btn--ghost sc-btn--sm" title={labels.attachFile} aria-disabled={isRunning}>
       <AttachIcon />
-      <span className="sc-sr-only">Attach a file</span>
+      <span className="sc-sr-only">{labels.attachFile}</span>
       <input
         type="file"
         multiple
-        style={{ display: "none" }}
+        accept={accept}
+        className="sc-composer__file"
         disabled={isRunning}
         onChange={(e) => {
-          const files = e.target.files;
+          // Copied before the input is cleared: the FileList is live, and clearing the value (so
+          // the same file can be picked again) empties it.
+          const files = e.target.files ? [...e.target.files] : [];
           e.target.value = "";
-          if (files?.length) void addFiles(files);
+          if (files.length) void addFiles(files);
         }}
       />
     </label>
@@ -1056,11 +1323,11 @@ export function Composer({
     // Disabled once requested: pressing Stop twice does nothing extra, and a
     // still-live button after a stop reads as the button being broken.
     <button type="button" className="sc-btn sc-btn--ghost" onClick={stop} disabled={stopping}>
-      {stopping ? "Stopping…" : "Stop"}
+      {stopping ? labels.stopping : labels.stop}
     </button>
   ) : (
     <button type="submit" className="sc-btn sc-btn--primary" disabled={!hasContent || overLimit}>
-      Send
+      {labels.send}
     </button>
   );
 
@@ -1082,7 +1349,7 @@ export function Composer({
         <SuggestMenu items={suggestions} active={activeIdx} onPick={pick} />
       ) : null}
       {quotes.length ? (
-        <ul className="sc-quotes" aria-label="Quoted from a document">
+        <ul className="sc-quotes" aria-label={labels.quotedFromDocument}>
           {quotes.map((q, i) => (
             <li key={`${q.docId}:${q.start}:${q.end}`} className="sc-quote">
               <span className="sc-quote__doc">{q.title}</span>
@@ -1090,12 +1357,19 @@ export function Composer({
               <button
                 type="button"
                 className="sc-quote__remove"
-                aria-label={`Remove quote from ${q.title}`}
+                aria-label={labels.removeQuote(q.title)}
                 onClick={() => quoteBus?.remove(i)}
               >
                 ✕
               </button>
             </li>
+          ))}
+        </ul>
+      ) : null}
+      {rejected.length ? (
+        <ul className="sc-composer__rejected" role="alert">
+          {rejected.map((r) => (
+            <li key={r}>{r}</li>
           ))}
         </ul>
       ) : null}
@@ -1109,7 +1383,7 @@ export function Composer({
               <button
                 type="button"
                 className="sc-attachment__remove"
-                aria-label={`Remove ${a.name}`}
+                aria-label={labels.removeAttachment(a.name)}
                 onClick={() =>
                   onAttachFile ? staged.remove(i) : setAttachments((prev) => prev.filter((p) => p.id !== a.id))
                 }
@@ -1125,7 +1399,8 @@ export function Composer({
         className="sc-composer__input"
         rows={1}
         value={value}
-        placeholder={placeholder}
+        placeholder={placeholder ?? labels.placeholder}
+        aria-label={placeholder ?? labels.placeholder}
         onPaste={(e) => {
           const files = [...e.clipboardData.files];
           if (!files.length) return;
@@ -1209,7 +1484,7 @@ export function Composer({
               className="sc-composer__model"
               value={model ?? models[0]}
               onChange={(e) => onModelChange?.(e.target.value)}
-              aria-label="Model"
+              aria-label={labels.model}
             >
               {models.map((m) => (
                 <option key={m} value={m}>

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "@supersolutions/super-chat-ui/styles.css";
 import "./globals.css";
 import { Shell } from "@/components/Shell";
+import { Words } from "@/components/Words";
 import { SITE_FONTS } from "@/components/site-fonts";
 
 export const metadata: Metadata = {
@@ -32,7 +33,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="stylesheet" href={SITE_FONTS} />
       </head>
       <body>
-        <Shell>{children}</Shell>
+        <Words>
+          <Shell>{children}</Shell>
+        </Words>
       </body>
     </html>
   );

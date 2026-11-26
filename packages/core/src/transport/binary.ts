@@ -9,7 +9,7 @@
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-const REVERSE: Int16Array = (() => {
+const REVERSE: Int16Array = /* @__PURE__ */ (() => {
   const table = new Int16Array(128).fill(-1);
   for (let i = 0; i < ALPHABET.length; i += 1) table[ALPHABET.charCodeAt(i)] = i;
   return table;

@@ -61,6 +61,28 @@ describe("CardRegistry", () => {
     expect(verdict.ok).toBe(false);
   });
 
+  it("accepts citations with and without ids, so every existing card still validates", () => {
+    const plain = { kind: "citations", items: [{ title: "A" }, { title: "B", url: "https://example.com" }] };
+    expect(cards.validate(plain)).toEqual({ ok: true });
+    const named = { kind: "citations", id: "authority", items: [{ id: "photo", title: "A" }, { id: "ucta.s3", title: "B" }] };
+    expect(cards.validate(named)).toEqual({ ok: true });
+  });
+
+  it("refuses a citation id that cannot travel in a link, or is used twice, saying which", () => {
+    const bad = cards.validate({ kind: "citations", items: [{ id: "has space", title: "A" }] });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(bad.error).toContain("citation `id`");
+    const twice = cards.validate({ kind: "citations", items: [{ id: "a", title: "A" }, { id: "a", title: "B" }] });
+    expect(twice.ok).toBe(false);
+    if (!twice.ok) expect(twice.error).toContain('"a"');
+    const card = cards.validate({ kind: "citations", id: "no good", items: [{ title: "A" }] });
+    expect(card.ok).toBe(false);
+  });
+
+  it("tells the model how to cite into the card", () => {
+    expect(cards.get("citations")?.summary).toContain("ref:<card id>?cite=");
+  });
+
   it("marks exactly the decision-requiring kinds as interactive", () => {
     // "Interactive" means the run SUSPENDS until the user answers. The bar is
     // that something is waiting — not that the card has controls in it. An
